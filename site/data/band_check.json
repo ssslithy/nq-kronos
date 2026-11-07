@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-07T19:50:11Z",
+ "generated_utc": "2026-11-07T20:12:35Z",
  "window": 30,
  "matured_24h": 34,
  "ready": true,
@@ -9,37 +9,37 @@
  "h24": {
   "n": 30,
   "hit_rate": 0.233,
-  "mae_median": 1119.05,
-  "mae_naive": 1175.97,
+  "mae_median": 1119.3,
+  "mae_naive": 1176.26,
   "avg_width": 737.67
  },
  "by_horizon": {
   "1": {
    "n": 30,
    "hit_rate": 0.433,
-   "mae_median": 145.24,
-   "mae_naive": 132.82,
+   "mae_median": 145.45,
+   "mae_naive": 133.04,
    "avg_width": 216.11
   },
   "6": {
    "n": 30,
    "hit_rate": 0.467,
-   "mae_median": 426.03,
-   "mae_naive": 425.84,
+   "mae_median": 426.34,
+   "mae_naive": 426.12,
    "avg_width": 420.9
   },
   "12": {
    "n": 30,
    "hit_rate": 0.533,
-   "mae_median": 640.91,
-   "mae_naive": 694.76,
+   "mae_median": 641.23,
+   "mae_naive": 695.08,
    "avg_width": 510.9
   },
   "24": {
    "n": 30,
    "hit_rate": 0.233,
-   "mae_median": 1119.05,
-   "mae_naive": 1175.97,
+   "mae_median": 1119.3,
+   "mae_naive": 1176.26,
    "avg_width": 737.67
   }
  },
@@ -65,10 +65,10 @@
    "p10": 26782.06,
    "p50": 27326.1,
    "p90": 27653.41,
-   "actual": 27077.75,
+   "actual": 27078.0,
    "inside": true,
-   "err_median": 248.35,
-   "err_naive": 40.25,
+   "err_median": 248.1,
+   "err_naive": 40.0,
    "roll_adj": 0,
    "backfill": true
   },
@@ -79,10 +79,10 @@
    "p10": 26432.95,
    "p50": 27099.25,
    "p90": 27815.1,
-   "actual": 27205.75,
+   "actual": 27205.5,
    "inside": true,
-   "err_median": 106.5,
-   "err_naive": 247.5,
+   "err_median": 106.25,
+   "err_naive": 247.25,
    "roll_adj": 0,
    "backfill": true
   },
@@ -121,10 +121,10 @@
    "p10": 26641.67,
    "p50": 27287.55,
    "p90": 27913.34,
-   "actual": 27265.5,
+   "actual": 27266.0,
    "inside": true,
-   "err_median": 22.05,
-   "err_naive": 285.75,
+   "err_median": 21.55,
+   "err_naive": 286.25,
    "roll_adj": 0,
    "backfill": true
   },
@@ -135,10 +135,10 @@
    "p10": 26960.26,
    "p50": 27831.11,
    "p90": 28125.73,
-   "actual": 27233.0,
+   "actual": 27232.5,
    "inside": true,
-   "err_median": 598.11,
-   "err_naive": 300.5,
+   "err_median": 598.61,
+   "err_naive": 301.0,
    "roll_adj": 0,
    "backfill": true
   },
@@ -149,10 +149,10 @@
    "p10": 28086.98,
    "p50": 28360.06,
    "p90": 28451.72,
-   "actual": 27346.75,
+   "actual": 27344.0,
    "inside": false,
-   "err_median": 1013.31,
-   "err_naive": 961.25,
+   "err_median": 1016.06,
+   "err_naive": 964.0,
    "roll_adj": 0,
    "backfill": true
   }
