@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NQ Kronos Forecast</title>
+  <meta name="description" content="Nasdaq-100 futures (NQ) hourly candles with a Kronos-small fan of possible paths for the next 24 hours.">
+  <meta name="theme-color" content="#090c0e">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="ticker">NQ</span>
+      <h1>Kronos 24h forecast</h1>
+    </div>
+    <div class="top-right">
+      <span id="status-pill" class="pill">loading…</span>
+      <span class="last-close"><span class="lbl">LAST</span> <span id="last-close">—</span></span>
+    </div>
+  </header>
+
+  <div id="stale-banner" class="banner" hidden></div>
+
+  <main class="layout">
+    <section class="chart-card" aria-label="Forecast chart">
+      <div class="chart-toolbar">
+        <div class="seg" role="group" aria-label="Horizon">
+          <button type="button" data-h="7">7h</button>
+          <button type="button" data-h="24" class="on">24h</button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="show-paths" checked> <span>paths</span></label>
+        <div class="legend">
+          <span><i class="sw sw-med"></i>median</span>
+          <span><i class="sw sw-band"></i>P10–P90</span>
+          <span><i class="sw sw-up"></i>path ends up</span>
+          <span><i class="sw sw-dn"></i>down</span>
+        </div>
+      </div>
+      <div class="chart-wrap" id="chart-wrap">
+        <canvas id="chart"></canvas>
+        <div id="tip" class="tip" hidden></div>
+      </div>
+      <div class="axis-note">bar start times, London · weekend and daily-break hours are skipped</div>
+    </section>
+
+    <aside class="side" aria-label="Model and data details">
+      <h2>Model</h2>
+      <dl>
+        <dt>model</dt><dd id="m-model">—</dd>
+        <dt>context</dt><dd id="m-context">—</dd>
+        <dt>horizon</dt><dd id="m-horizon">—</dd>
+        <dt>samples</dt><dd id="m-samples">—</dd>
+        <dt>sampling</dt><dd id="m-sampling">—</dd>
+      </dl>
+      <h2>Updated</h2>
+      <dl>
+        <dt>London</dt><dd id="u-london">—</dd>
+        <dt>New York</dt><dd id="u-ny">—</dd>
+        <dt>last bar</dt><dd id="u-lastbar">—</dd>
+      </dl>
+      <h2>Data</h2>
+      <dl>
+        <dt>source</dt><dd id="d-source">—</dd>
+      </dl>
+      <div class="badges" id="badges"></div>
+      <p class="note">Data is delayed and unofficial. Hourly direction is close to unpredictable for any model: read the fan's <b>width</b> (the expected range), not the median.</p>
+    </aside>
+  </main>
+
+  <section class="summary" aria-label="Forecast summary">
+    <div class="sum-title" id="sum-title">Next 24h</div>
+    <div class="stat"><div class="k">median change</div><div class="v" id="s-med">—</div><div class="sub" id="s-med-pct"></div></div>
+    <div class="stat"><div class="k">P10–P90 range</div><div class="v" id="s-range">—</div><div class="sub" id="s-range-lvls"></div></div>
+    <div class="stat"><div class="k">paths ending up</div><div class="v" id="s-up">—</div><div class="sub" id="s-up-n"></div></div>
+  </section>
+
+  <section class="band" id="band" aria-label="Band check" hidden>
+    <div class="band-head">
+      <h2>Band check</h2>
+      <span class="band-sub" id="band-sub"></span>
+    </div>
+    <div class="band-stats" id="band-stats"></div>
+    <div class="band-hz" id="band-hz"></div>
+    <div class="band-table-wrap">
+      <table class="band-table">
+        <thead><tr>
+          <th>forecast from</th><th>+24h bar</th><th>P10</th><th>median</th><th>P90</th><th>actual</th><th>in band</th><th>|med err|</th><th>|naive err|</th>
+        </tr></thead>
+        <tbody id="band-rows"></tbody>
+      </table>
+    </div>
+    <p class="band-note" id="band-note"></p>
+  </section>
+
+  <footer>
+    <p class="disclaimer">Experimental model output on delayed data. Not investment advice.</p>
+    <p class="credits">
+      Forecasts: <a href="https://github.com/shiyu-coder/Kronos" rel="noopener">Kronos</a>
+      (Shi et al., MIT licence), weights <a href="https://huggingface.co/NeoQuasar/Kronos-small" rel="noopener">NeoQuasar/Kronos-small</a>.
+      Data: Yahoo Finance <code>NQ=F</code>, roll-adjusted. Kronos benchmarks are the authors' own and not yet independently replicated.
+    </p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

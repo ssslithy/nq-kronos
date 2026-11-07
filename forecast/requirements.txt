@@ -1,0 +1,14 @@
+# Pinned so data (Phase 1) and Kronos (Phase 2) install together on Python 3.11.
+# pandas is pinned to Kronos's own requirement (vendor/kronos/requirements.txt: pandas==2.2.2).
+# On Linux CI install torch from the CPU wheel index to avoid multi-GB CUDA downloads:
+#   pip install -r forecast/requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+yfinance==1.8.0
+pandas==2.2.2
+numpy==2.4.6
+requests==2.34.2
+curl_cffi==0.17.0
+torch==2.15.0
+einops==0.8.1
+huggingface_hub==0.33.1
+safetensors==0.6.2
+tqdm==4.67.1
