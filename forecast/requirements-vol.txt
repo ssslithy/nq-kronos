@@ -1,0 +1,11 @@
+# The daily GARCH vol forecast (forecast/run_vol.py) only: no torch / Kronos.
+# Versions match forecast/requirements.txt and the local .venv (Python 3.11).
+yfinance==1.8.0
+pandas==2.2.2
+numpy==2.4.6
+requests==2.34.2
+curl_cffi==0.17.0
+arch==8.0.0
+scipy==1.17.1
+statsmodels==0.15.0
+patsy==1.0.3

@@ -1,0 +1,106 @@
+name: garch-vol
+
+# Daily 24h volatility forecast as of the 08:00 New York bar close. GitHub cron is UTC-only
+# and can start late, so it fires at 12:05 and 13:05 UTC: one lands in 08:00-09:25 NY in
+# both EDT and EST; forecast/run_vol.py decides and the other run exits quietly.
+on:
+  schedule:
+    - cron: "5 12 * * 1-5"
+    - cron: "5 13 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Forecast from the latest daily origin even outside 08:00-09:25 NY"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write                 # commit site/data
+  pages: write                    # deploy to GitHub Pages
+  id-token: write
+
+concurrency:
+  group: garch-vol
+  cancel-in-progress: false
+
+jobs:
+  vol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: forecast/requirements-vol.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r forecast/requirements-vol.txt
+
+      - name: Run vol forecast
+        id: run
+        run: |
+          set +e
+          FORCE=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force }}" = "true" ]; then FORCE="--force"; fi
+          python forecast/run_vol.py $FORCE
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Commit site/data if changed
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- site/data/vol_* 2>/dev/null || true   # whichever of vol_latest/history/status exist
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"; echo "no data changes"; exit 0
+          fi
+          ORIGIN=$(python -c "import json;print(json.load(open('site/data/vol_status.json')).get('forecast_origin_utc'))")
+          git commit -q -m "vol: GARCH 24h forecast, origin ${ORIGIN}"
+          pushed=false
+          for i in 1 2 3; do
+            if git pull --rebase -q origin "${GITHUB_REF_NAME}" && git push -q origin "HEAD:${GITHUB_REF_NAME}"; then
+              pushed=true; break
+            fi
+            echo "push attempt $i/3 failed"
+            sleep $((i * 5))
+          done
+          if [ "$pushed" != "true" ]; then
+            echo "::error::could not push the data commit after 3 attempts (git errors above); nothing deployed"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Fail the run if the forecast failed
+        if: steps.run.outputs.code != '0'
+        run: |
+          echo "run_vol.py exited with ${{ steps.run.outputs.code }}; previous vol_latest.json kept and marked stale, vol_status.json records the error"
+          exit 1
+
+  deploy:
+    needs: vol
+    if: always() && needs.vol.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    concurrency:                    # shared with the other workflow: one Pages deploy at a time
+      group: pages-deploy
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.ref }}       # branch head, so the data commit above is included
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

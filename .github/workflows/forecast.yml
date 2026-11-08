@@ -79,10 +79,19 @@ jobs:
           fi
           GEN=$(python -c "import json;print(json.load(open('site/data/latest.json'))['generated_utc'])")
           git commit -q -m "forecast: data as of ${GEN}"
+          pushed=false
           for i in 1 2 3; do
-            git pull --rebase -q origin "${GITHUB_REF_NAME}" && git push -q origin "HEAD:${GITHUB_REF_NAME}" && break
+            if git pull --rebase -q origin "${GITHUB_REF_NAME}" && git push -q origin "HEAD:${GITHUB_REF_NAME}"; then
+              pushed=true; break
+            fi
+            echo "push attempt $i/3 failed"
             sleep $((i * 5))
           done
+          if [ "$pushed" != "true" ]; then
+            echo "::error::could not push the data commit after 3 attempts (git errors above); nothing deployed"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
       - name: Fail the run if the forecast failed
@@ -99,6 +108,9 @@ jobs:
         github.event_name == 'push' ||
         github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    concurrency:                    # shared with the other workflow: one Pages deploy at a time
+      group: pages-deploy
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
