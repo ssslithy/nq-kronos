@@ -56,6 +56,22 @@
  "realised_rms_5d_pct": 1.4231,
  "realised_rms_20d_pct": 1.3,
  "roll_note": null,
+ "events": {
+  "loaded": true,
+  "items": [
+   {
+    "kind": "NFP",
+    "name": "Payrolls (NFP)",
+    "release": "BLS Employment Situation",
+    "time_utc": "2026-11-06T13:30:00+00:00",
+    "ny": "Fri 06 Nov 08:30",
+    "today": true,
+    "source": "https://www.bls.gov/schedule/news_release/empsit.htm"
+   }
+  ],
+  "today": true,
+  "note": "Scheduled release today: realised move often exceeds the GARCH range."
+ },
  "model": {
   "spec": "GARCH(1,1), zero mean, Student-t",
   "n_returns": 2000,
@@ -74,9 +90,8 @@
   "sigma_pct": 1.6193,
   "vs_analytic": 0.9727
  },
- "generated_utc": "2026-11-08T15:29:27Z",
+ "generated_utc": "2026-11-08T15:35:44Z",
  "forecast_time_utc": "2026-11-06T13:00:00Z",
  "next_forecast_utc": "2026-11-09T13:00:00Z",
- "events": null,
  "stale": false
 }
