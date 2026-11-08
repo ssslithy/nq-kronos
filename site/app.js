@@ -19,7 +19,7 @@ const C = {
   gold: "#f2c14e", now: "#2dd4bf", sep: "#1b2429", bg: "#090c0e",
 };
 
-const S = { kronos: null, vol: null, status: null, band: null, volHist: [], horizon: 24,
+const S = { kronos: null, vol: null, status: null, kstatus: null, band: null, volHist: [], horizon: 24,
             showPaths: true, showKronos: false, hoverSlot: null };
 const $ = (id) => document.getElementById(id);
 
@@ -69,12 +69,13 @@ async function getLines(url) {
 }
 
 async function load(initial) {
-  const [vol, kronos, status, band, volHist] = await Promise.all([
+  const [vol, kronos, status, band, volHist, kstatus] = await Promise.all([
     getJSON("data/vol_latest.json").catch(() => null),
     getJSON("data/latest.json").catch(() => null),
     getJSON("data/vol_status.json").catch(() => null),
     getJSON("data/band_check.json").catch(() => null),
     getLines("data/vol_history.jsonl").catch(() => []),
+    getJSON("data/status.json").catch(() => null),
   ]);
   if (!vol && !kronos) { showBanner("Could not load forecast data."); return; }
   const changed = (vol && (!S.vol || vol.generated_utc !== S.vol.generated_utc)) ||
@@ -82,7 +83,7 @@ async function load(initial) {
   if (vol) S.vol = prepVol(vol);
   if (kronos) S.kronos = prepKronos(kronos);
   if (!S.vol) S.showKronos = true;                     // no GARCH data yet: Kronos is all there is
-  S.status = status; S.band = band; S.volHist = volHist;
+  S.status = status; S.band = band; S.volHist = volHist; S.kstatus = kstatus;
   renderBand();
   renderMeta();
   if (changed || initial) { renderSummary(); draw(); }
@@ -163,6 +164,9 @@ function renderMeta() {
     }
   }
   if (S.showKronos) badges.push(`<span class="badge est">${KRONOS_NOTE}</span>`);
+  const ks = kronosStale();
+  if (ks) badges.push(`<span class="badge est" title="${ks.why}">Kronos stale: last Kronos forecast from ${nyLon(ks.from)}</span>`);
+  $("kronos-label").textContent = ks ? "Kronos (experimental · stale)" : "Kronos (experimental)";
   $("badges").innerHTML = badges.join("");
 
   // daily status pill: next update, or stale once the daily forecast is overdue
@@ -181,6 +185,19 @@ function renderMeta() {
     pill.className = "pill live";
     showBanner("");
   }
+}
+
+// Kronos is stale if its own daily run failed/timed out, or it isn't from the GARCH forecast's bar.
+// GARCH's pill and banner are never affected by this.
+function kronosStale() {
+  const d = S.kronos, v = S.vol;
+  if (!d) return null;
+  const from = new Date(d.last_bar_utc);
+  if (d.stale) return { from, why: d.stale_reason || "the latest daily Kronos run failed" };
+  if (S.kstatus && S.kstatus.ok === false) return { from, why: S.kstatus.error || "the latest Kronos run failed" };
+  if (v && Date.parse(d.last_bar_utc) !== Date.parse(v.origin_utc))
+    return { from, why: "not from the same bar as today's GARCH forecast (Kronos may still be running)" };
+  return null;
 }
 
 function renderSummary() {

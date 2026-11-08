@@ -7,8 +7,9 @@ fan from the same bar, and checks how often reality lands inside each model's ba
 
 **Live page:** https://ssslithy.github.io/nq-kronos/
 
-It runs for free on GitHub: one daily Actions job fetches data, runs both models on a CPU
-runner, commits the result and deploys GitHub Pages.
+It runs for free on GitHub: one daily Actions workflow fetches data, runs both models on a CPU
+runner, commits the results and deploys GitHub Pages: GARCH first, then Kronos, so Kronos can never
+delay or block the GARCH forecast.
 
 > Experimental model output on delayed data. Not investment advice.
 
@@ -44,12 +45,12 @@ runner, commits the result and deploys GitHub Pages.
 | Kronos-small from the same bar (`--origin`): 100 paths × 24 steps, `site/data/latest.json`, `history.jsonl`, `band_check.json`, `status.json` | `forecast/run_forecast.py` |
 | Score past Kronos forecasts against actual closes | `forecast/band_check.py` |
 | Static page (vanilla JS + canvas, no build step) | `site/` |
-| Daily job (GARCH, then Kronos, one commit, one deploy) | `.github/workflows/garch_vol.yml` |
+| Daily job: GARCH + alert, commit, deploy; then Kronos as its own job (15-min limit), commit, deploy | `.github/workflows/garch_vol.yml` |
 | Manual Kronos run from the latest bar; deploy on `site/` code changes | `.github/workflows/forecast.yml` |
 
 If the GARCH forecast fails, the previous one stays up marked stale and the run fails. If
-only Kronos fails, the GARCH forecast is still published and `status.json` records the
-Kronos error.
+Kronos fails or runs past 15 minutes, only Kronos is marked stale (badge on the page, error in
+`status.json`); the GARCH forecast, alert and deploy have already gone out.
 
 ## Run locally
 

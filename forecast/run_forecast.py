@@ -191,10 +191,23 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=None, help="default: derived from the last bar time")
     ap.add_argument("--origin", help="forecast from the bar starting at this UTC time (it must be the "
                                       "last closed bar); history lines get daily=true")
+    ap.add_argument("--mark-stale", metavar="REASON",
+                    help="don't forecast: mark the current latest.json stale and record REASON in status.json "
+                         "(used by the daily workflow when Kronos fails or times out)")
     ap.add_argument("--skip-if-closed", action="store_true",
                     help="exit 0 if NQ is closed now and no bar closed in the last hour")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+
+    if args.mark_stale:
+        if LATEST.exists():
+            latest = json.loads(LATEST.read_text())
+            latest["stale"] = True
+            latest["stale_reason"] = args.mark_stale
+            write_json_atomic(LATEST, latest, separators=(",", ":"))
+        write_status(False, args.mark_stale)
+        print(f"Kronos marked stale: {args.mark_stale}")
+        return 0
 
     if args.skip_if_closed:
         now = pd.Timestamp.now(tz="UTC")

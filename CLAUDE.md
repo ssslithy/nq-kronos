@@ -12,12 +12,19 @@ runs from the same bar as an **experimental** comparison only. Research tool, no
 - `.github/workflows/garch_vol.yml`, cron `5 12 * * 1-5` and `5 13 * * 1-5` (UTC). One of the two
   lands in 08:00–09:25 New York in both EST and EDT; `forecast/run_vol.py` decides, the other exits
   "not a forecast window".
-- Origin = the **07:00–08:00 NY bar** (closed 08:00 NY). Steps in the one job:
-  1. `run_vol.py`: GARCH forecast → `site/data/vol_latest.json`, `vol_history.jsonl`, `vol_status.json`;
-     fills in the accuracy of earlier forecasts; ntfy alert (secret `NTFY_TOPIC`).
-  2. `run_forecast.py --origin <that bar>`: Kronos-small, 100 paths → `latest.json`, `history.jsonl`,
-     `band_check.json`, `status.json`. `continue-on-error`: never blocks the GARCH commit.
-  3. One data commit, one Pages deploy (concurrency group `pages-deploy`, shared with `forecast.yml`).
+- Origin = the **07:00–08:00 NY bar** (closed 08:00 NY). Jobs:
+  1. `vol`: `run_vol.py`: GARCH forecast → `site/data/vol_latest.json`, `vol_history.jsonl`,
+     `vol_status.json`; fills in earlier forecasts' accuracy; sends the ntfy alert (secret `NTFY_TOPIC`);
+     commits and pushes the GARCH files.
+  2. `deploy`: Pages deploy of the GARCH forecast, straight away.
+  3. `kronos` (only if a forecast was made): `run_forecast.py --origin <that bar>`, 100 paths, its own
+     **15-minute limit**. If it fails or times out, `--mark-stale` flags only Kronos (`latest.json`
+     `stale`, `status.json` ok=false); GARCH is never touched. Commits `latest.json`, `history.jsonl`,
+     `band_check.json`, `status.json`.
+  4. `deploy-kronos`: second Pages deploy (after the GARCH one). All deploys share the
+     `pages-deploy` concurrency group with `forecast.yml`.
+- Timing: GARCH (alert + deploy) is live within ~5 min of the start; Kronos ~8–10 min after that.
+  Even a 20-minute-late start with a Kronos timeout finishes well before 09:30 NY.
 - `forecast.yml` has **no schedule**: manual Kronos run from the latest bar, and a deploy on pushes to
   `site/**` (not `site/data/**`). A push that only changes `site/data` does not deploy by itself.
 - Accuracy timing: the run only has bars up to the 07:00 NY bar, so a forecast's 24h result is filled
