@@ -41,7 +41,9 @@ import logging
 import sys
 import time
 import warnings
-from datetime import datetime
+from datetime import date, datetime
+from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -64,6 +66,7 @@ PROFILE_DAYS = 60              # trading days for the intraday variance profile
 Z80 = 1.2816                   # normal P90
 CARRY = 294.0 / 29560.0        # quarterly calendar spread as a share of price (Sep 2026, measured)
 ROLL_PAD_BEFORE, ROLL_PAD_AFTER = pd.Timedelta(days=1), pd.Timedelta(days=4)
+EVENTS_FILE = Path(__file__).resolve().parent / "events_2026_2027.yaml"
 
 
 # ---- data ----------------------------------------------------------------------------
@@ -269,6 +272,45 @@ def intraday_profile(bars: pd.DataFrame, days: int = PROFILE_DAYS) -> dict[int, 
     return {int(h): float(v) for h, v in (m / m.sum()).items()}
 
 
+# ---- scheduled events (forecast/events_2026_2027.yaml) ----------------------------------
+
+EVENT_NOTE = "Scheduled release today: realised move often exceeds the GARCH range."
+EVENT_NOTE_HORIZON = "Scheduled release inside the 24h horizon: realised move often exceeds the GARCH range."
+
+
+@lru_cache(maxsize=1)
+def load_events(path: str = str(EVENTS_FILE)) -> tuple[date, list[dict]]:
+    """(covered_until, events sorted by time); each event has kind, name, release, time_utc, source."""
+    import yaml
+    doc = yaml.safe_load(Path(path).read_text())
+    out = []
+    for kind, t in doc["types"].items():
+        for d in t["dates"]:
+            day, hhmm = (str(d).split() + [t["time"]])[:2]
+            ny = pd.Timestamp(f"{day} {hhmm}").tz_localize(cal.NY)
+            out.append({"kind": kind, "name": t["name"], "release": t["release"],
+                        "time_utc": ny.tz_convert("UTC"), "source": t["sources"][0]})
+    return pd.Timestamp(doc["covered_until"]).date(), sorted(out, key=lambda e: e["time_utc"])
+
+
+def events_between(start: pd.Timestamp, end: pd.Timestamp, today: date) -> dict:
+    """Scheduled releases in (start, end] and the flag text for the page and the alert."""
+    covered_until, events = load_events()
+    if end.tz_convert(cal.NY).date() > covered_until:
+        return {"loaded": False, "items": [], "today": False,
+                "note": f"event calendar not loaded after {covered_until} (update {EVENTS_FILE.name})"}
+    items = []
+    for e in events:
+        if start < e["time_utc"] <= end:
+            ny = e["time_utc"].tz_convert(cal.NY)
+            items.append({"kind": e["kind"], "name": e["name"], "release": e["release"],
+                          "time_utc": e["time_utc"].isoformat(), "ny": f"{ny:%a %d %b %H:%M}",
+                          "today": ny.date() == today, "source": e["source"]})
+    is_today = any(i["today"] for i in items)
+    note = EVENT_NOTE if is_today else EVENT_NOTE_HORIZON if items else None
+    return {"loaded": True, "items": items, "today": is_today, "note": note}
+
+
 # ---- forecast ------------------------------------------------------------------------
 
 def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
@@ -335,6 +377,8 @@ def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
         "regime_days": int(len(s_prev)),
         "realised_rms_5d_pct": rms(5), "realised_rms_20d_pct": rms(20),
         "roll_note": roll_note(future),
+        "events": events_between(origin + pd.Timedelta(hours=1), pd.Timestamp(future[-1]) + pd.Timedelta(hours=1),
+                                 origin.tz_convert(cal.NY).date()),
         "model": {"spec": "GARCH(1,1), zero mean, Student-t", "n_returns": len(r),
                   "omega": float(p["omega"]), "alpha": float(p["alpha[1]"]),
                   "beta": float(p["beta[1]"]), "nu": float(p["nu"]),
@@ -386,7 +430,13 @@ def print_table(f: dict) -> None:
     if r5 and r20:
         rows.append(("vs realised", f"forecast {f['sigma_pct']:.2f}% vs realised RMS 24h move "
                                     f"{r5:.2f}% (5d), {r20:.2f}% (20d) → ×{f['sigma_pct'] / r5:.2f}, ×{f['sigma_pct'] / r20:.2f}"))
-    rows.append(("Event flag", "not loaded yet (step 4)"))
+    ev = f["events"]
+    if ev["items"]:
+        rows.append(("Event flag", "; ".join(f"{i['name']} {i['ny']} NY" + (" (today)" if i["today"] else "")
+                                             for i in ev["items"])))
+        rows.append(("", ev["note"]))
+    else:
+        rows.append(("Event flag", ev["note"] or "no scheduled release in the 24h horizon"))
     rows.append(("Roll", f["roll_note"] or "no roll in the horizon"))
     rows.append(("Calibration", f"raw GARCH σ {cal_['sigma_raw_pct']:.2f}% × k {cal_['k']:.3f} "
                                 f"(RMS move/σ, last {cal_['n']} matured daily forecasts)"))

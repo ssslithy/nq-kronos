@@ -129,7 +129,8 @@ def history_line(f: dict) -> dict:
             "range80": f["range80"], "range68": f["range68"],
             "sigma_raw_pct": f["calibration"]["sigma_raw_pct"], "k": f["calibration"]["k"],
             "cash_sigma_pts": f["cash"]["sigma_pts"], "regime": f["regime"],
-            "percentile": f["percentile"], "roll": f["roll_note"] is not None}
+            "percentile": f["percentile"], "roll": f["roll_note"] is not None,
+            "events": [i["kind"] for i in f["events"]["items"]], "event_today": f["events"]["today"]}
 
 
 def append_history(path: Path, line: dict) -> str:
@@ -191,7 +192,6 @@ def main() -> int:
     f.update({"generated_utc": iso(datetime.now(cal.UTC)) if not args.now else iso(now),
               "forecast_time_utc": iso(origin + timedelta(hours=1)),
               "next_forecast_utc": next_forecast_utc(today),
-              "events": None,           # step 4
               "stale": False})
     write_json_atomic(latest_p, f, indent=1)
     hist = append_history(hist_p, history_line(f))

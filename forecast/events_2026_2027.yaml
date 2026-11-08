@@ -1,0 +1,184 @@
+# Scheduled US releases for the GARCH vol event flag (forecast/garch_vol.py), 2026-2027.
+# All times New York (Eastern). Dates copied from the official calendars below on 2026-11-08.
+#
+# UPDATE EACH JANUARY (or when an agency revises its calendar): add the new year's dates from
+# the same pages, and rename/extend the file if needed (EVENTS_FILE in garch_vol.py). After the
+# last date covered here the page shows "event calendar not loaded" instead of "no events".
+#
+# Coverage gaps:
+# - Retail sales Jan-Sep 2026 (already past) are only in Census's Excel history file; the
+#   page lists Oct 2026 onwards. December 2027 retail sales is "to be announced" (Jan 2028).
+# - The Fed calendar page gives meeting days, not times. The decision (statement) is
+#   released at 14:00 on the second day; the date below is that second day.
+
+covered_until: 2027-12-31
+
+types:
+  FOMC:
+    name: FOMC decision
+    release: Federal Open Market Committee policy statement (second day of the meeting)
+    time: "14:00"
+    sources:
+      - https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
+    dates:
+      # 2026 meetings: Jan 27-28, Mar 17-18*, Apr 28-29, Jun 16-17*, Jul 28-29, Sep 15-16*, Oct 27-28, Dec 8-9*
+      - 2026-01-28
+      - 2026-03-18
+      - 2026-04-29
+      - 2026-06-17
+      - 2026-07-29
+      - 2026-09-16
+      - 2026-10-28
+      - 2026-12-09
+      # 2027 meetings: Jan 26-27, Mar 16-17*, Apr 27-28, Jun 8-9*, Jul 27-28, Sep 14-15*, Oct 26-27, Dec 7-8*
+      - 2027-01-27
+      - 2027-03-17
+      - 2027-04-28
+      - 2027-06-09
+      - 2027-07-28
+      - 2027-09-15
+      - 2027-10-27
+      - 2027-12-08
+
+  CPI:
+    name: CPI
+    release: BLS Consumer Price Index
+    time: "08:30"
+    sources:
+      - https://www.bls.gov/schedule/news_release/cpi.htm
+      - https://www.bls.gov/schedule/2026/home.htm
+      - https://www.bls.gov/schedule/2027/home.htm
+    dates:
+      - 2026-01-13   # Dec 2025
+      - 2026-02-13   # Jan 2026
+      - 2026-03-11   # Feb
+      - 2026-04-10   # Mar
+      - 2026-05-12   # Apr
+      - 2026-06-10   # May
+      - 2026-07-14   # Jun
+      - 2026-08-12   # Jul
+      - 2026-09-11   # Aug
+      - 2026-10-14   # Sep
+      - 2026-11-10   # Oct
+      - 2026-12-10   # Nov
+      - 2027-01-13   # Dec 2026
+      - 2027-02-11   # Jan 2027
+      - 2027-03-10   # Feb
+      - 2027-04-13   # Mar
+      - 2027-05-12   # Apr
+      - 2027-06-10   # May
+      - 2027-07-14   # Jun
+      - 2027-08-11   # Jul
+      - 2027-09-14   # Aug
+      - 2027-10-14   # Sep
+      - 2027-11-10   # Oct
+      - 2027-12-10   # Nov
+
+  NFP:
+    name: Payrolls (NFP)
+    release: BLS Employment Situation
+    time: "08:30"
+    sources:
+      - https://www.bls.gov/schedule/news_release/empsit.htm
+      - https://www.bls.gov/schedule/2026/home.htm
+      - https://www.bls.gov/schedule/2027/home.htm
+    dates:
+      - 2026-01-09   # Dec 2025
+      - 2026-02-11   # Jan 2026
+      - 2026-03-06   # Feb
+      - 2026-04-03   # Mar
+      - 2026-05-08   # Apr
+      - 2026-06-05   # May
+      - 2026-07-02   # Jun
+      - 2026-08-07   # Jul
+      - 2026-09-04   # Aug
+      - 2026-10-02   # Sep
+      - 2026-11-06   # Oct
+      - 2026-12-04   # Nov
+      - 2027-01-08   # Dec 2026
+      - 2027-02-05   # Jan 2027
+      - 2027-03-05   # Feb
+      - 2027-04-02   # Mar
+      - 2027-05-07   # Apr
+      - 2027-06-04   # May
+      - 2027-07-02   # Jun
+      - 2027-08-06   # Jul
+      - 2027-09-03   # Aug
+      - 2027-10-08   # Sep
+      - 2027-11-05   # Oct
+      - 2027-12-03   # Nov
+
+  PCE:
+    name: PCE inflation
+    release: BEA Personal Income and Outlays
+    time: "08:30"
+    sources:
+      - https://www.bea.gov/news/schedule/full
+      - https://www.bea.gov/news/schedule/next-year
+    dates:
+      - "2026-01-22 10:00"   # Oct and Nov 2025 (rescheduled, 10:00)
+      - 2026-02-20   # Dec 2025
+      - 2026-03-13   # Jan 2026
+      - 2026-04-09   # Feb
+      - 2026-04-30   # Mar
+      - 2026-05-28   # Apr
+      - 2026-06-25   # May
+      - 2026-07-30   # Jun
+      - 2026-08-26   # Jul
+      - 2026-09-30   # Aug
+      - 2026-10-29   # Sep
+      - 2026-11-25   # Oct
+      - 2026-12-23   # Nov
+      - 2027-01-28   # Dec 2026
+      - 2027-02-25   # Jan 2027
+      - 2027-03-31   # Feb
+      - 2027-04-29   # Mar
+      - 2027-05-27   # Apr
+      - 2027-06-25   # May
+      - 2027-07-29   # Jun
+      - 2027-08-25   # Jul
+      - 2027-09-30   # Aug
+      - 2027-10-28   # Sep
+      - 2027-11-24   # Oct
+      - 2027-12-22   # Nov
+
+  GDP:
+    name: GDP (advance)
+    release: BEA GDP advance estimate
+    time: "08:30"
+    sources:
+      - https://www.bea.gov/news/schedule/full
+      - https://www.bea.gov/news/schedule/next-year
+    dates:
+      - 2026-02-20   # Q4 2025
+      - 2026-04-30   # Q1 2026
+      - 2026-07-30   # Q2
+      - 2026-10-29   # Q3
+      - 2027-01-28   # Q4 2026
+      - 2027-04-29   # Q1 2027
+      - 2027-07-29   # Q2
+      - 2027-10-28   # Q3
+
+  RETAIL:
+    name: Retail sales
+    release: Census Advance Monthly Retail Trade (Advance Monthly Sales for Retail and Food Services)
+    time: "08:30"
+    sources:
+      - https://www.census.gov/retail/release_schedule.html
+      - https://www.census.gov/economic-indicators/calendar-listview.html
+    dates:
+      - 2026-10-15   # Sep 2026
+      - 2026-11-17   # Oct
+      - 2026-12-16   # Nov
+      - 2027-01-15   # Dec 2026
+      - 2027-02-17   # Jan 2027
+      - 2027-03-16   # Feb
+      - 2027-04-16   # Mar
+      - 2027-05-14   # Apr
+      - 2027-06-16   # May
+      - 2027-07-16   # Jun
+      - 2027-08-16   # Jul
+      - 2027-09-16   # Aug
+      - 2027-10-15   # Sep
+      - 2027-11-16   # Oct
+      - 2027-12-15   # Nov

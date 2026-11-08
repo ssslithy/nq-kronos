@@ -69,6 +69,23 @@ from the CPU run).
 - Sampling cost is ~1.5–2 s per path on CPU, because Kronos recomputes its full 512-bar
   context at every step; 100 paths take about 3–5 minutes on a GitHub runner.
 
+## Daily 24h volatility forecast (GARCH)
+
+Every US trading day `.github/workflows/garch_vol.yml` (12:05 and 13:05 UTC) runs
+`forecast/run_vol.py`, which forecasts the next 24 tradable hours' volatility as of the
+08:00 New York bar close with a calibrated GARCH(1,1) (`forecast/garch_vol.py`) and writes
+`site/data/vol_latest.json`, `vol_history.jsonl` and `vol_status.json`. Volatility only, not direction.
+
+```bash
+python forecast/garch_vol.py --now "2026-11-05 08:10"     # forecast table for a past day (NY time)
+```
+
+**Event calendar: update each January.** `forecast/events_2026_2027.yaml` holds the scheduled
+FOMC, CPI, payrolls, PCE, GDP (advance) and retail sales dates, copied from the official
+calendars cited in the file (Federal Reserve, BLS, BEA, Census). Add the new year's dates
+every January (or when an agency revises its calendar); after `covered_until` the page shows
+"event calendar not loaded" instead of flagging releases.
+
 ## Data notes and known limits
 
 - Yahoo data is delayed and unofficial; it can have gaps, bad ticks or revisions. Bars
