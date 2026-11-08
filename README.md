@@ -124,6 +124,14 @@ read the topic, so keep it secret. Without the secret nothing is sent. Manual fo
   replicated.
 - Backfilled history lines (`"backfill": true`, marked "bf" on the page) were generated
   afterwards with 30 paths; they drop out of the 30-forecast window as live ones arrive.
+- **GARCH volatility forecast: volatility only, not direction.** It says how far NQ is likely
+  to move in the next 24 tradable hours, not which way. Not investment advice.
+- GARCH assumes tomorrow looks like the recent past: it reacts to shocks only after they
+  happen, and it knows nothing about scheduled releases (FOMC, CPI, payrolls…). The event
+  flag marks those days; realised moves on them often exceed the range.
+- The GARCH forecast uses the same delayed, unofficial Yahoo data as above, so a bad or late
+  bar affects it too. The 80% range held 80.8% of the time over the 1-year backfill
+  (3 Nov 2025 – 5 Nov 2026). That is past behaviour, not a guarantee.
 
 ## Credits
 
