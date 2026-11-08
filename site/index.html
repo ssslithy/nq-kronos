@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>NQ Kronos Forecast</title>
-  <meta name="description" content="Nasdaq-100 futures (NQ) hourly candles with a Kronos-small fan of possible paths for the next 24 hours.">
+  <title>NQ forecasts</title>
+  <meta name="description" content="Nasdaq-100 futures (NQ): a daily GARCH 24h volatility forecast, and hourly candles with a Kronos-small fan of possible paths for the next 24 hours.">
   <meta name="theme-color" content="#090c0e">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -12,7 +12,7 @@
   <header class="top">
     <div class="brand">
       <span class="ticker">NQ</span>
-      <h1>Kronos 24h forecast</h1>
+      <h1>NQ forecasts</h1>
     </div>
     <div class="top-right">
       <span id="status-pill" class="pill">loading…</span>
@@ -22,9 +22,44 @@
 
   <div id="stale-banner" class="banner" hidden></div>
 
+  <section class="vol" id="vol" aria-label="24h volatility forecast (GARCH)" hidden>
+    <div class="vol-head">
+      <h2>24h volatility (GARCH)</h2>
+      <span class="vol-regime" id="vol-regime"></span>
+      <span class="vol-when" id="vol-when"></span>
+    </div>
+    <div class="vol-warn" id="vol-warn" hidden></div>
+    <div class="vol-grid">
+      <div class="vol-main">
+        <div class="k">expected 24h move (1σ)</div>
+        <div class="vol-big"><span id="vol-pts">—</span> <span class="vol-pct" id="vol-pct"></span></div>
+        <div class="vol-range"><span class="lbl">80% RANGE</span> <span id="vol-r80">—</span></div>
+        <div class="vol-sub"><span class="lbl">68%</span> <span id="vol-r68">—</span> · <span class="lbl">CASH 09–16 NY</span> <span id="vol-cash">—</span></div>
+      </div>
+      <div class="vol-mid">
+        <div class="vol-event" id="vol-event"></div>
+        <dl class="vol-dl">
+          <dt>vs realised</dt><dd id="vol-real">—</dd>
+          <dt class="vol-model-row">model</dt><dd class="vol-model-row" id="vol-model">—</dd>
+        </dl>
+        <button type="button" class="vol-model-btn" id="vol-model-btn" aria-expanded="false" aria-controls="vol-model">model details</button>
+      </div>
+      <div class="vol-spark">
+        <div class="vol-spark-head">
+          <span class="k">last 60 trading days</span>
+          <span class="vol-legend"><i class="sw sw-sig"></i>forecast σ <i class="sw sw-edge"></i>80% edge <i class="dot"></i>actual |move| <i class="dot out"></i>outside</span>
+        </div>
+        <div id="vol-spark-svg" class="vol-spark-svg"></div>
+        <div class="vol-calib" id="vol-calib"></div>
+      </div>
+    </div>
+    <p class="vol-note">Volatility only, not direction. GARCH reacts to shocks after they happen and ignores scheduled releases (hence the flag).</p>
+  </section>
+
   <main class="layout">
     <section class="chart-card" aria-label="Forecast chart">
       <div class="chart-toolbar">
+        <h2 class="chart-title">Kronos 24h forecast</h2>
         <div class="seg" role="group" aria-label="Horizon">
           <button type="button" data-h="7">7h</button>
           <button type="button" data-h="24" class="on">24h</button>
@@ -103,5 +138,6 @@
   </footer>
 
   <script src="app.js"></script>
+  <script src="vol.js"></script>
 </body>
 </html>
