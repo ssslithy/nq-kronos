@@ -63,10 +63,12 @@ def history_line(f: dict) -> dict:
             "range80": f["range80"], "range68": f["range68"], "range95": f["range95"],
             "m95": f["multipliers"]["m95"], "m99": f["multipliers"]["m99"],
             "sigma_raw_pct": f["calibration"]["sigma_raw_pct"], "k": f["calibration"]["k"],
-            "cash_sigma_pts": f["cash"]["sigma_pts"], "regime": f["regime"],
+            "cash_sigma_pts": f["cash"]["sigma_pts"], "cash_sigma_pct": f["cash"]["sigma_pct"],
+            "cash_hours": f["cash"]["hours"], "regime": f["regime"],
             "percentile": f["percentile"], "roll": f["roll_note"] is not None,
             "events": [i["kind"] for i in f["events"]["items"]] if f["events"]["loaded"] else None,
-            "event_today": f["events"]["today"]}
+            "event_today": f["events"]["today"],
+            "events_today": [i["kind"] for i in f["events"]["items"] if i["today"]] if f["events"]["loaded"] else None}
 
 
 def read_history(path: Path) -> list[dict]:
@@ -117,6 +119,77 @@ def update_accuracy(rows: list[dict], bars: pd.DataFrame, now: datetime | None =
         if r.get("m95") is not None:                    # lines from before the 95% band lack these
             r["inside95"] = bool(a <= r["m95"] * r["sigma_pct"])
             r["inside99"] = bool(a <= r["m99"] * r["sigma_pct"])
+    n += update_cash(rows, bars)
+    return n
+
+
+# ---- cash session (09:00-16:00 NY on the forecast day) ------------------------------------
+
+CASH_START_NY, CASH_END_NY = 8, 15        # close of the 08:00-09:00 bar -> close of the 15:00-16:00 bar
+K_CASH_DAYS, K_CASH_MIN = 250, 60
+
+
+def _ny_bar(day, hour: int) -> pd.Timestamp:
+    return pd.Timestamp(datetime(day.year, day.month, day.day, hour), tz=cal.NY).tz_convert("UTC")
+
+
+def cash_outcome(r: dict, bars: pd.DataFrame) -> dict | None:
+    """Cash-session result for one forecast, or None while the session hasn't finished.
+    Cash move = 100 ln(close of the 15:00-16:00 NY bar / close of the 08:00-09:00 NY bar) on
+    the forecast's own New York date; high/low from the 09:00-15:00 NY bars."""
+    day = pd.Timestamp(r["origin_utc"]).tz_convert(cal.NY).date()
+    t0, t1 = _ny_bar(day, CASH_START_NY), _ny_bar(day, CASH_END_NY)
+    if t1 > bars.index[-1]:
+        return None
+    sess = bars.loc[(bars.index > t0) & (bars.index <= t1)]
+    if t0 not in bars.index or t1 not in bars.index or len(sess) != CASH_END_NY - CASH_START_NY:
+        return {"cash_missing": True}                       # early close or missing Yahoo bars
+    base = float(bars.at[t0, "close"])
+    return {"cash_move_pct": round(100 * float(np.log(bars.at[t1, "close"] / base)), 4),
+            "cash_high_pct": round(100 * float(np.log(sess["high"].max() / base)), 4),
+            "cash_low_pct": round(100 * float(np.log(sess["low"].min() / base)), 4)}
+
+
+def assign_k_cash(rows: list[dict]) -> None:
+    """k_cash per row = RMS(cash move / raw cash sigma) over the trailing K_CASH_DAYS sessions
+    completed before that row's origin (earlier NY dates only), min K_CASH_MIN; else None."""
+    done = []                                               # (date, z) of completed sessions, in order
+    rows_sorted = sorted(rows, key=lambda r: pd.Timestamp(r["origin_utc"]))
+    for r in rows_sorted:
+        day = pd.Timestamp(r["origin_utc"]).tz_convert(cal.NY).date()
+        z = [v for d, v in done if d < day][-K_CASH_DAYS:]
+        r["k_cash"] = round(float(np.sqrt(np.mean(np.square(z)))), 4) if len(z) >= K_CASH_MIN else None
+        if r.get("cash_move_pct") is not None and r.get("cash_sigma_pct"):
+            done.append((day, r["cash_move_pct"] / r["cash_sigma_pct"]))
+
+
+def cash_flags(r: dict) -> None:
+    """inside / touch for the raw cash sigma and, where k_cash exists, the calibrated one."""
+    if r.get("cash_move_pct") is None or not r.get("cash_sigma_pct"):
+        return
+    for suffix, s in (("", r["cash_sigma_pct"]),
+                      ("_cal", r["cash_sigma_pct"] * r["k_cash"] if r.get("k_cash") else None)):
+        if s is None:
+            r.pop(f"cash_inside80{suffix}", None); r.pop(f"cash_touch{suffix}", None)
+            continue
+        lim = gv.Z80 * s
+        r[f"cash_inside80{suffix}"] = bool(abs(r["cash_move_pct"]) <= lim)
+        r[f"cash_touch{suffix}"] = bool(r["cash_high_pct"] > lim or r["cash_low_pct"] < -lim)
+
+
+def update_cash(rows: list[dict], bars: pd.DataFrame) -> int:
+    """Fill cash outcomes for finished sessions, then k_cash and the flags on every row."""
+    n = 0
+    for r in rows:
+        if r.get("cash_move_pct") is not None or r.get("cash_missing") or r.get("cash_hours") != 7:
+            continue
+        out = cash_outcome(r, bars)
+        if out:
+            r.update(out)
+            n += "cash_move_pct" in out
+    assign_k_cash(rows)
+    for r in rows:
+        cash_flags(r)
     return n
 
 
@@ -182,6 +255,47 @@ def report(rows: list[dict]) -> None:
           f"missing +24h bar: {sum(1 for r in rows if r.get('missing'))}")
 
 
+def cash_table(rows: list[dict]) -> list[dict]:
+    """Rows of the cash-session results table (raw and, where k_cash exists, calibrated)."""
+    m = [r for r in rows if r.get("cash_move_pct") is not None and r.get("cash_sigma_pct")]
+    half = len(m) // 2
+    groups = [("all", m), ("older half", m[:half]), ("newer half", m[half:]), ("last 60", m[-60:]),
+              ("release that day", [r for r in m if r.get("events_today")]),
+              ("no release that day", [r for r in m if r.get("events_today") == []])]
+    out = []
+    for name, g in groups:
+        row = {"group": name, "n": len(g)}
+        for suffix, k in (("", lambda r: 1.0), ("_cal", lambda r: r.get("k_cash"))):
+            gg = [r for r in g if k(r)]
+            if not gg:
+                continue
+            z = np.array([r["cash_move_pct"] / (r["cash_sigma_pct"] * k(r)) for r in gg])
+            row[f"inside{suffix}"] = hit_rate(gg, f"cash_inside80{suffix}")[0]
+            row[f"rms{suffix}"] = float(np.sqrt(np.mean(z ** 2)))
+            row[f"touch{suffix}"] = hit_rate(gg, f"cash_touch{suffix}")[0]
+            row[f"n{suffix}"] = len(gg)
+        out.append(row)
+    return out
+
+
+def cash_report(rows: list[dict]) -> None:
+    t = cash_table(rows)
+    if not t or not t[0]["n"]:
+        print("  no finished cash sessions")
+        return
+    m = [r for r in rows if r.get("cash_move_pct") is not None]
+    print(f"  cash session 09:00-16:00 NY, {t[0]['n']} sessions ({m[0]['origin_utc'][:10]} to {m[-1]['origin_utc'][:10]}); "
+          f"missing/early close: {sum(1 for r in rows if r.get('cash_missing'))}")
+    print(f"    {'':28} {'raw cash σ':^26}   {'calibrated (× k_cash)':^33}")
+    print(f"    {'':28} {'inside 80%':>10} {'RMS z':>7} {'touch':>7}   {'inside 80%':>10} {'RMS z':>7} {'touch':>7} {'n':>5}")
+    for r in t:
+        raw = f"{r['inside']:9.1f}% {r['rms']:7.3f} {r['touch']:6.1f}%" if "inside" in r else f"{'—':>26}"
+        cal_ = (f"{r['inside_cal']:9.1f}% {r['rms_cal']:7.3f} {r['touch_cal']:6.1f}% {r['n_cal']:5d}"
+                if "inside_cal" in r else f"{'—':>33}")
+        label = f"{r['group']} (n {r['n']})"
+        print(f"    {label:28} {raw}   {cal_}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--backfill", action="store_true", help="forecast the last --days daily origins")
@@ -213,6 +327,7 @@ def main() -> int:
     write_history(path, rows)
     print(f"  {n} newly matured; wrote {len(rows)} lines to {path}")
     report(rows)
+    cash_report(rows)
     return 0
 
 

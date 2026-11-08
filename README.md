@@ -26,6 +26,10 @@ runner, commits the result and deploys GitHub Pages.
 - Toggles: show/hide paths; 7h or 24h view. Hover/tap the chart for values.
 - Status pill: "daily · next update <date> 08:00 NY (<London time>)"; "stale" with a
   banner if the daily run failed or is more than 90 minutes late.
+- **Accuracy page** (`accuracy.html`, linked from the header): 24h and cash-session moves
+  against the forecast ranges for the last 250 days, hit-rate tables (80/95/99, cash
+  inside and touch rates, by half, by event day and by event type), rolling 60-day hit rates,
+  and the Phase 6 Kronos lab results.
 - **Band check:** live daily forecasts only, GARCH next to Kronos: the share of +24h
   closes inside each 80% band (shows "collecting" until 20 have matured), then the Kronos
   detail table.
@@ -110,6 +114,12 @@ The page's sparkline and "Last 60 forecasts" line read these fields. The history
 ```bash
 python forecast/vol_accuracy.py --backfill     # last 252 trading days; live lines are kept
 ```
+
+**Cash-session backtest.** For each forecast, the cash move is 100·ln(close of the 15:00–16:00 NY
+bar / close of the 08:00–09:00 NY bar) on the forecast day. The session high and low come from the
+09:00–16:00 bars. Over the backfill, the move fell inside ±1.28 × cash σ on 82.4% / 83.3% of
+days (older / newer half). The session's high or low touched outside that range on about 35% of
+days. The cash σ is therefore used uncalibrated. A rolling `k_cash` is still stored for monitoring.
 
 **Phone alert (optional).** After each forecast, `forecast/vol_alert.py` posts one line to
 [ntfy.sh](https://ntfy.sh), for example
