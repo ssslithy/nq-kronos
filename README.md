@@ -97,6 +97,15 @@ The page's sparkline and "Last 60 forecasts" line read these fields. The history
 python forecast/vol_accuracy.py --backfill     # last 252 trading days; live lines are kept
 ```
 
+**Phone alert (optional).** After each forecast, `forecast/vol_alert.py` posts one line to
+[ntfy.sh](https://ntfy.sh), for example
+`NQ 24h vol: ±276 pts (±1.02%) · 80%: 26,747–27,454 · Calm (19th pct) · NFP 08:30 NY`.
+To turn it on, install the ntfy app and subscribe to a long random topic name
+(`python forecast/vol_alert.py --new-topic` makes one). Then store that name as the repository
+secret `NTFY_TOPIC` (Settings → Secrets and variables → Actions). Anyone who knows the name can
+read the topic, so keep it secret. Without the secret nothing is sent. Manual forced runs alert too;
+`--now` runs never do. To check the setup, run garch-vol manually with "Send a TEST phone alert" ticked.
+
 ## Data notes and known limits
 
 - Yahoo data is delayed and unofficial; it can have gaps, bad ticks or revisions. Bars

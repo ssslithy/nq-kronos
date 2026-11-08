@@ -13,6 +13,10 @@ on:
         description: "Forecast from the latest daily origin even outside 08:00-09:25 NY"
         type: boolean
         default: false
+      test_alert:
+        description: "Send a TEST phone alert (ntfy) with the latest forecast"
+        type: boolean
+        default: false
 
 permissions:
   contents: write                 # commit site/data
@@ -45,12 +49,21 @@ jobs:
 
       - name: Run vol forecast
         id: run
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}     # optional: unset = no phone alert
         run: |
           set +e
           FORCE=""
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force }}" = "true" ]; then FORCE="--force"; fi
           python forecast/run_vol.py $FORCE
           echo "code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Send a test alert
+        if: github.event_name == 'workflow_dispatch' && inputs.test_alert
+        continue-on-error: true                       # a failed test never blocks the data commit
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python forecast/vol_alert.py --send
 
       - name: Commit site/data if changed
         id: commit

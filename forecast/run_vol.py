@@ -15,6 +15,7 @@ Then it loads bars closed by 08:00 NY and needs the 07:00-08:00 NY bar to be the
   success: site/data/vol_latest.json (the forecast), one line appended to
            site/data/vol_history.jsonl (one per origin) and the accuracy of earlier lines
            filled in (vol_accuracy.py), site/data/vol_status.json ok.
+  alert:   if NTFY_TOPIC is set, one line to ntfy.sh (vol_alert.py); not for --now runs or --no-alert.
   failure: vol_status.json records the error and stale=true; vol_latest.json keeps the
            previous forecast, flagged "stale": true; exit 1 so the run fails.
 
@@ -40,6 +41,7 @@ import fetch  # noqa: E402
 import garch_vol as gv  # noqa: E402
 import nq_calendar as cal  # noqa: E402
 import vol_accuracy as acc  # noqa: E402
+import vol_alert  # noqa: E402
 
 log = logging.getLogger("run_vol")
 
@@ -131,6 +133,7 @@ def main() -> int:
     ap.add_argument("--force", action="store_true",
                     help="ignore the time window and 'already made'; use the latest daily origin")
     ap.add_argument("--out", default=str(ROOT / "site" / "data"), help="output folder")
+    ap.add_argument("--no-alert", action="store_true", help="don't send the ntfy phone alert")
     ap.add_argument("--retries", type=int, default=RETRIES)
     ap.add_argument("--retry-wait", type=float, default=RETRY_WAIT)
     args = ap.parse_args()
@@ -183,6 +186,10 @@ def main() -> int:
                                  "forecast_origin_utc": f["origin_utc"]}, indent=1)
     gv.print_table(f)
     print(f"\nwrote {latest_p} ; history {hist} ; status ok ({time.perf_counter() - t0:.0f}s)")
+    if not (args.now or args.no_alert):             # never for a pretend time
+        text = vol_alert.alert_text(f)
+        if vol_alert.send(text):
+            print(f"alert sent: {text}")
     return 0
 
 
