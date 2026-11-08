@@ -279,8 +279,9 @@ EVENT_NOTE_HORIZON = "Scheduled release inside the 24h horizon: realised move of
 
 
 @lru_cache(maxsize=1)
-def load_events(path: str = str(EVENTS_FILE)) -> tuple[date, list[dict]]:
-    """(covered_until, events sorted by time); each event has kind, name, release, time_utc, source."""
+def load_events(path: str = str(EVENTS_FILE)) -> tuple[date, date, list[dict]]:
+    """(covered_from, covered_until, events sorted by time); each event has kind, name,
+    release, time_utc, source."""
     import yaml
     doc = yaml.safe_load(Path(path).read_text())
     out = []
@@ -290,15 +291,19 @@ def load_events(path: str = str(EVENTS_FILE)) -> tuple[date, list[dict]]:
             ny = pd.Timestamp(f"{day} {hhmm}").tz_localize(cal.NY)
             out.append({"kind": kind, "name": t["name"], "release": t["release"],
                         "time_utc": ny.tz_convert("UTC"), "source": t["sources"][0]})
-    return pd.Timestamp(doc["covered_until"]).date(), sorted(out, key=lambda e: e["time_utc"])
+    return (pd.Timestamp(doc["covered_from"]).date(), pd.Timestamp(doc["covered_until"]).date(),
+            sorted(out, key=lambda e: e["time_utc"]))
 
 
 def events_between(start: pd.Timestamp, end: pd.Timestamp, today: date) -> dict:
     """Scheduled releases in (start, end] and the flag text for the page and the alert."""
-    covered_until, events = load_events()
+    covered_from, covered_until, events = load_events()
     if end.tz_convert(cal.NY).date() > covered_until:
         return {"loaded": False, "items": [], "today": False,
                 "note": f"event calendar not loaded after {covered_until} (update {EVENTS_FILE.name})"}
+    if start.tz_convert(cal.NY).date() < covered_from:
+        return {"loaded": False, "items": [], "today": False,
+                "note": f"event calendar not loaded before {covered_from}"}
     items = []
     for e in events:
         if start < e["time_utc"] <= end:

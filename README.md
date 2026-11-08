@@ -86,6 +86,17 @@ calendars cited in the file (Federal Reserve, BLS, BEA, Census). Add the new yea
 every January (or when an agency revises its calendar); after `covered_until` the page shows
 "event calendar not loaded" instead of flagging releases.
 
+**Accuracy log.** Once a forecast's +24h bar has closed, its line in `vol_history.jsonl` gets
+the actual 24h move (`move_pct`) and whether it landed inside the 80% range (`inside80`). This is
+recorded by the next forecast run after that bar closes, so normally two runs after the forecast.
+The page's sparkline and "Last 60 forecasts" line read these fields. The history started with a
+1-year backfill: each past day was forecast using only the data available before it
+(`"backfill": true`). To redo or extend it:
+
+```bash
+python forecast/vol_accuracy.py --backfill     # last 252 trading days; live lines are kept
+```
+
 ## Data notes and known limits
 
 - Yahoo data is delayed and unofficial; it can have gaps, bad ticks or revisions. Bars

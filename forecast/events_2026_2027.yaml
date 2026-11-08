@@ -11,6 +11,7 @@
 # - The Fed calendar page gives meeting days, not times. The decision (statement) is
 #   released at 14:00 on the second day; the date below is that second day.
 
+covered_from: 2026-01-01   # forecasts before this (the 1-year backfill) show "not loaded"
 covered_until: 2027-12-31
 
 types:

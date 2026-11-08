@@ -13,7 +13,8 @@ Then it loads bars closed by 08:00 NY and needs the 07:00-08:00 NY bar to be the
 (retrying up to 3 times, 2 minutes apart, if Yahoo is slow).
 
   success: site/data/vol_latest.json (the forecast), one line appended to
-           site/data/vol_history.jsonl (one per origin), site/data/vol_status.json ok.
+           site/data/vol_history.jsonl (one per origin) and the accuracy of earlier lines
+           filled in (vol_accuracy.py), site/data/vol_status.json ok.
   failure: vol_status.json records the error and stale=true; vol_latest.json keeps the
            previous forecast, flagged "stale": true; exit 1 so the run fails.
 
@@ -38,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import fetch  # noqa: E402
 import garch_vol as gv  # noqa: E402
 import nq_calendar as cal  # noqa: E402
+import vol_accuracy as acc  # noqa: E402
 
 log = logging.getLogger("run_vol")
 
@@ -123,30 +125,6 @@ def load_until(origin: datetime, retries: int, wait: float) -> tuple[pd.DataFram
     raise fetch.DataError(err)
 
 
-def history_line(f: dict) -> dict:
-    return {"origin_utc": f["origin_utc"], "horizon_end_utc": f["horizon_end_utc"],
-            "last_close": f["last_close"], "sigma_pct": f["sigma_pct"], "sigma_pts": f["sigma_pts"],
-            "range80": f["range80"], "range68": f["range68"],
-            "sigma_raw_pct": f["calibration"]["sigma_raw_pct"], "k": f["calibration"]["k"],
-            "cash_sigma_pts": f["cash"]["sigma_pts"], "regime": f["regime"],
-            "percentile": f["percentile"], "roll": f["roll_note"] is not None,
-            "events": [i["kind"] for i in f["events"]["items"]], "event_today": f["events"]["today"]}
-
-
-def append_history(path: Path, line: dict) -> str:
-    """One line per origin: replace an existing line for the same origin, keep time order."""
-    rows = []
-    if path.exists():
-        rows = [json.loads(s) for s in path.read_text().splitlines() if s.strip()]
-    replaced = any(r["origin_utc"] == line["origin_utc"] for r in rows)
-    rows = [r for r in rows if r["origin_utc"] != line["origin_utc"]] + [line]
-    rows.sort(key=lambda r: r["origin_utc"])
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text("".join(json.dumps(r, separators=(",", ":")) + "\n" for r in rows))
-    os.replace(tmp, path)
-    return f"{'replaced' if replaced else 'appended'} ({len(rows)} lines)"
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--now", help="pretend it is this time (New York unless a zone is given)")
@@ -194,7 +172,13 @@ def main() -> int:
               "next_forecast_utc": next_forecast_utc(today),
               "stale": False})
     write_json_atomic(latest_p, f, indent=1)
-    hist = append_history(hist_p, history_line(f))
+    rows, replaced = acc.upsert(acc.read_history(hist_p), acc.history_line(f))
+    rows.sort(key=lambda r: pd.Timestamp(r["origin_utc"]))
+    matured = acc.update_accuracy(rows, df, now)      # earlier forecasts whose +24h bar has closed
+    acc.write_history(hist_p, rows)
+    hit, n = acc.hit_rate(rows[-60:])
+    hist = (f"{'replaced' if replaced else 'appended'} ({len(rows)} lines, {matured} newly matured"
+            + (f", last 60: {hit:.0f}% of {n} inside 80%" if hit is not None else "") + ")")
     write_json_atomic(status_p, {"ok": True, "checked_utc": iso(now), "error": None, "stale": False,
                                  "forecast_origin_utc": f["origin_utc"]}, indent=1)
     gv.print_table(f)
