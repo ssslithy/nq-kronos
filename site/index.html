@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NQ forecasts</title>
-  <meta name="description" content="Nasdaq-100 futures (NQ): a daily GARCH 24h volatility forecast, and hourly candles with a Kronos-small fan of possible paths for the next 24 hours.">
+  <meta name="description" content="Nasdaq-100 futures (NQ): a daily 24h volatility forecast (calibrated GARCH) with its forecast fan, plus an experimental Kronos-small fan from the same bar.">
   <meta name="theme-color" content="#090c0e">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -34,7 +34,9 @@
         <div class="k">expected 24h move (1σ)</div>
         <div class="vol-big"><span id="vol-pts">—</span> <span class="vol-pct" id="vol-pct"></span></div>
         <div class="vol-range"><span class="lbl">80% RANGE</span> <span id="vol-r80">—</span></div>
+        <div class="vol-range vol-range95"><span class="lbl">95% RANGE</span> <span id="vol-r95">—</span></div>
         <div class="vol-sub"><span class="lbl">68%</span> <span id="vol-r68">—</span> · <span class="lbl">CASH 09–16 NY</span> <span id="vol-cash">—</span></div>
+        <div class="vol-sub"><span class="lbl">99% STRESS</span> <span id="vol-s99">—</span> <i class="rough">rough: few observations</i></div>
       </div>
       <div class="vol-mid">
         <div class="vol-event" id="vol-event"></div>
@@ -63,24 +65,20 @@
   <main class="layout">
     <section class="chart-card" aria-label="Forecast chart">
       <div class="chart-toolbar">
-        <h2 class="chart-title">Kronos 24h forecast</h2>
+        <h2 class="chart-title" id="chart-title">24h forecast · GARCH (daily)</h2>
         <div class="seg" role="group" aria-label="Horizon">
           <button type="button" data-h="7">7h</button>
           <button type="button" data-h="24" class="on">24h</button>
         </div>
         <label class="toggle"><input type="checkbox" id="show-paths" checked> <span>paths</span></label>
-        <div class="legend">
-          <span><i class="sw sw-med"></i>median</span>
-          <span><i class="sw sw-band"></i>P10–P90</span>
-          <span><i class="sw sw-up"></i>path ends up</span>
-          <span><i class="sw sw-dn"></i>down</span>
-        </div>
+        <label class="toggle" title="Kronos-small, same daily origin. Its 80% band held ~46% of the time in the lab vs the 80% target."><input type="checkbox" id="show-kronos"> <span>Kronos (experimental)</span></label>
+        <div class="legend" id="legend"></div>
       </div>
       <div class="chart-wrap" id="chart-wrap">
         <canvas id="chart"></canvas>
         <div id="tip" class="tip" hidden></div>
       </div>
-      <div class="axis-note">bar start times, London · weekend and daily-break hours are skipped</div>
+      <div class="axis-note">bar start times, London · weekend and daily-break hours are skipped · forecast made once a day from the 07:00–08:00 New York bar</div>
     </section>
 
     <aside class="side" aria-label="Model and data details">
@@ -103,20 +101,26 @@
         <dt>source</dt><dd id="d-source">—</dd>
       </dl>
       <div class="badges" id="badges"></div>
-      <p class="note">Data is delayed and unofficial. Hourly direction is close to unpredictable for any model: read the fan's <b>width</b> (the expected range), not the median.</p>
+      <p class="note">Data is delayed and unofficial. Direction is close to unpredictable for any model: read the fan's <b>width</b> (the expected range), not the median. The GARCH fan's bands are its published 80% and 95% ranges; Kronos (experimental) is its own sampled paths.</p>
     </aside>
   </main>
 
   <section class="summary" aria-label="Forecast summary">
     <div class="sum-title" id="sum-title">Next 24h</div>
-    <div class="stat"><div class="k">median change</div><div class="v" id="s-med">—</div><div class="sub" id="s-med-pct"></div></div>
-    <div class="stat"><div class="k">P10–P90 range</div><div class="v" id="s-range">—</div><div class="sub" id="s-range-lvls"></div></div>
-    <div class="stat"><div class="k">paths ending up</div><div class="v" id="s-up">—</div><div class="sub" id="s-up-n"></div></div>
+    <div class="stat"><div class="k" id="s-k1">—</div><div class="v" id="s-v1">—</div><div class="sub" id="s-sub1"></div></div>
+    <div class="stat"><div class="k" id="s-k2">—</div><div class="v" id="s-v2">—</div><div class="sub" id="s-sub2"></div></div>
+    <div class="stat"><div class="k" id="s-k3">—</div><div class="v" id="s-v3">—</div><div class="sub" id="s-sub3"></div></div>
   </section>
 
   <section class="band" id="band" aria-label="Band check" hidden>
     <div class="band-head">
-      <h2>Band check</h2>
+      <h2>Band check · daily forecasts</h2>
+      <span class="band-sub">live forecasts only: how often the actual +24h close landed inside each model's 80% band</span>
+    </div>
+    <div class="band-stats cmp" id="cmp-stats"></div>
+    <div id="band-detail">
+    <div class="band-head band-head2">
+      <h2>Kronos detail</h2>
       <span class="band-sub" id="band-sub"></span>
     </div>
     <div class="band-stats" id="band-stats"></div>
@@ -130,6 +134,7 @@
       </table>
     </div>
     <p class="band-note" id="band-note"></p>
+    </div>
   </section>
 
   <footer>

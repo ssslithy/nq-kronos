@@ -52,6 +52,8 @@
     $("vol-pct").textContent = `(±${num(f.sigma_pct, 2)}%)`;
     $("vol-r80").textContent = `${num(f.range80[0])} – ${num(f.range80[1])}`;
     $("vol-r68").textContent = `${num(f.range68[0])} – ${num(f.range68[1])}`;
+    $("vol-r95").textContent = f.range95 ? `${num(f.range95[0])} – ${num(f.range95[1])}` : "—";
+    $("vol-s99").textContent = f.stress99 ? `±${num(f.stress99.pts)} pts (${num(f.stress99.range[0])} – ${num(f.stress99.range[1])})` : "—";
     $("vol-cash").textContent = f.cash && f.cash.sigma_pts != null ? `±${num(f.cash.sigma_pts)} pts` : "—";
 
     const reg = $("vol-regime");

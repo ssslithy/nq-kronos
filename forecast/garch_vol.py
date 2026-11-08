@@ -25,6 +25,11 @@ returns), not gaps or hourly mean reversion. So:
   Alternative tested: q80 = 80th percentile of |move / raw sigma| over the same 250, range
   last x exp(+-q80 x raw sigma). It held 81% / 78%: closer on the older half, further on the
   newer (confirmation) half, so +-1.2816 k sigma is kept.
+- 95% range = last x exp(+-m95 x sigma), m95 = 95th percentile of |move / k sigma| over the same
+  trailing 250 (about 2.05). 99% "stress" uses the 99th percentile (about 3.1; rough, as it rests
+  on 2-3 observations). Backfill Nov 2025 - Nov 2026: 95% held 95.2% / 96.8%, 99% held
+  99.2% / 97.6% (older / newer half).
+- Chart fan: per-step variance = sigma^2 x the hour-of-day profile's share (see fan_paths).
 - The simulated GARCH quantiles are kept as a diagnostic only: raw they held 72-79%, and
   scaled by k they fall to 53-57% (fat-tailed paths make the quantiles narrower than 1.28 sigma).
 - Cash session (bars 09:00-15:00 NY): variance = 24h variance x the cash hours' share of the
@@ -61,6 +66,7 @@ DAYS = 729             # history to download (Yahoo's 1h cap); covers the k and 
 ORIGIN_NY_HOUR = 7     # the 07:00-08:00 NY bar: the last complete bar before 08:30 NY
 CASH_NY_HOURS = range(9, 16)   # bars starting 09:00..15:00 NY = 7 hours 09:00-16:00
 REGIME_DAYS = 252
+CANDLES = 48                   # bars before the origin shown on the chart
 K_DAYS, K_MIN = 250, 60        # calibration factor lookback (matured daily forecasts), minimum
 PROFILE_DAYS = 60              # trading days for the intraday variance profile
 Z80 = 1.2816                   # normal P90
@@ -251,6 +257,16 @@ def calibration_k(prior: pd.DataFrame) -> tuple[float, int]:
     return float(np.sqrt(np.mean(z ** 2))), int(len(m))
 
 
+def tail_multipliers(prior: pd.DataFrame, k: float) -> tuple[float, float, int]:
+    """Empirical 95% and 99% multipliers of the calibrated sigma: the 95th / 99th percentile of
+    |move / (k x raw sigma)| over the same trailing matured, roll-free forecasts as k. Only
+    forecasts matured before the origin are in `prior`, so there is no look-ahead. The 99th
+    percentile of ~250 rests on 2-3 observations: rough."""
+    m = prior[prior["move_pct"].notna() & ~prior["roll"]].tail(K_DAYS)
+    z = (m["move_pct"] / m["sigma_raw_pct"]).abs().to_numpy() / k
+    return float(np.quantile(z, 0.95)), float(np.quantile(z, 0.99)), int(len(z))
+
+
 def regime_of(pctile: float) -> str:
     if pctile > 90:
         return "High"
@@ -316,6 +332,29 @@ def events_between(start: pd.Timestamp, end: pd.Timestamp, today: date) -> dict:
     return {"loaded": True, "items": items, "today": is_today, "note": note}
 
 
+# ---- fan for the chart ---------------------------------------------------------------
+
+FAN_PATHS = 100
+
+
+def fan_paths(last: float, sigma: float, weights: np.ndarray, m95: float, seed: int,
+              n: int = FAN_PATHS) -> dict:
+    """The calibrated forecast as a 24-step fan. Step variance = (k sigma)^2 x that hour's share
+    of the horizon's variance under the intraday profile, so the fan widens fast through the
+    cash open and slowly overnight. Bands are analytic (zero-mean log-normal steps), so at +24h
+    they equal the published 80% and 95% ranges exactly; the paths are normal draws with the
+    same step variances, for illustration."""
+    share = weights / weights.sum()
+    s_t = sigma * np.sqrt(np.cumsum(share))                     # cumulative sd in %, per step
+    lv = lambda z: np.round(last * np.exp(z * s_t / 100), 2).tolist()   # noqa: E731
+    rng = np.random.default_rng(seed)
+    steps = rng.standard_normal((n, len(share))) * (sigma * np.sqrt(share) / 100)
+    paths = np.round(last * np.exp(np.cumsum(steps, axis=1)), 2)
+    return {"p025": lv(-m95), "p10": lv(-Z80), "p50": lv(0), "p90": lv(Z80), "p975": lv(m95),
+            "paths": paths.tolist(), "seed": seed,
+            "method": "analytic bands from k sigma x hour-of-day profile; paths are normal draws"}
+
+
 # ---- forecast ------------------------------------------------------------------------
 
 def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
@@ -336,6 +375,7 @@ def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
     prior = prior_forecasts(bars) if prior is None else prior
     k, k_n = calibration_k(prior)
     sigma = k * raw
+    m95, m99, m_n = tail_multipliers(prior, k)
 
     future = cal.next_tradable_hours(origin.to_pydatetime(), HORIZON)
     hours = [t.astimezone(cal.NY).hour for t in future]
@@ -348,6 +388,7 @@ def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
     cash_sigma = sigma * np.sqrt(cash_share) if cash_share else None
 
     seed = seed_for(origin) if seed is None else seed
+    fan = fan_paths(last, sigma, w, m95, seed)
     end = simulate(res, last, sims, seed)[:, -1]
     sim_sigma = float(np.std(100 * np.log(end / last)))
 
@@ -369,6 +410,11 @@ def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
         "sigma_pts": pts(sigma),
         "range80": [px(-Z80 * sigma), px(Z80 * sigma)],
         "range68": [px(-sigma), px(sigma)],
+        "range95": [px(-m95 * sigma), px(m95 * sigma)],
+        "multipliers": {"m80": Z80, "m95": round(m95, 4), "m99": round(m99, 4), "n": m_n,
+                        "method": f"95th / 99th percentile of |move / k sigma| over the last {m_n} matured daily forecasts"},
+        "stress99": {"pts": pts(m99 * sigma), "pct": round(m99 * sigma, 4),
+                     "range": [px(-m99 * sigma), px(m99 * sigma)], "note": "rough: few observations"},
         "calibration": {"k": round(k, 4), "n": k_n, "sigma_raw_pct": round(raw, 4),
                         "method": f"k = RMS(move / raw sigma) over the last {k_n} matured daily forecasts"},
         "cash": {"hours": len(cash_steps),
@@ -382,6 +428,11 @@ def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
         "regime_days": int(len(s_prev)),
         "realised_rms_5d_pct": rms(5), "realised_rms_20d_pct": rms(20),
         "roll_note": roll_note(future),
+        "future_utc": [t.isoformat() for t in future],
+        "fan": fan,
+        "candles": [{"t": t.isoformat(), "o": round(float(r.open), 2), "h": round(float(r.high), 2),
+                     "l": round(float(r.low), 2), "c": round(float(r.close), 2)}
+                    for t, r in bars.tail(CANDLES).iterrows()],
         "events": events_between(origin + pd.Timedelta(hours=1), pd.Timestamp(future[-1]) + pd.Timedelta(hours=1),
                                  origin.tz_convert(cal.NY).date()),
         "model": {"spec": "GARCH(1,1), zero mean, Student-t", "n_returns": len(r),
@@ -420,6 +471,10 @@ def print_table(f: dict) -> None:
         ("80% range (±1.28σ)", f"{f['range80'][0]:,.0f} – {f['range80'][1]:,.0f}  "
                                f"({f['range80'][0] - last:+,.0f} / {f['range80'][1] - last:+,.0f} pts)"),
         ("68% range (±1σ)", f"{f['range68'][0]:,.0f} – {f['range68'][1]:,.0f}"),
+        (f"95% range (±{f['multipliers']['m95']:.2f}σ)", f"{f['range95'][0]:,.0f} – {f['range95'][1]:,.0f}  "
+                                                       f"(empirical multiplier, last {f['multipliers']['n']} matured)"),
+        (f"99% stress (±{f['multipliers']['m99']:.2f}σ)", f"±{f['stress99']['pts']:,.0f} pts  "
+                                                         f"{f['stress99']['range'][0]:,.0f} – {f['stress99']['range'][1]:,.0f}  ({f['stress99']['note']})"),
     ]
     c = f["cash"]
     if c["sigma_pts"]:

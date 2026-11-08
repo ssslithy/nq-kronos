@@ -60,7 +60,8 @@ def iso(t) -> str:
 def history_line(f: dict) -> dict:
     return {"origin_utc": f["origin_utc"], "horizon_end_utc": f["horizon_end_utc"],
             "last_close": f["last_close"], "sigma_pct": f["sigma_pct"], "sigma_pts": f["sigma_pts"],
-            "range80": f["range80"], "range68": f["range68"],
+            "range80": f["range80"], "range68": f["range68"], "range95": f["range95"],
+            "m95": f["multipliers"]["m95"], "m99": f["multipliers"]["m99"],
             "sigma_raw_pct": f["calibration"]["sigma_raw_pct"], "k": f["calibration"]["k"],
             "cash_sigma_pts": f["cash"]["sigma_pts"], "regime": f["regime"],
             "percentile": f["percentile"], "roll": f["roll_note"] is not None,
@@ -99,24 +100,28 @@ def update_accuracy(rows: list[dict], bars: pd.DataFrame, now: datetime | None =
     stamp = iso(now or datetime.now(timezone.utc))
     n = 0
     for r in rows:
-        if "inside80" in r or r.get("missing"):
+        if r.get("missing"):
             continue
-        o, e = pd.Timestamp(r["origin_utc"]), pd.Timestamp(r["horizon_end_utc"])
-        if e > last:
-            continue                                    # +24h bar not closed yet
-        if o not in close.index or e not in close.index:
-            r["missing"] = True                         # Yahoo has no bar there: skip for good
-            continue
-        move = 100 * float(np.log(close[e] / close[o]))
-        r["move_pct"] = round(move, 4)
-        r["inside80"] = bool(abs(move) <= gv.Z80 * r["sigma_pct"])
-        r["matured_utc"] = stamp
-        n += 1
+        if "move_pct" not in r or r["move_pct"] is None:
+            o, e = pd.Timestamp(r["origin_utc"]), pd.Timestamp(r["horizon_end_utc"])
+            if e > last:
+                continue                                # +24h bar not closed yet
+            if o not in close.index or e not in close.index:
+                r["missing"] = True                     # Yahoo has no bar there: skip for good
+                continue
+            r["move_pct"] = round(100 * float(np.log(close[e] / close[o])), 4)
+            r["matured_utc"] = stamp
+            n += 1
+        a = abs(r["move_pct"])
+        r["inside80"] = bool(a <= gv.Z80 * r["sigma_pct"])
+        if r.get("m95") is not None:                    # lines from before the 95% band lack these
+            r["inside95"] = bool(a <= r["m95"] * r["sigma_pct"])
+            r["inside99"] = bool(a <= r["m99"] * r["sigma_pct"])
     return n
 
 
-def hit_rate(rows: list[dict]) -> tuple[float | None, int]:
-    m = [r["inside80"] for r in rows if isinstance(r.get("inside80"), bool)]
+def hit_rate(rows: list[dict], key: str = "inside80") -> tuple[float | None, int]:
+    m = [r[key] for r in rows if isinstance(r.get(key), bool)]
     return (100 * sum(m) / len(m) if m else None), len(m)
 
 
@@ -159,10 +164,14 @@ def report(rows: list[dict]) -> None:
         print("no matured forecasts")
         return
     half = len(m) // 2
-    print(f"  80% range hit rate: {hit_rate(m)[0]:.1f}% of {len(m)} matured forecasts "
-          f"({m[0]['origin_utc'][:10]} to {m[-1]['origin_utc'][:10]})")
-    for name, part in (("older half", m[:half]), ("newer half", m[half:])):
-        print(f"    {name}: {hit_rate(part)[0]:.1f}% of {len(part)}")
+    print(f"  hit rates over {len(m)} matured forecasts ({m[0]['origin_utc'][:10]} to {m[-1]['origin_utc'][:10]}):")
+    print(f"    {'':12} {'80% range':>10} {'95% range':>10} {'99% stress':>11}")
+    for name, part in (("all", m), ("older half", m[:half]), ("newer half", m[half:]), ("last 60", m[-60:])):
+        cells = []
+        for key in ("inside80", "inside95", "inside99"):
+            h, n = hit_rate(part, key)
+            cells.append(f"{h:9.1f}%" if h is not None else f"{'—':>10}")
+        print(f"    {name:12} {cells[0]:>10} {cells[1]:>10} {cells[2]:>11}   (n {len(part)})")
     for name, sel in (("no roll in horizon", [r for r in m if not r.get("roll")]),
                       ("release in horizon", [r for r in m if r.get("events")]),
                       ("release on the day", [r for r in m if r.get("event_today")])):
@@ -177,6 +186,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--backfill", action="store_true", help="forecast the last --days daily origins")
     ap.add_argument("--days", type=int, default=BACKFILL_DAYS)
+    ap.add_argument("--all", action="store_true",
+                    help="with --backfill: recompute live lines too (they keep backfill=false)")
     ap.add_argument("--now", help="use bars up to this time (New York unless a zone is given)")
     ap.add_argument("--out", default=str(ROOT / "site" / "data"))
     args = ap.parse_args()
@@ -190,8 +201,10 @@ def main() -> int:
           f"{len(rows)} lines in {path.name}")
     if args.backfill:
         live = {pd.Timestamp(r["origin_utc"]) for r in rows if not r.get("backfill")}
-        new, skipped = backfill(bars, args.days, skip=live)
+        new, skipped = backfill(bars, args.days, skip=set() if args.all else live)
         for line in new:
+            if pd.Timestamp(line["origin_utc"]) in live:
+                line["backfill"] = False                # recomputed, but it was published live
             rows, _ = upsert(rows, line)
         print(f"  backfilled {len(new)} forecasts, kept {len(live)} live line(s)"
               + (f", skipped {len(skipped)} (first: {skipped[0]})" if skipped else ""))

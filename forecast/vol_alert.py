@@ -3,7 +3,7 @@
 After a successful forecast (scheduled, or a manual forced run), run_vol.py POSTs one line
 to https://ntfy.sh/<NTFY_TOPIC>:
 
-    NQ 24h vol: ±276 pts (±1.02%) · 80%: 26,747–27,454 · Calm (19th pct) · NFP 08:30 NY
+    NQ 24h vol: ±276 pts (±1.02%) · 80%: 26,747–27,454 · 95%: 26,535–27,674 · Calm (19th pct) · NFP 08:30 NY
 
 NTFY_TOPIC comes from the environment (a GitHub Actions secret in the workflow). If it isn't
 set, nothing is sent and nothing is logged. A failed send is logged as a warning and never
@@ -43,6 +43,8 @@ def alert_text(f: dict) -> str:
     lo, hi = f["range80"]
     parts = [f"NQ 24h vol: ±{f['sigma_pts']:,.0f} pts (±{f['sigma_pct']:.2f}%)",
              f"80%: {lo:,.0f}–{hi:,.0f}"]
+    if f.get("range95"):
+        parts.append(f"95%: {f['range95'][0]:,.0f}–{f['range95'][1]:,.0f}")
     if f.get("regime"):
         parts.append(f"{f['regime']} ({_ordinal(round(f['percentile']))} pct)")
     ev = f.get("events") or {}

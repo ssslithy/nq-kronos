@@ -186,6 +186,10 @@ def main() -> int:
                                  "forecast_origin_utc": f["origin_utc"]}, indent=1)
     gv.print_table(f)
     print(f"\nwrote {latest_p} ; history {hist} ; status ok ({time.perf_counter() - t0:.0f}s)")
+    gh = os.environ.get("GITHUB_OUTPUT")            # tell the workflow a forecast was made, and its origin
+    if gh and not args.now:
+        with open(gh, "a") as fh:
+            fh.write(f"made=true\norigin={iso(origin)}\n")
     if not (args.now or args.no_alert):             # never for a pretend time
         text = vol_alert.alert_text(f)
         if vol_alert.send(text):

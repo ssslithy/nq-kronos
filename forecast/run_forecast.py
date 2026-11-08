@@ -2,7 +2,10 @@
 
     python forecast/run_forecast.py                 # 100 paths, 24h, CPU
     python forecast/run_forecast.py --samples 50
-    python forecast/run_forecast.py --skip-if-closed   # used by the hourly workflow
+    python forecast/run_forecast.py --origin 2026-11-09T13:00:00Z   # the daily run (garch_vol.yml)
+
+Daily schedule: garch_vol.yml runs this once per US trading day with --origin = the start of
+the 07:00-08:00 NY bar the GARCH forecast used, so both models forecast from the same bar.
 
 On any data or model failure the previous site/data/latest.json is left untouched,
 site/data/status.json records the error, and the script exits non-zero.
@@ -186,6 +189,8 @@ def main() -> int:
     ap.add_argument("--horizon", type=int, default=int(os.environ.get("NQ_HORIZON", HORIZON)))
     ap.add_argument("--device", default=os.environ.get("KRONOS_DEVICE", "cpu"))
     ap.add_argument("--seed", type=int, default=None, help="default: derived from the last bar time")
+    ap.add_argument("--origin", help="forecast from the bar starting at this UTC time (it must be the "
+                                      "last closed bar); history lines get daily=true")
     ap.add_argument("--skip-if-closed", action="store_true",
                     help="exit 0 if NQ is closed now and no bar closed in the last hour")
     args = ap.parse_args()
@@ -201,8 +206,12 @@ def main() -> int:
         # session's final bar gets a forecast.
 
     t0 = time.perf_counter()
+    origin = pd.Timestamp(args.origin) if args.origin else None
     try:
-        bars = fetch.load_bars()
+        bars = fetch.load_bars(now=(origin + pd.Timedelta(hours=1)).to_pydatetime() if origin is not None else None)
+        if origin is not None and bars.df.index[-1] != origin:
+            raise fetch.DataError(f"origin bar {iso(origin)} is not the last closed bar "
+                                  f"(last is {iso(bars.df.index[-1])})")
     except fetch.DataError as e:
         log.error("data check failed, keeping previous forecast: %s", e)
         write_status(False, f"data: {e}")
@@ -229,6 +238,8 @@ def main() -> int:
     meta = {"generated_utc": iso(pd.Timestamp.now(tz="UTC")), "n_params": n_params,
             "seed": seed, "runtime_s": round(t_total, 1)}
     latest, hist = build_outputs(bars, paths, future, meta)
+    if origin is not None:
+        latest["daily"] = hist["daily"] = True
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     write_json_atomic(LATEST, latest, separators=(",", ":"))
     appended = append_history(hist)

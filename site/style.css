@@ -59,6 +59,8 @@ h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: 0.01em; white
 .sw-band { height: 9px; background: rgba(45, 212, 191, 0.22); border: 1px solid rgba(45, 212, 191, 0.45); }
 .sw-up { background: rgba(34, 197, 94, 0.7); }
 .sw-dn { background: rgba(240, 82, 82, 0.7); }
+.sw-outer { height: 9px; background: rgba(45, 212, 191, 0.08); border: 1px dashed rgba(45, 212, 191, 0.4); }
+.sw-g { background: rgba(45, 212, 191, 0.45); }
 
 .chart-wrap { position: relative; height: 520px; }
 #chart { display: block; width: 100%; height: 100%; touch-action: pan-y; }
@@ -103,6 +105,8 @@ dd { margin: 0; font: 12.5px/1.6 var(--mono); font-variant-numeric: tabular-nums
 .band-stats .sub { font: 12px var(--mono); color: var(--muted); }
 .band-stats .v.good { color: var(--teal); }
 .band-stats .v.warn { color: var(--warn); }
+.band-stats.cmp { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.band-head2 { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
 .collecting { font: 600 16px var(--mono); color: var(--warn); grid-column: 1 / -1; }
 .band-hz { font: 12px var(--mono); color: var(--muted); margin: 4px 0 10px; }
 .band-hz b { color: var(--text); font-weight: 500; }
@@ -138,6 +142,8 @@ dd { margin: 0; font: 12.5px/1.6 var(--mono); font-variant-numeric: tabular-nums
 .vol-range { font: 600 15px var(--mono); font-variant-numeric: tabular-nums; }
 .vol-sub { font: 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 4px; }
 .vol-sub span:not(.lbl) { color: var(--text); }
+.vol-range95 { font-size: 13px; font-weight: 500; margin-top: 2px; }
+.vol-sub .rough { font-style: normal; color: var(--warn); font-size: 11px; }
 .vol-event { font: 12.5px/1.5 var(--mono); color: var(--muted); margin-bottom: 8px; }
 .vol-event.on { color: #f8c76b; border-left: 2px solid var(--warn); padding-left: 8px; }
 .vol-event b { color: var(--warn); font-weight: 600; }
@@ -186,6 +192,7 @@ footer p { margin: 0 0 6px; }
   .stat .sub { grid-column: 1 / -1; font-size: 11px; }
   .band { padding: 12px; margin-top: 12px; }
   .band-stats { grid-template-columns: 1fr; gap: 8px; }
+  .band-stats.cmp { grid-template-columns: 1fr; }
   .band-stats .v { font-size: 18px; }
   .vol { padding: 12px; margin-top: 12px; }
   .vol-when { margin-left: 0; width: 100%; font-size: 11px; }
