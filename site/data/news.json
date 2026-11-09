@@ -1,36 +1,117 @@
 {
  "ok": true,
- "generated_utc": "2026-11-09T15:59:04Z",
+ "generated_utc": "2026-11-09T16:57:39Z",
+ "window_start_utc": "2026-11-06T21:00:00Z",
+ "window_end_utc": "2026-11-09T13:00:00Z",
  "items": [
   {
+   "source": "Yahoo Finance",
+   "title": "Broadcom Inc. to Announce Fourth Quarter and Fiscal Year 2026 Financial Results on Wednesday, December 9, 2026",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/broadcom-inc-announce-fourth-quarter-130000392.html?.tsrc=rss",
+   "published_utc": "2026-11-09T13:00:00Z",
+   "time_london": "1:00pm",
+   "impact": 3
+  },
+  {
+   "source": "Yahoo Finance",
+   "title": "US Stock Futures Rise, Dow Futures Lead Gains As Wall Street Eyes Inflation Data, AI Earnings \u2014 NVDA, TSLA, CRWV In Focus",
+   "link": "https://stocktwits.com/news-articles/markets/equity/us-stock-futures-rise-dow-futures-lead-gains-as-wall-street-eyes-inflation-data-ai-earnings-nvda-tsla-crwv-in-focus/cNGr7iLR9eF?.tsrc=rss",
+   "published_utc": "2026-11-09T11:40:52Z",
+   "time_london": "11:40am",
+   "impact": 3
+  },
+  {
+   "source": "Yahoo Finance",
+   "title": "Premarket movers: Nvidia slides on Huang probe, NVR extends rally",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/premarket-movers-nvidia-slides-huang-113609873.html?.tsrc=rss",
+   "published_utc": "2026-11-09T11:36:09Z",
+   "time_london": "11:36am",
+   "impact": 3
+  },
+  {
+   "source": "Yahoo Finance",
+   "title": "Nvidia Scandal Hurdled on Pre-Bell Wall Street; Asia, Europe Up",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/nvidia-scandal-hurdled-pre-bell-111038422.html?.tsrc=rss",
+   "published_utc": "2026-11-09T11:10:38Z",
+   "time_london": "11:10am",
+   "impact": 3
+  },
+  {
    "source": "CNBC",
-   "title": "Stocks making the biggest moves in early trading: Nvidia, AMD, Eli Lilly, cruise lines \u2014 Live updates",
-   "link": "https://www.cnbc.com/2026/11/09/stock-market-movers-live-updates.html",
-   "published_utc": "2026-11-09T15:59:11Z",
-   "time_london": "3:59pm"
+   "title": "Nasdaq defies Nvidia impact as Huang faces espionage affair probe",
+   "link": "https://www.cnbc.com/2026/11/09/nasdaq-defies-nvidia-impact-huang-faces-espionage-affair-probe.html",
+   "published_utc": "2026-11-09T11:04:49Z",
+   "time_london": "11:04am",
+   "impact": 3
   },
   {
    "source": "Yahoo Finance",
-   "title": "iPhone Duo: Apple says 100,000 apps are now ready for folding phone as customers still struggle to buy it",
-   "link": "https://www.independent.co.uk/tech/iphone-duo-apple-apps-update-stock-b3081859.html?.tsrc=rss",
-   "published_utc": "2026-11-09T15:48:30Z",
-   "time_london": "3:48pm"
+   "title": "US Equity Investors to Monitor Key Tech Earnings, Inflation This Week as Democrats Midterm Victory Hits AI Trade",
+   "link": "https://finance.yahoo.com/technology/ai/articles/us-equity-investors-monitor-key-105739479.html?.tsrc=rss",
+   "published_utc": "2026-11-09T10:57:39Z",
+   "time_london": "10:57am",
+   "impact": 3
   },
   {
    "source": "Yahoo Finance",
-   "title": "Why Nvidia's board really needs to lay out Jensen Huang's succession plan",
-   "link": "https://finance.yahoo.com/video/why-nvidias-board-really-needs-to-lay-out-jensen-huangs-succession-plan-154736576.html?.tsrc=rss",
-   "published_utc": "2026-11-09T15:47:36Z",
-   "time_london": "3:47pm"
+   "title": "US Stock Futures Mixed as Investors Assess Berkshire Hathaway Earnings, Nvidia Reports and AI Regulation Plans: Dow Jones, S&P, Nasdaq, Wall Street",
+   "link": "https://investorshub.advfn.com/market-news/article/39501/us-stock-futures-mixed-as-investors-assess-berkshire-hathaway-earnings-nvidia-reports-and-ai-regulation-plans-dow-jones-sp-nasdaq-wall-street?.tsrc=rss",
+   "published_utc": "2026-11-09T09:59:52Z",
+   "time_london": "9:59am",
+   "impact": 3
+  },
+  {
+   "source": "CNBC",
+   "title": "Nvidia CEO Jensen Huang faces bipartisan congressional scrutiny over reported China spy link",
+   "link": "https://www.cnbc.com/2026/11/08/jensen-huang-nvidia-china-spy-congress.html",
+   "published_utc": "2026-11-08T22:49:46Z",
+   "time_london": "10:49pm",
+   "impact": 3
+  },
+  {
+   "source": "CNBC",
+   "title": "Read Huang's email to his staff and statement from Nvidia's board of directors",
+   "link": "https://www.cnbc.com/2026/11/08/nvidia-jensen-huang-email-board-of-directors-statement.html",
+   "published_utc": "2026-11-08T22:19:00Z",
+   "time_london": "10:19pm",
+   "impact": 2
+  },
+  {
+   "source": "MarketWatch",
+   "title": "Economic calendar: CPI, PPI and a flotilla of Fed speakers on weekly agenda",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=9622b187-7dd2-4086-87d2-b9448dd2298a&mod=mw_rss_bulletins",
+   "published_utc": "2026-11-08T18:14:41Z",
+   "time_london": "6:14pm",
+   "impact": 3
+  },
+  {
+   "source": "CNBC",
+   "title": "Recent AI agent experiments reveal a risky future of machine 'teamwork' inside corporations",
+   "link": "https://www.cnbc.com/2026/11/08/ai-agents-risks.html",
+   "published_utc": "2026-11-08T14:14:11Z",
+   "time_london": "2:14pm",
+   "impact": 2
+  },
+  {
+   "source": "CNBC",
+   "title": "AI is speeding up recruitment \u2014 and putting agency fees under pressure",
+   "link": "https://www.cnbc.com/2026/11/08/ai-recruitment-agency-fees.html",
+   "published_utc": "2026-11-08T06:00:01Z",
+   "time_london": "6:00am",
+   "impact": 2
   }
  ],
- "errors": null,
- "feeds": [
-  "Yahoo Finance",
-  "CNBC"
+ "stats": {
+  "fetched": 396,
+  "in_window": 111,
+  "relevant": 67,
+  "duplicates": 0
+ },
+ "feeds_ok": 21,
+ "feeds_total": 23,
+ "errors": [
+  "Nasdaq aq.com/feed/rssoutbound?category=Markets: ReadTimeout: HTTPSConnectionPool(host='www.nasdaq.com', port=443): Read timed out. (read timeout=15)",
+  "Nasdaq com/feed/rssoutbound?category=Technology: ReadTimeout: HTTPSConnectionPool(host='www.nasdaq.com', port=443): Read timed out. (read timeout=15)"
  ],
- "per_feed": {
-  "Yahoo Finance": 18,
-  "CNBC": 11
- }
+ "rules": "news_rules.yaml"
 }

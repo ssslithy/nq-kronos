@@ -7,16 +7,22 @@ with "ok": false and the page hides that block; nothing here can fail or delay t
   treasuries.json  2Y / 10Y note futures (ZT=F, ZN=F, Yahoo hourly): % move from the close of the
                    previous origin bar to the close of this one (1pm -> 1pm London) and the hourly
                    closes in between (sparkline); yields: 10Y ^TNX (Yahoo), 2Y DGS2 (FRED CSV)
-  news.json        3 newest tech headlines of the last 24h (headline, outlet, link, time; never
-                   article text) from free RSS: Yahoo Finance headlines for NQ=F, ^NDX and the top
-                   Nasdaq names, and CNBC Technology. Picked round-robin across the two feeds
-                   (newest first within each), so one feed can't fill all three. Yahoo's feed only
-                   holds its ~20 newest items (a few hours), CNBC's ~30 (a few days): a re-run for
-                   a past time (--now) finds no Yahoo items that old, so it shows CNBC only.
+  news.json        up to 12 tech headlines published from the previous cash-session close (4pm
+                   New York, previous trading day) to the origin bar close (1pm London), never
+                   after it, whenever the job runs. Free RSS (headline, outlet, link, time; never
+                   article text): Yahoo Finance per-ticker headlines for ^NDX and the 15 largest
+                   Nasdaq-100 names, CNBC Technology / Markets (Market Insider) / Earnings,
+                   MarketWatch Top Stories / Breaking, Nasdaq.com Markets / Technology. Filtered,
+                   de-duplicated and given a significance (1-3) by forecast/news_rules.yaml.
+                   Yahoo's NQ=F feed is stale (last item Oct 2026) and MarketWatch's MarketPulse
+                   stopped in 2025, so neither is used. Yahoo per-ticker feeds hold ~20 items
+                   (an hour or two on busy days); a re-run for a past time only finds what the
+                   feeds still hold.
   fed_odds.json    Polymarket crowd betting odds for the next FOMC decision after the origin (date
                    from the events YAML): Hike / Hold / Cut = summed "Yes" prices of the event's
                    increase / no change / decrease markets, hourly over the same 1pm -> 1pm window
-                   as the Treasuries. Free public APIs, no key: Gamma /public-search and /events
+                   as the Treasuries, sampled at the ZT=F bar times (weekend hours skipped like the
+                   yields; if ZT=F fails, the NQ trading hours). Free public APIs, no key: Gamma /public-search and /events
                    (find the event by title month + year; the slug has a random suffix), CLOB
                    /prices-history (hourly points).
 
@@ -45,12 +51,21 @@ log = logging.getLogger("page_data")
 ROOT = Path(__file__).resolve().parent.parent
 TIMEOUT = 15
 UA = {"User-Agent": "Mozilla/5.0 (compatible; nq-forecasts; +https://ssslithy.github.io/nq-kronos/)"}
-NEWS_TICKERS = ["NQ=F", "^NDX", "NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AVGO", "TSLA"]
-FEEDS = [
-    ("Yahoo Finance", "https://feeds.finance.yahoo.com/rss/2.0/headline?s="
-     + ",".join(t.replace("^", "%5E") for t in NEWS_TICKERS) + "&region=US&lang=en-US"),
-    ("CNBC", "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=19854910"),
-]
+NEWS_TICKERS = ["^NDX", "NVDA", "MSFT", "AAPL", "AMZN", "GOOGL", "META", "AVGO", "TSLA", "NFLX", "COST",
+                "PLTR", "AMD", "ASML", "CSCO", "TMUS"]
+FEEDS = ([("Yahoo Finance", f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={t.replace('^', '%5E')}&region=US&lang=en-US")
+          for t in NEWS_TICKERS] + [
+    ("CNBC", "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=19854910"),   # Technology
+    ("CNBC", "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20409666"),   # Markets (Market Insider)
+    ("CNBC", "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=15839135"),   # Earnings
+    ("MarketWatch", "https://feeds.content.dowjones.io/public/rss/mw_topstories"),
+    ("MarketWatch", "https://feeds.content.dowjones.io/public/rss/mw_bulletins"),
+    ("Nasdaq", "https://www.nasdaq.com/feed/rssoutbound?category=Markets"),
+    ("Nasdaq", "https://www.nasdaq.com/feed/rssoutbound?category=Technology"),
+])
+NEWS_RULES = Path(__file__).resolve().parent / "news_rules.yaml"
+NEWS_MAX = 12
+NEWS_PER_OUTLET = 6
 GAMMA = "https://gamma-api.polymarket.com"
 CLOB = "https://clob.polymarket.com"
 FRED_DGS2 = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS2"
@@ -124,6 +139,8 @@ def _close_at(s: pd.Series, bar_start: pd.Timestamp) -> float:
 def _daily_last_before(ticker: str, day) -> float:
     import yfinance as yf
     d = yf.Ticker(ticker).history(period="1mo", interval="1d", auto_adjust=False, timeout=TIMEOUT)
+    if d.empty:
+        raise ValueError(f"no daily data for {ticker}")
     s = pd.Series(d["Close"].to_numpy(), index=pd.to_datetime(d.index.strftime("%Y-%m-%d"))).dropna()
     s = s[(s.index < pd.Timestamp(day)) & (s.index.weekday < 5)]
     if s.empty:
@@ -181,49 +198,136 @@ def _clean(s: str) -> str:
     return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", "", s or ""))).strip()
 
 
-def news(now, n: int = 3) -> dict:
+def load_news_rules(path: Path = NEWS_RULES) -> dict:
+    """news_rules.yaml compiled: each list becomes one case-insensitive regex."""
+    import yaml
+    raw = yaml.safe_load(path.read_text())
+
+    def rx(items):
+        parts = [x[3:] if x.startswith("re:") else rf"\b(?:{x})\b" for x in items]
+        return re.compile("|".join(f"(?:{p})" for p in parts), re.I) if parts else re.compile(r"(?!x)x")
+    top = [a for v in raw["top_names"].values() for a in v]
+    return {k: rx(v) for k, v in (("top", top), ("other", raw["other_names"]), ("sector", raw["sector"]),
+                                   ("macro", raw["macro"]), ("policy", raw["policy_3"]), ("major", raw["major_event"]),
+                                   ("rating", raw["rating"]), ("ex_title", raw["exclude_title"]),
+                                   ("ex_link", raw["exclude_link"]))}
+
+
+def news_relevant(title: str, summary: str, link: str, R: dict) -> bool:
+    if R["ex_title"].search(title) or R["ex_link"].search(link or ""):
+        return False
+    text = f"{title} {summary[:300]}"
+    return any(R[k].search(text) for k in ("top", "other", "sector", "macro"))
+
+
+def news_impact(title: str, R: dict) -> int:
+    top = bool(R["top"].search(title))
+    if R["macro"].search(title) or R["policy"].search(title) or (top and R["major"].search(title)):
+        return 3
+    if top or R["other"].search(title) or R["sector"].search(title):
+        return 2
+    return 1
+
+
+def _title_key(t: str) -> list[str]:
+    stop = {"the", "a", "an", "to", "of", "in", "on", "for", "and", "as", "is", "at", "with", "after", "by", "its", "from"}
+    return [w for w in re.sub(r"[^a-z0-9 ]", " ", t.lower()).split() if w not in stop]
+
+
+def _near_duplicate(a: str, b: str) -> bool:
+    """Fuzzy title match: same story across feeds (character ratio or word overlap)."""
+    from difflib import SequenceMatcher
+    ka, kb = _title_key(a), _title_key(b)
+    if not ka or not kb:
+        return False
+    jac = len(set(ka) & set(kb)) / len(set(ka) | set(kb))
+    return jac >= 0.6 or SequenceMatcher(None, " ".join(ka), " ".join(kb)).ratio() >= 0.85
+
+
+def news_window(f: dict, prev_origin) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """Previous cash-session close (4pm New York on the previous trading day) -> the origin bar's
+    close (1pm London). Fixed by the origin, not by when the job runs."""
+    end = pd.Timestamp(f["origin_utc"]) + pd.Timedelta(hours=1)
+    if prev_origin is None:
+        return end - pd.Timedelta(hours=24), end
+    d = pd.Timestamp(prev_origin).tz_convert(cal.NY).date()
+    start = pd.Timestamp(datetime(d.year, d.month, d.day, 16), tz=cal.NY).tz_convert("UTC")
+    return start, end
+
+
+def _fetch_feed(outlet_url):
     import feedparser
     import requests
-    items, errors = [], []
-    for outlet, url in FEEDS:
-        try:
-            r = requests.get(url, headers=UA, timeout=TIMEOUT)
-            r.raise_for_status()
-            d = feedparser.parse(r.content)
-            for e in d.entries:
-                t = e.get("published_parsed") or e.get("updated_parsed")
-                link = e.get("link", "")
-                title = _clean(e.get("title", ""))
-                if not (t and title and link.startswith(("https://", "http://"))):
-                    continue
-                pub = datetime(*t[:6], tzinfo=timezone.utc)
-                src = e.get("source", {}).get("title") if isinstance(e.get("source"), dict) else None
-                items.append({"source": _clean(src) or outlet, "title": title, "link": link,
-                              "published_utc": iso(pub), "_t": pub, "_feed": outlet})
-        except Exception as e:  # noqa: BLE001
-            errors.append(f"{outlet}: {type(e).__name__}: {e}")
-    if not items and errors:
-        raise RuntimeError("; ".join(errors))
-    now_ts = pd.Timestamp(now).to_pydatetime()
-    lo = now_ts - timedelta(hours=24)
-    seen, per = set(), {o: [] for o, _ in FEEDS}
-    for it in sorted(items, key=lambda x: x["_t"], reverse=True):
-        key = re.sub(r"[^a-z0-9]", "", it["title"].lower())
-        if key in seen or not (lo <= it["_t"] <= now_ts + timedelta(minutes=5)):
+    outlet, url = outlet_url
+    r = requests.get(url, headers=UA, timeout=TIMEOUT)
+    r.raise_for_status()
+    out = []
+    for e in feedparser.parse(r.content).entries:
+        t = e.get("published_parsed") or e.get("updated_parsed")
+        link = e.get("link", "")
+        title = _clean(e.get("title", ""))
+        if not (t and title and link.startswith(("https://", "http://"))):
             continue
-        seen.add(key)
-        per[it["_feed"]].append(it)
-    picked, k = [], 0                                   # round-robin: newest of each feed in turn
-    while len(picked) < n and any(len(v) > k for v in per.values()):
-        picked += [v[k] for v in per.values() if len(v) > k][: n - len(picked)]
-        k += 1
+        src = e.get("source", {}).get("title") if isinstance(e.get("source"), dict) else None
+        out.append({"source": _clean(src) or outlet, "title": title, "link": link,
+                    "summary": _clean(e.get("summary", ""))[:400],
+                    "_t": datetime(*t[:6], tzinfo=timezone.utc), "_feed": outlet})
+    return out
+
+
+def news(f: dict, prev_origin, now, n: int = NEWS_MAX) -> dict:
+    """Up to n relevant headlines in the news window (news_window), each with a significance 1-3
+    (news_rules.yaml): the most significant first, then the newest, at most NEWS_PER_OUTLET per
+    outlet; listed newest first. Near-duplicates across feeds keep the earliest."""
+    from concurrent.futures import ThreadPoolExecutor
+    start, end = news_window(f, prev_origin)
+    R = load_news_rules()
+    items, errors, ok_feeds = [], [], 0
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        futs = [(fu, ex.submit(_fetch_feed, fu)) for fu in FEEDS]
+        for (outlet, url), fut in futs:
+            try:
+                items += fut.result()
+                ok_feeds += 1
+            except Exception as e:  # noqa: BLE001
+                errors.append(f"{outlet} {url[-40:]}: {type(e).__name__}: {e}"[:200])
+    if not ok_feeds:
+        raise RuntimeError("; ".join(errors) or "no feeds")
+    lo, hi = start.to_pydatetime(), end.to_pydatetime()
+    seen_links, kept = set(), []
+    stats = {"fetched": len(items), "in_window": 0, "relevant": 0, "duplicates": 0}
+    for it in sorted(items, key=lambda x: x["_t"]):                 # oldest first: duplicates keep the earliest
+        if not (lo <= it["_t"] <= hi) or it["link"] in seen_links:
+            continue
+        stats["in_window"] += 1
+        seen_links.add(it["link"])
+        if not news_relevant(it["title"], it["summary"], it["link"], R):
+            continue
+        stats["relevant"] += 1
+        if any(_near_duplicate(it["title"], k["title"]) for k in kept):
+            stats["duplicates"] += 1
+            continue
+        kept.append(it)
+    for it in kept:
+        it["impact"] = news_impact(it["title"], R)
+    # pick the n most significant (then newest), at most NEWS_PER_OUTLET from one outlet so the
+    # 16 busy Yahoo feeds can't crowd out CNBC / MarketWatch / Nasdaq; then show newest first
+    picked, per = [], {}
+    for it in sorted(kept, key=lambda x: (x["impact"], x["_t"]), reverse=True):
+        if per.get(it["_feed"], 0) >= NEWS_PER_OUTLET:
+            continue
+        picked.append(it)
+        per[it["_feed"]] = per.get(it["_feed"], 0) + 1
+        if len(picked) == n:
+            break
     out = []
     for it in sorted(picked, key=lambda x: x["_t"], reverse=True):
-        it["time_london"] = london_time(it.pop("_t"))
-        it.pop("_feed")
-        out.append(it)
-    return {"ok": True, "generated_utc": iso(now), "items": out, "errors": errors or None,
-            "feeds": [o for o, _ in FEEDS], "per_feed": {o: len(v) for o, v in per.items()}}
+        out.append({"source": it["source"], "title": it["title"], "link": it["link"],
+                    "published_utc": iso(it["_t"]), "time_london": london_time(it["_t"]),
+                    "impact": it["impact"]})
+    return {"ok": True, "generated_utc": iso(now), "window_start_utc": iso(start), "window_end_utc": iso(end),
+            "items": out, "stats": stats, "feeds_ok": ok_feeds, "feeds_total": len(FEEDS),
+            "errors": errors or None, "rules": NEWS_RULES.name}
 
 
 # ---- Fed decision odds (Polymarket) ---------------------------------------------------------
@@ -285,12 +389,27 @@ def _bucket(m: dict) -> str | None:
     return None
 
 
+def window_times(prev_origin: pd.Timestamp, origin: pd.Timestamp) -> pd.DatetimeIndex:
+    """The Treasuries sparkline's sample times: closes of the ZT=F hourly bars from the previous
+    origin bar to this one (weekend and daily-break hours absent, as in the yields). If ZT=F
+    can't be fetched: closes of the NQ trading hours in the same span."""
+    try:
+        s = _hourly("ZT=F", prev_origin, origin)
+        idx = s.index[(s.index >= prev_origin) & (s.index <= origin)]
+        if len(idx) >= 2 and idx[0] == prev_origin and idx[-1] == origin:
+            return pd.DatetimeIndex(idx + pd.Timedelta(hours=1))
+    except Exception as e:  # noqa: BLE001
+        log.warning("fed_odds: ZT=F times unavailable (%s); using NQ trading hours", e)
+    hrs = pd.date_range(prev_origin, origin, freq="1h")
+    return pd.DatetimeIndex([t + pd.Timedelta(hours=1) for t in hrs if cal.is_tradable_hour(t.to_pydatetime())])
+
+
 def fed_odds(f: dict, prev_origin: pd.Timestamp, now) -> dict:
     origin = pd.Timestamp(f["origin_utc"])
     meeting = next_fomc(origin)
     ev = find_fed_event(meeting["time_utc"])
     w0, w1 = prev_origin + pd.Timedelta(hours=1), origin + pd.Timedelta(hours=1)
-    grid = pd.date_range(w0, w1, freq="1h")
+    grid = window_times(prev_origin, origin)
     sums = {k: np.zeros(len(grid)) for k in ("Hike", "Hold", "Cut")}
     used = {k: [] for k in sums}
     for m in ev.get("markets") or []:
@@ -320,7 +439,8 @@ def fed_odds(f: dict, prev_origin: pd.Timestamp, now) -> dict:
              "spark": [round(float(x), 4) for x in v], "markets": used[k]} for k, v in sums.items()]
     return {"ok": True, "generated_utc": iso(now), "origin_utc": iso(origin),
             "meeting_utc": iso(meeting["time_utc"]), "meeting_label": f"{MONTHS[md.month - 1][:3]} {md.day}",
-            "window_start_utc": iso(w0), "window_end_utc": iso(w1),
+            "window_start_utc": iso(grid[0]), "window_end_utc": iso(grid[-1]), "points": len(grid),
+            "sampling": "ZT=F hourly bar closes (as the Treasuries)",
             "event": {"id": ev.get("id"), "title": ev.get("title"), "slug": ev.get("slug"),
                       "url": f"https://polymarket.com/event/{ev.get('slug')}"},
             "rows": rows, "source": "Polymarket (crowd betting odds; Gamma + CLOB public APIs)"}
@@ -339,7 +459,7 @@ def collect(f: dict, out: Path, now, prev_origin=None, skip: set[str] | None = N
     res = {}
     jobs = {"calendar": lambda: calendar(f, now),
             "treasuries": lambda: treasuries(f, pd.Timestamp(prev_origin), now),
-            "news": lambda: news(now),
+            "news": lambda: news(f, prev_origin, now),
             "fed_odds": lambda: fed_odds(f, pd.Timestamp(prev_origin), now)}
     for name, job in jobs.items():
         try:

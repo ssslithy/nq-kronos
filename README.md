@@ -23,18 +23,22 @@ All times are London, 12-hour ("1:00pm"); New York appears only in Details.
 - **Header:** forecast time and the 1pm price, next update time, link to the accuracy page.
 - **Top card:** "Next 24 hours" (the 1pm → 1pm window, 23 trading hours) and "NYC Cash Session"
   (2:30pm – 9:00pm London): ± points, ± %, and the price range, from the **90% prediction
-  interval (PI)**, with 3 tech headlines listed under them (links only; the day is shown for any
-  not from the forecast's day). In the right column: the next 3 US releases (impact bars), the
-  2Y / 10Y Treasury note futures' 1pm → 1pm move with a sparkline and yields, and Polymarket's
-  odds for the next Fed decision (Hike / Hold / Cut, 1pm → 1pm sparkline, change in points;
-  crowd betting odds, not a forecast from this site). On phones the headlines come before the
+  interval (PI)**, with up to 12 tech headlines under them (3 visible, the rest scroll; links
+  only): published between the previous 4pm New York close and 1pm London, newest first, each
+  with 1–3 significance bars (rules in `forecast/news_rules.yaml`). In the right column: the next
+  3 US releases (impact bars), the 2Y / 10Y Treasury note futures' 1pm → 1pm move with a
+  sparkline and yields, and Polymarket's odds for the next Fed decision (Hike / Hold / Cut, over
+  the same window and hours as the Treasuries, change in points; crowd betting odds, not a
+  forecast from this site). On phones the headlines come before the
   right column's blocks.
 - **Chart:** 48 hourly candles, then the forecast fan to the end of the window. Buttons 99 / 95 /
   90 / 85 / 80% (multi-select, 90% on by default) draw stacked bands; at the last step each band
   equals that range exactly, and every selected band's upper and lower price is labelled at the
   right edge. The chart always shows the full 1pm → 1pm window (the cash session is in the top
   card only). "Kronos (experimental)" overlays Kronos-small's P10 / P90 paths when it ran from the
-  same bar (its 80% band held only ~46% in the lab); otherwise it is disabled ("not run today").
+  same bar (its 80% band held only ~46% in the lab). Kronos lands ~10 minutes after the forecast:
+  until then it reads "Kronos (updating…)" and switches on by itself; "not run today" only after
+  30 minutes.
 - **Footer:** the 90% PI's hit rate over the last 250 days, and a Details section (window, model and
   multipliers, recent moves, cash-session notes, Friday weekend-gap note, data sources, and
   "Volatility only, not direction. Not investment advice.").
@@ -95,7 +99,8 @@ from the CPU run).
 ## Daily volatility forecast (HAR-RV), 1pm → 1pm London
 
 Every US trading day `.github/workflows/garch_vol.yml` (seven slots between 12:07 and 14:07 UTC,
-in case GitHub drops a scheduled run) runs
+in case GitHub drops a scheduled run; `vol_watchdog.yml` re-runs it once and sends a "late"
+note if nothing has published by 09:30 New York) runs
 `forecast/run_vol.py`. As of the 07:00–08:00 New York bar close (1pm London; 12pm in the few
 weeks when US and UK clocks change on different dates) it forecasts the volatility of the next
 **23 trading hours**, to the same bar's close the next trading day, with a calibrated
@@ -183,8 +188,8 @@ read the topic, so keep it secret. Without the secret nothing is sent. Manual fo
   whether that width has been realistic.
 - Treasuries: the % move is of the 2Y / 10Y note futures (`ZT=F`, `ZN=F`, Yahoo hourly), not of
   yields; yields are the latest daily values before the forecast (FRED `DGS2`, Yahoo `^TNX`).
-  Headlines are a 1pm snapshot of free RSS feeds (Yahoo Finance, CNBC): titles and links only,
-  mixed across both feeds. Fed odds are Polymarket's public prices (crowd betting odds), not a
+  Headlines come from free RSS feeds (Yahoo Finance, CNBC, MarketWatch, Nasdaq.com): titles and
+  links only, never anything published after 1pm London. Fed odds are Polymarket's public prices (crowd betting odds), not a
   forecast from this site.
 - Kronos's published benchmarks come from its authors and are not yet independently
   replicated.

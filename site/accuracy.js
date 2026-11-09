@@ -73,7 +73,7 @@
       b += `<circle cx="${f.X(i).toFixed(1)}" cy="${f.Y(r.move_pct).toFixed(1)}" r="${ev ? 2.8 : 2.2}" fill="${out ? COL.out : COL.dot}"` +
            `${ev ? ` stroke="${COL.ev}" stroke-width="1.2"` : ""}><title>${day.format(new Date(r.origin_utc))}: ` +
            `move ${r.move_pct >= 0 ? "+" : "−"}${Math.abs(r.move_pct).toFixed(2)}%, 90% range ±${m90(r).toFixed(2)}%` +
-           `${ev ? " · " + r.events.join(", ") : ""}${r.backfill ? " · backfill" : ""}</title></circle>`;
+           `${ev ? " · " + r.events.join(", ") : ""}${r.backfill ? " · Backfill" : ""}</title></circle>`;
     });
     el.innerHTML = svg(f, b, "1pm to 1pm moves against the 90% and 95% forecast ranges");
   }

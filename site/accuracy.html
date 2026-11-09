@@ -6,7 +6,7 @@
   <title>NQ forecast accuracy</title>
   <meta name="description" content="How often NQ's actual 1pm-to-1pm (London) and cash-session moves landed inside the daily volatility forecast ranges, plus the Kronos lab results.">
   <meta name="theme-color" content="#090c0e">
-  <link rel="stylesheet" href="style.css?v=20261109c">
+  <link rel="stylesheet" href="style.css?v=20261109d">
 </head>
 <body class="acc">
   <header class="top">
@@ -24,7 +24,7 @@
   <section class="band acc-card" aria-label="1pm to 1pm moves vs the forecast range">
     <div class="band-head">
       <h2>1pm → 1pm move vs forecast range</h2>
-      <span class="band-sub">last 250 forecasts · actual move from the 1pm London close to the same time the next trading day (23 trading hours)</span>
+      <span class="band-sub">last 250 forecasts · Actual move from the 1pm London close to the same time the next trading day (23 trading hours)</span>
     </div>
     <div class="acc-legend"><span><i class="sw sw-band"></i>90% range</span><span><i class="sw sw-outer"></i>95% range</span><span><i class="dot"></i>inside 90%</span><span><i class="dot out"></i>outside 90%</span><span><i class="dot ev"></i>scheduled release in the window</span></div>
     <div class="acc-chart" id="chart-24h"></div>
@@ -33,7 +33,7 @@
   <section class="band acc-card" aria-label="Cash-session moves vs the forecast range">
     <div class="band-head">
       <h2>Cash session 09:00–16:00 NY</h2>
-      <span class="band-sub">2:00–9:00pm London · move from the 9:00am New York close to the 4:00pm close vs the measured 90% multiplier × the forecast's cash σ</span>
+      <span class="band-sub">2:00–9:00pm London · Move from the 9:00am New York close to the 4:00pm close vs the measured 90% multiplier × the forecast's cash σ</span>
     </div>
     <div class="acc-legend"><span><i class="sw sw-band"></i>90% cash range</span><span><i class="dot"></i>inside</span><span><i class="dot out"></i>outside</span><span><i class="dot ev"></i>release that day</span><span><i class="tick"></i>session high/low went outside</span></div>
     <div class="acc-chart" id="chart-cash"></div>
@@ -61,7 +61,7 @@
   </section>
 
   <details class="band acc-card acc-lab">
-    <summary><h2>Kronos lab (Phase 6)</h2> <span class="band-sub">research backtest, May–Nov 2026, hourly origins · tap to open</span></summary>
+    <summary><h2>Kronos lab (Phase 6)</h2> <span class="band-sub">research backtest, May–Nov 2026, hourly origins · Tap to open</span></summary>
     <p class="acc-p">The lab compared four +24h band sources on 825 hourly forecasts (every 3rd bar, May–Nov 2026; the multiplier for "Kronos widened" was fitted on the first two-thirds). Share of actual closes inside P10–P90, target ≈ 80%:</p>
     <div class="acc-table-wrap"><table class="band-table acc-table">
       <thead><tr><th>band source</th><th>all +24h</th><th>in-sample</th><th>out-of-sample</th><th>avg +24h width</th></tr></thead>
@@ -94,6 +94,6 @@
     <p>Backfilled days were forecast afterwards using only data before each 7:00–8:00am New York bar (1pm London). Research write-ups: <code>lab/results/vol_contest.md</code> (GARCH kept), <code>lab/results/vol_fix.md</code> (HAR-RV replaced GARCH: faster after shocks) and <code>lab/results/regime.md</code> (no regime chip). Data: Yahoo Finance <code>NQ=F</code>, delayed and unofficial.</p>
   </footer>
 
-  <script src="accuracy.js?v=20261109c"></script>
+  <script src="accuracy.js?v=20261109d"></script>
 </body>
 </html>

@@ -47,20 +47,29 @@
     ({ vol, status, hist, calendar, tsy, news, kronos, kstatus, fed }));
 
   // Kronos is usable only if it was made from the same bar as the daily forecast and isn't stale.
+  // Kronos runs as its own job after the forecast (~10 min later). Until its origin matches the
+  // forecast's it is "updating…"; only 30 minutes after the forecast was published is it "not run today".
+  const KRONOS_GRACE_MS = 30 * 60e3;
   const kronosState = (D) => {
     const k = D.kronos, v = D.vol;
-    if (!k || !k.last_bar_utc) return { ok: false, why: "not run today" };
-    if (T(k.last_bar_utc).getTime() !== T(v.origin_utc).getTime()) return { ok: false, why: "not run today" };
+    const sameBar = k && k.last_bar_utc && T(k.last_bar_utc).getTime() === T(v.origin_utc).getTime();
+    if (!sameBar) {
+      const pub = T(v.generated_utc || v.forecast_time_utc).getTime();
+      return Date.now() < pub + KRONOS_GRACE_MS
+        ? { ok: false, updating: true, why: "updating… (it runs about 10 minutes after the forecast)" }
+        : { ok: false, why: "not run today" };
+    }
     if (k.stale || (D.kstatus && D.kstatus.ok === false)) return { ok: false, why: "not run today (last run failed)" };
     return { ok: true };
   };
+  const reloadKronos = () => Promise.all([soft("data/latest.json"), soft("data/status.json")]);
 
   // ---- render -----------------------------------------------------------------------------
   function header(D) {
     const v = D.vol, close = T(v.forecast_time_utc);
     $("h-when").innerHTML = `${esc(date(close))} · ${esc(clock(close))} London · <span class="nq-price">${num(v.last_close)}</span>`;
     const next = v.next_forecast_utc ? T(v.next_forecast_utc) : null;
-    $("h-sub").textContent = `Nasdaq-100 futures${next ? ` · next update ${at(next)}` : ""}`;
+    $("h-sub").textContent = `Nasdaq-100 futures${next ? ` · Next Update ${at(next)}` : ""}`;
     document.title = `NQ ${date(close)} · ±${num(v.headline_pts)} pts`;
     // stale / late: the only warning on the page
     const failed = (D.status && D.status.ok === false) || v.stale;
@@ -97,7 +106,7 @@
 
   const signal = (n) => {
     const fill = (i) => (i < n ? "#5EE0C6" : "#2A353C");
-    const lbl = n >= 3 ? "High impact" : "Medium impact";
+    const lbl = n >= 3 ? "High impact" : n === 2 ? "Medium impact" : "Low impact";
     return `<svg width="13" height="10" viewBox="0 0 13 10" role="img" aria-label="${lbl}"><title>${lbl}</title>` +
       `<rect x="0" y="6" width="3" height="4" rx="1" fill="${fill(0)}"/><rect x="5" y="3" width="3" height="7" rx="1" fill="${fill(1)}"/>` +
       `<rect x="10" y="0" width="3" height="10" rx="1" fill="${fill(2)}"/></svg>`;
@@ -141,7 +150,9 @@
     const fd = D.fed;
     const frows = fd && fd.ok ? (fd.rows || []).filter((r) => r.p != null && r.spark && r.spark.length > 1) : [];
     if (frows.length) {
-      $("fed-h").textContent = `Fed · ${fd.meeting_label} decision · Polymarket`;
+      $("fed-h").textContent = `Fed · ${fd.meeting_label} Decision · Polymarket`;
+      const fa = T(fd.window_start_utc), fb = T(fd.window_end_utc);         // same window as the Treasuries
+      $("fed-w").textContent = `${day(fa)} ${hourOnly(fa)} – ${day(fb)} ${hourOnly(fb)}`;
       if (fd.event && fd.event.url) $("fed-h").href = fd.event.url;
       $("fed-h").title = `${fd.event ? fd.event.title : ""} Crowd betting odds, not a forecast from this site.`.trim();
       $("fed-rows").innerHTML = frows.map((r) =>
@@ -157,12 +168,25 @@
   function news(D) {
     const n = D.news;
     if (!(n && n.ok && n.items && n.items.length)) return;
-    const oDay = date(T(D.vol.forecast_time_utc));
-    const when = (t) => (date(t) === oDay ? clock(t) : `${day(t)} ${clock(t)}`);      // "Thu 11:39pm" if not the origin's day
-    $("news-rows").innerHTML = n.items.map((i) =>
-      `<div class="nq-item"><div class="meta"><span class="src">${esc(i.source)}</span><span class="tm">${esc(when(T(i.published_utc)))}</span></div>` +
-      `<a class="hl" href="${esc(i.link)}" target="_blank" rel="noopener noreferrer">${esc(i.title)}</a></div>`).join("");
+    const when = (t) => `${day(t)} ${clock(t)}`;                                     // "Mon 11:39am"
+    const box = $("news-rows");
+    box.innerHTML = n.items.map((i) =>
+      `<div class="nq-item"><div class="nq-item-main"><div class="meta"><span class="src">${esc(i.source)}</span>` +
+      `<span class="tm">${esc(when(T(i.published_utc)))}</span></div>` +
+      `<a class="hl" href="${esc(i.link)}" target="_blank" rel="noopener noreferrer">${esc(i.title)}</a></div>` +
+      `${signal(i.impact || 1)}</div>`).join("");
     $("news").hidden = false;
+    // show 3 rows at a time; the rest scroll (height follows the first three rows)
+    const fit = () => {
+      const rows = [...box.children].slice(0, 3);
+      if (!rows.length) return;
+      const h = rows.reduce((a, r) => a + r.getBoundingClientRect().height, 0);
+      box.style.height = box.children.length > 3 ? `${Math.ceil(h)}px` : "";
+    };
+    fit();
+    let rt;
+    window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(fit, 150); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
   }
 
   function footer(D) {
@@ -208,7 +232,8 @@
       (ks.ok ? "Today's run is from the same bar." : `Today: ${ks.why}.`)]);
     rows.push(["Data", "Yahoo Finance NQ=F, hourly, delayed and unofficial, roll-adjusted. Treasuries: ZT=F and ZN=F note futures (Yahoo), " +
       "yields FRED DGS2 (2Y) and Yahoo ^TNX (10Y), latest close before the forecast. Calendar: BLS, BEA, Census and the Fed schedules. " +
-      "Headlines: Yahoo Finance and CNBC RSS, a 1pm snapshot."]);
+      "Headlines: Yahoo Finance, CNBC, MarketWatch and Nasdaq.com RSS, published between the previous 4pm New York close and 1pm London; " +
+      "the bars are a rule-based significance (Fed and macro, the biggest Nasdaq names' earnings and major news = 3)."]);
     if (D.fed && D.fed.ok) rows.push(["Fed odds", `Polymarket crowd betting odds for the ${D.fed.meeting_label} FOMC decision ` +
       "(Hike = all increase outcomes, Cut = all decrease outcomes), hourly over the same 1pm → 1pm window. " +
       "They are what bettors are pricing, not a forecast from this site."]);
@@ -217,7 +242,7 @@
       `<dt></dt><dd class="disc">Volatility only, not direction. Not investment advice.</dd>`;
   }
 
-  window.NQ = { ready, kronosState, fmt: { clock, hourOnly, day, date, at, num, esc, T, plusH } };
+  window.NQ = { ready, kronosState, reloadKronos, fmt: { clock, hourOnly, day, date, at, num, esc, T, plusH } };
 
   ready.then((D) => {
     for (const f of [header, blocks, side, news, footer]) {

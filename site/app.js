@@ -24,15 +24,31 @@
       S.shown.has(l) ? S.shown.delete(l) : S.shown.add(l);
       pressed(b, S.shown.has(l)); draw();
     });
-    const ks = NQ.kronosState(D);
-    S.kOk = ks.ok;
-    const k = $("show-kronos"), kl = $("kronos-label");
-    if (!ks.ok) {
-      k.disabled = true; kl.classList.add("off"); kl.title = `Kronos (experimental): ${ks.why}`;
+    const k = $("show-kronos"), kl = $("kronos-label"), kt = $("kronos-text");
+    const tip = kl.title;
+    const applyKronos = () => {
+      const ks = NQ.kronosState(D);
+      S.kOk = ks.ok;
+      k.disabled = !ks.ok;
+      kl.classList.toggle("off", !ks.ok);
+      kt.textContent = ks.updating ? "Kronos (updating…)" : "Kronos (experimental)";
+      kl.title = ks.ok ? tip : `Kronos (experimental): ${ks.why}`;
+      return ks;
+    };
+    // while Kronos is still running for today's bar, check for it every minute and switch on when it lands
+    if (applyKronos().updating) {
+      const timer = setInterval(() => {
+        NQ.reloadKronos().then(([kr, kst]) => {
+          if (kr) D.kronos = kr;
+          if (kst) D.kstatus = kst;
+          const ks = applyKronos();
+          if (!ks.updating) { clearInterval(timer); draw(); }
+        });
+      }, 60e3);
     }
     k.addEventListener("change", (e) => { S.kronos = e.target.checked; draw(); });
     const { at, plusH } = NQ.fmt;
-    $("chart-title").textContent = `Hourly price · forecast to ${at(plusH(D.vol.horizon_end_utc, 1))} London`;
+    $("chart-title").textContent = `Hourly price · Forecast to ${at(plusH(D.vol.horizon_end_utc, 1))} London`;
   }
 
   // nice tick step for the price axis

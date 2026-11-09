@@ -16,6 +16,10 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   the first in-window run forecasts, the others exit "not a forecast window" / "already made". Why
   seven: GitHub's scheduler is best effort. On 9 Nov 2026 (EST) the old schedule had one in-window
   slot (13:05 UTC), it never fired, and nothing was published.
+- `.github/workflows/vol_watchdog.yml` (`forecast/vol_watchdog.py`, standard library only), cron
+  `45 13 * * 1-5` and `45 14 * * 1-5`: acts only 09:30–10:30 New York (one slot per day in EST and
+  EDT). If `vol_status.json`'s origin isn't today's, it sends an ntfy "forecast late" note and
+  dispatches garch-vol with `force=true` once.
 - Origin = the **07:00–08:00 NY bar** (closed 08:00 NY). Jobs:
   1. `vol`: `run_vol.py`: vol forecast → `site/data/vol_latest.json`, `vol_history.jsonl`,
      `vol_status.json`; fills in earlier forecasts' accuracy; sends the ntfy alert (secret `NTFY_TOPIC`);
@@ -78,6 +82,10 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   edges equal the card's ranges exactly; the 100 paths are normal draws (kept in the JSON, not drawn).
 - **Kronos is experimental:** its lab 80% band held ~46% (target 80%). Off by default; its P10/P90
   paths are drawn only if `latest.json` is from the same bar as the vol forecast and not stale.
+  Kronos is its own job (~9 min) and lands ~10 min after the forecast with its own Pages deploy
+  (`deploy-kronos`, shared `pages-deploy` group). Until then the checkbox reads "Kronos (updating…)"
+  and the page re-checks `latest.json` every minute; "not run today" only 30 min after the forecast
+  was published (`generated_utc`).
 - **Events:** `forecast/events_2026_2027.yaml` (FOMC 14:00; CPI, NFP, PCE, GDP advance, retail sales
   08:30 NY). `covered_from` 2026-01-01 / `covered_until` 2027-12-31; outside that the flag says
   "not loaded". **Update every January** from the official calendars cited in the file.
@@ -94,12 +102,19 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   `/events/{id}` gives the outcome markets, CLOB `/prices-history` (fidelity 60) the hourly "Yes"
   prices; Hike / Cut = sum of all increase / decrease markets, Hold = no change. Use the default
   `requests` User-Agent (Cloudflare returns 403 to urllib's). Sparklines have a 10-point minimum scale.
-- **News:** round-robin across the Yahoo and CNBC feeds, newest first within each. Why 6 Nov showed
-  only CNBC: not a live-run bug. That news.json came from a re-run for a past time (`--now` Fri 13:10,
-  run on Sun night); Yahoo's headline feed only holds its ~20 newest items (about 3 hours), all newer
-  than the cutoff, while CNBC's holds ~30 items over ~3 days. Re-runs for a past time will still
-  show CNBC only (or nothing); live runs get both. Headlines not from the origin's London day show
-  the day ("Thu 11:39pm").
+  Window and sampling = the Treasuries': the ZT=F hourly bar closes from the previous origin bar to this
+  one, so weekend hours are skipped (fallback if ZT=F fails: NQ trading hours). Heading
+  "Fed · Dec 9 Decision · Polymarket" with the window on a second small line.
+- **News (`news.json`):** headlines published from the previous cash-session close (4pm New York on the
+  previous trading day) to the origin bar close (1pm London), **never after it**, however late the job
+  runs (on 9 Nov the forced 4pm run showed 3:59pm headlines; fixed). 23 free RSS feeds: Yahoo per-ticker
+  (^NDX + 15 largest names), CNBC Technology / Markets (Market Insider, id 20409666) / Earnings,
+  MarketWatch Top Stories / Breaking, Nasdaq.com Markets / Technology. Not used: Yahoo `NQ=F` (stale
+  since Oct 2026), MarketWatch MarketPulse (stopped 2025). Filter, significance (1–3 bars, as the
+  calendar) and exclusions live in `forecast/news_rules.yaml` (tune there). Near-duplicates across
+  feeds (word overlap ≥ 0.6 or character ratio ≥ 0.85) keep the earliest. Up to 12, newest first, in a
+  list showing 3 rows that scrolls. Yahoo per-ticker feeds hold only ~20 items, so a re-run for a past
+  time finds mostly CNBC (as on 6 Nov).
 - **Times are London only, 12-hour ("1:00pm")**, on the page and in the alert; New York appears only
   in Details. The disclaimer "Volatility only, not direction. Not investment advice." lives in Details.
 
@@ -109,7 +124,8 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
 |---|---|
 | Model, calibration, fan, events, CLI table | `forecast/garch_vol.py` |
 | Daily run (window check, retries, outputs, alert, cash range) | `forecast/run_vol.py` |
-| Calendar / Treasuries / Fed odds / news files (fail-soft) | `forecast/page_data.py` |
+| Calendar / Treasuries / Fed odds / news files (fail-soft) | `forecast/page_data.py`; news filter and significance in `forecast/news_rules.yaml` |
+| Late-forecast watchdog | `forecast/vol_watchdog.py`, `.github/workflows/vol_watchdog.yml` |
 | Accuracy log, cash-session backtest, backfill | `forecast/vol_accuracy.py` |
 | ntfy alert | `forecast/vol_alert.py` |
 | Kronos run, band check | `forecast/run_forecast.py`, `forecast/band_check.py` |
@@ -137,6 +153,12 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
 GitHub: Actions → garch-vol → Run workflow (tick **force** to forecast outside the window, which also
 alerts; tick **test alert** to check the secret). Actions → forecast → Run workflow for Kronos only.
 
+## Incidents
+
+- **9 Nov 2026, no forecast at 1pm:** GitHub never started the 13:05 UTC garch-vol run (no run exists;
+  its only in-window slot in EST). Fixed: 7 cron slots (4 in-window in EST and EDT), the vol-watchdog
+  workflow, and a forced re-run that published at 15:59 UTC with the alert.
+
 ## Rules for future changes
 
 - Wait for the user's OK after each step; show it working (tables, screenshots) first. Don't push
@@ -149,7 +171,7 @@ alerts; tick **test alert** to check the secret). Actions → forecast → Run w
   page and the README.
 - Don't hand-edit `site/data/*`; it's written by the scripts and the bot. Before committing, `git pull
   --rebase`; if the bot has committed data since, take its data files and regenerate rather than merge.
-- Page CSS/JS links carry a version tag (`style.css?v=20261109c`, same in index.html and accuracy.html):
+- Page CSS/JS links carry a version tag (`style.css?v=20261109d`, same in index.html and accuracy.html):
   bump it whenever site code changes, or browsers keep the old file for Pages' 10-minute cache.
 - New page code goes in its own script or a self-contained block; the page must work at 375 px
   wide with no sideways scrolling, London times only. Check with Playwright at 1280 and 375 px

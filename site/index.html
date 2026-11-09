@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261109c">
+  <link rel="stylesheet" href="style.css?v=20261109d">
 </head>
 <body class="nq">
 <div class="nq-wrap">
@@ -53,7 +53,7 @@
 
     <div class="nq-side" id="side" hidden>
       <div id="cal" hidden>
-        <span class="nq-h">US calendar · London</span>
+        <span class="nq-h">US Calendar · London</span>
         <div id="cal-rows"></div>
       </div>
       <div id="tsy" hidden>
@@ -61,7 +61,8 @@
         <div id="tsy-rows"></div>
       </div>
       <div id="fed" hidden>
-        <a class="nq-h nq-h2 nq-h-link" id="fed-h" target="_blank" rel="noopener noreferrer">Fed decision · Polymarket</a>
+        <a class="nq-h nq-h2 nq-h-link" id="fed-h" target="_blank" rel="noopener noreferrer">Fed Decision · Polymarket</a>
+        <span class="nq-h-win" id="fed-w"></span>
         <div id="fed-rows"></div>
       </div>
     </div>
@@ -70,18 +71,18 @@
 
   <section class="nq-card nq-chart-card" aria-label="Hourly price and forecast">
     <div class="nq-chart-head">
-      <span class="nq-chart-title" id="chart-title">Hourly price · forecast</span>
+      <span class="nq-chart-title" id="chart-title">Hourly price · Forecast</span>
       <div class="nq-controls">
         <span class="nq-legend"><span class="nq-lp"></span>Last Price</span>
         <label class="nq-check" id="kronos-label" title="Kronos-small (experimental): its P10 and P90 paths. Its 80% band held ~46% of the time vs the 80% target.">
-          <input type="checkbox" id="show-kronos" class="ac-purple">Kronos (experimental)</label>
+          <input type="checkbox" id="show-kronos" class="ac-purple"><span id="kronos-text">Kronos (experimental)</span></label>
         <div class="nq-pis" role="group" aria-label="Show prediction intervals">
           <span class="nq-pi-btns" id="pi-buttons"></span>
         </div>
       </div>
     </div>
     <div id="chart" class="nq-chart" role="img" aria-label="NQ hourly candles with the forecast ranges widening to the end of the window"></div>
-    <span class="nq-axis-note" id="axis-note">Times London · weekend and daily-break hours skipped · forecast made from the 7:00–8:00am New York bar</span>
+    <span class="nq-axis-note" id="axis-note">Times London · Weekend and daily-break hours skipped · Forecast made from the 7:00–8:00am New York bar</span>
   </section>
 
   <footer class="nq-foot">
@@ -96,7 +97,7 @@
   </footer>
 
 </div>
-<script src="vol.js?v=20261109c"></script>
-<script src="app.js?v=20261109c"></script>
+<script src="vol.js?v=20261109d"></script>
+<script src="app.js?v=20261109d"></script>
 </body>
 </html>

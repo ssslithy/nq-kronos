@@ -1,0 +1,39 @@
+name: vol-watchdog
+
+# Second line behind garch_vol.yml's 7 cron slots (GitHub's scheduler is best effort: on
+# 9 Nov 2026 the only in-window slot never fired). At 13:45 and 14:45 UTC on weekdays,
+# forecast/vol_watchdog.py checks site/data/vol_status.json. It acts only between 09:30 and
+# 10:30 New York (one of the two slots in both EDT and EST), so at most once a day: if today's
+# forecast isn't published, it sends an ntfy "forecast late" note and dispatches garch-vol with
+# force=true (which forecasts from today's 07:00 NY bar and sends the normal alert).
+# Standard library only: no pip install, ~15 s.
+on:
+  schedule:
+    - cron: "45 13 * * 1-5"
+    - cron: "45 14 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write                  # dispatch garch_vol.yml
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Is today's forecast published?
+        id: check
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python3 forecast/vol_watchdog.py
+
+      - name: Re-dispatch the vol run
+        if: steps.check.outputs.late == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run garch_vol.yml --repo "${{ github.repository }}" --ref "${{ github.event.repository.default_branch }}" -f force=true
+          echo "::warning::today's forecast was late; garch-vol dispatched with force=true"
