@@ -1,27 +1,27 @@
 {
  "ok": true,
- "generated_utc": "2026-11-06T13:10:00Z",
+ "generated_utc": "2026-11-09T15:59:04Z",
  "items": [
   {
    "source": "CNBC",
-   "title": "Nasdaq sell-off batters Asian chip stocks as SK Hynix, Samsung, Softbank, TSMC tumble",
-   "link": "https://www.cnbc.com/2026/11/06/tech-stocks-sk-hynix-samsung-softbank.html",
-   "published_utc": "2026-11-06T11:06:58Z",
-   "time_london": "11:06am"
+   "title": "Stocks making the biggest moves in early trading: Nvidia, AMD, Eli Lilly, cruise lines \u2014 Live updates",
+   "link": "https://www.cnbc.com/2026/11/09/stock-market-movers-live-updates.html",
+   "published_utc": "2026-11-09T15:59:11Z",
+   "time_london": "3:59pm"
   },
   {
-   "source": "CNBC",
-   "title": "Elon Musk's Tesla and SpaceX lose over $420 billion in combined market cap after midterms",
-   "link": "https://www.cnbc.com/2026/11/05/tesla-spacex-stocks-fall-after-2026-midterms.html",
-   "published_utc": "2026-11-06T03:20:43Z",
-   "time_london": "3:20am"
+   "source": "Yahoo Finance",
+   "title": "iPhone Duo: Apple says 100,000 apps are now ready for folding phone as customers still struggle to buy it",
+   "link": "https://www.independent.co.uk/tech/iphone-duo-apple-apps-update-stock-b3081859.html?.tsrc=rss",
+   "published_utc": "2026-11-09T15:48:30Z",
+   "time_london": "3:48pm"
   },
   {
-   "source": "CNBC",
-   "title": "Magnificent 7 loses $1 trillion. The most eye-popping stats from Thursday's tech stock plunge",
-   "link": "https://www.cnbc.com/2026/11/05/stock-market-selloff-ai-fears.html",
-   "published_utc": "2026-11-05T23:39:32Z",
-   "time_london": "11:39pm"
+   "source": "Yahoo Finance",
+   "title": "Why Nvidia's board really needs to lay out Jensen Huang's succession plan",
+   "link": "https://finance.yahoo.com/video/why-nvidias-board-really-needs-to-lay-out-jensen-huangs-succession-plan-154736576.html?.tsrc=rss",
+   "published_utc": "2026-11-09T15:47:36Z",
+   "time_london": "3:47pm"
   }
  ],
  "errors": null,
@@ -30,7 +30,7 @@
   "CNBC"
  ],
  "per_feed": {
-  "Yahoo Finance": 0,
-  "CNBC": 8
+  "Yahoo Finance": 18,
+  "CNBC": 11
  }
 }
