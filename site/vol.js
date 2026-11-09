@@ -1,6 +1,6 @@
 // NQ forecasts: data loading and everything on the page except the chart (app.js draws that).
-// Reads data/vol_latest.json (daily GARCH forecast), vol_history.jsonl, vol_status.json,
-// calendar.json, treasuries.json, news.json, and Kronos's latest.json / status.json.
+// Reads data/vol_latest.json (daily vol forecast), vol_history.jsonl, vol_status.json,
+// calendar.json, treasuries.json, fed_odds.json, news.json, and Kronos's latest.json / status.json.
 // All times are London, 12-hour ("1:00pm"); New York appears only in Details.
 (() => {
   "use strict";
@@ -42,11 +42,11 @@
   const ready = Promise.all([
     getJSON("data/vol_latest.json"), soft("data/vol_status.json"), getLines("data/vol_history.jsonl"),
     soft("data/calendar.json"), soft("data/treasuries.json"), soft("data/news.json"),
-    soft("data/latest.json"), soft("data/status.json"),
-  ]).then(([vol, status, hist, calendar, tsy, news, kronos, kstatus]) =>
-    ({ vol, status, hist, calendar, tsy, news, kronos, kstatus }));
+    soft("data/latest.json"), soft("data/status.json"), soft("data/fed_odds.json"),
+  ]).then(([vol, status, hist, calendar, tsy, news, kronos, kstatus, fed]) =>
+    ({ vol, status, hist, calendar, tsy, news, kronos, kstatus, fed }));
 
-  // Kronos is usable only if it was made from the same bar as the GARCH forecast and isn't stale.
+  // Kronos is usable only if it was made from the same bar as the daily forecast and isn't stale.
   const kronosState = (D) => {
     const k = D.kronos, v = D.vol;
     if (!k || !k.last_bar_utc) return { ok: false, why: "not run today" };
@@ -103,13 +103,19 @@
       `<rect x="10" y="0" width="3" height="10" rx="1" fill="${fill(2)}"/></svg>`;
   };
 
-  const spark = (pts) => {
-    const lo = Math.min(...pts), hi = Math.max(...pts), n = pts.length;
+  // minSpan: smallest vertical range (data units), so a nearly flat line looks flat, not jittery
+  const spark = (pts, color = "#5EE0C6", minSpan = 0) => {
+    let lo = Math.min(...pts), hi = Math.max(...pts);
+    const n = pts.length;
+    if (hi - lo < minSpan) { const m = (hi + lo) / 2; lo = m - minSpan / 2; hi = m + minSpan / 2; }
     const y = (p) => (hi > lo ? 18 - 16 * (p - lo) / (hi - lo) : 10);
     const xy = pts.map((p, i) => `${(84 * i / (n - 1)).toFixed(1)},${y(p).toFixed(1)}`).join(" ");
     return `<svg viewBox="0 0 84 20" preserveAspectRatio="none" aria-hidden="true"><polyline points="${xy}" fill="none" ` +
-      `stroke="#5EE0C6" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
+      `stroke="${color}" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
   };
+  const FED_COLOR = { Hike: "#F2B84B", Hold: "#93A1A9", Cut: "#5EE0C6" };
+  const pct = (p) => (p < 0.005 ? "<1%" : `${Math.round(100 * p)}%`);
+  const ptsChange = (x) => { const r = Math.round(x); return r === 0 ? "0 pts" : `${r > 0 ? "+" : "−"}${Math.abs(r)} pts`; };
 
   function side(D) {
     const c = D.calendar, t = D.tsy;
@@ -132,14 +138,29 @@
       $("tsy").hidden = false;
       $("tsy-h").classList.toggle("nq-h2", !$("cal").hidden);
     }
-    $("side").hidden = $("cal").hidden && $("tsy").hidden;
+    const fd = D.fed;
+    const frows = fd && fd.ok ? (fd.rows || []).filter((r) => r.p != null && r.spark && r.spark.length > 1) : [];
+    if (frows.length) {
+      $("fed-h").textContent = `Fed · ${fd.meeting_label} decision · Polymarket`;
+      if (fd.event && fd.event.url) $("fed-h").href = fd.event.url;
+      $("fed-h").title = `${fd.event ? fd.event.title : ""} Crowd betting odds, not a forecast from this site.`.trim();
+      $("fed-rows").innerHTML = frows.map((r) =>
+        `<div class="nq-tsy nq-fed"><span class="l">${esc(r.label)}</span>${spark(r.spark, FED_COLOR[r.label], 0.10)}` +
+        `<span class="m" style="color:${FED_COLOR[r.label] || "#C9D4D9"}">${pct(r.p)}</span>` +
+        `<span class="y">${ptsChange(r.change_pts)}</span></div>`).join("");
+      $("fed").hidden = false;
+      $("fed-h").classList.toggle("nq-h2", !($("cal").hidden && $("tsy").hidden));
+    }
+    $("side").hidden = $("cal").hidden && $("tsy").hidden && $("fed").hidden;
   }
 
   function news(D) {
     const n = D.news;
     if (!(n && n.ok && n.items && n.items.length)) return;
+    const oDay = date(T(D.vol.forecast_time_utc));
+    const when = (t) => (date(t) === oDay ? clock(t) : `${day(t)} ${clock(t)}`);      // "Thu 11:39pm" if not the origin's day
     $("news-rows").innerHTML = n.items.map((i) =>
-      `<div class="nq-item"><div class="meta"><span class="src">${esc(i.source)}</span><span class="tm">${esc(clock(T(i.published_utc)))}</span></div>` +
+      `<div class="nq-item"><div class="meta"><span class="src">${esc(i.source)}</span><span class="tm">${esc(when(T(i.published_utc)))}</span></div>` +
       `<a class="hl" href="${esc(i.link)}" target="_blank" rel="noopener noreferrer">${esc(i.title)}</a></div>`).join("");
     $("news").hidden = false;
   }
@@ -160,7 +181,11 @@
         `(New York ${clock(a, NYC)} to ${clock(b, NYC)}). The daily break and weekends are skipped.`],
       ["PI", "Prediction interval: the range the price should end inside, with that probability, at the end of the window. " +
         "The chart can show the 99, 95, 90, 85 and 80% intervals; the card shows the 90%."],
-      ["Model", `GARCH(1,1), Student-t, ${num(v.model.n_returns)} hourly returns, calibrated ×${v.calibration.k.toFixed(2)} ` +
+      ["Model", (v.model.har
+        ? `HAR-RV: the next 23 hours' variance from the last 1, 5 and 22 days' realised variance (hourly returns), ` +
+          `refitted daily on the last ${v.model.har.n} days. Chosen in Nov 2026 because it reacts faster after shocks than the hourly GARCH it replaced. `
+        : `GARCH(1,1), Student-t, ${num(v.model.n_returns)} hourly returns. `) +
+        `Calibrated ×${v.calibration.k.toFixed(2)} ` +
         `(last ${v.calibration.n} forecasts); 85 / 90 / 95 / 99% use measured multipliers (fat tails): ` +
         `×${mu.m85.toFixed(2)} / ×${mu.m90.toFixed(2)} / ×${mu.m95.toFixed(2)} / ×${mu.m99.toFixed(2)} of σ ${v.sigma_pct.toFixed(2)}%; ` +
         `80% = ±1.28σ. The 99% rests on few observations (rough).`],
@@ -184,6 +209,9 @@
     rows.push(["Data", "Yahoo Finance NQ=F, hourly, delayed and unofficial, roll-adjusted. Treasuries: ZT=F and ZN=F note futures (Yahoo), " +
       "yields FRED DGS2 (2Y) and Yahoo ^TNX (10Y), latest close before the forecast. Calendar: BLS, BEA, Census and the Fed schedules. " +
       "Headlines: Yahoo Finance and CNBC RSS, a 1pm snapshot."]);
+    if (D.fed && D.fed.ok) rows.push(["Fed odds", `Polymarket crowd betting odds for the ${D.fed.meeting_label} FOMC decision ` +
+      "(Hike = all increase outcomes, Cut = all decrease outcomes), hourly over the same 1pm → 1pm window. " +
+      "They are what bettors are pricing, not a forecast from this site."]);
     rows.push(["Updated", `${at(T(v.generated_utc))} London`]);
     $("details").innerHTML = rows.map(([k, x]) => `<dt>${esc(k)}</dt><dd>${esc(x)}</dd>`).join("") +
       `<dt></dt><dd class="disc">Volatility only, not direction. Not investment advice.</dd>`;

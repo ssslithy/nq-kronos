@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NQ forecasts</title>
-  <meta name="description" content="Daily NQ (Nasdaq-100 futures) volatility forecast: how far the price may move from 1pm to 1pm London, with its prediction intervals, the cash-session range, the US calendar, Treasuries and tech headlines.">
+  <meta name="description" content="Daily NQ (Nasdaq-100 futures) volatility forecast: how far the price may move from 1pm to 1pm London, with its prediction intervals, the cash-session range, the US calendar, Treasuries, Fed decision odds and tech headlines.">
   <meta name="theme-color" content="#0A0E11">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,6 +55,10 @@
         <span class="nq-h nq-h2" id="tsy-h">US Treasuries</span>
         <div id="tsy-rows"></div>
       </div>
+      <div id="fed" hidden>
+        <a class="nq-h nq-h2 nq-h-link" id="fed-h" target="_blank" rel="noopener noreferrer">Fed decision · Polymarket</a>
+        <div id="fed-rows"></div>
+      </div>
     </div>
 
     <div class="nq-news" id="news" hidden>
@@ -76,12 +80,13 @@
           <button type="button" class="nq-cash-btn" id="cash-btn" aria-pressed="false">Cash</button>
         </div>
         <span class="nq-levels" id="levels">Levels
-          <label class="nq-check"><input type="checkbox" id="lv-pi" class="ac-teal" checked>PI</label>
+          <label class="nq-check"><input type="checkbox" id="lv-pi" class="ac-teal" checked>24h</label>
           <label class="nq-check"><input type="checkbox" id="lv-cash" class="ac-blue" checked>Cash</label>
         </span>
       </div>
     </div>
     <div id="chart" class="nq-chart" role="img" aria-label="NQ hourly candles with the forecast ranges widening to the end of the window"></div>
+    <p class="nq-cash-levels" id="cash-levels" hidden></p>
     <span class="nq-axis-note" id="axis-note">Times London · weekend and daily-break hours skipped · forecast made from the 7:00–8:00am New York bar</span>
   </section>
 

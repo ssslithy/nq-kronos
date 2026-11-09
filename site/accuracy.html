@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NQ forecast accuracy</title>
-  <meta name="description" content="How often NQ's actual 1pm-to-1pm (London) and cash-session moves landed inside the daily GARCH forecast ranges, plus the Kronos lab results.">
+  <meta name="description" content="How often NQ's actual 1pm-to-1pm (London) and cash-session moves landed inside the daily volatility forecast ranges, plus the Kronos lab results.">
   <meta name="theme-color" content="#090c0e">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -19,7 +19,7 @@
     </div>
   </header>
 
-  <p class="acc-intro" id="acc-intro">Daily GARCH forecasts made from the 07:00–08:00 New York bar, each using only data available then. Loading…</p>
+  <p class="acc-intro" id="acc-intro">Daily volatility forecasts made from the 07:00–08:00 New York bar, each using only data available then. Loading…</p>
 
   <section class="band acc-card" aria-label="1pm to 1pm moves vs the forecast range">
     <div class="band-head">
@@ -81,7 +81,7 @@
         <tr><td>Naive</td><td>84%</td><td>83%</td><td>83%</td></tr>
       </tbody>
     </table></div>
-    <p class="acc-p">Verdict: raw Kronos's band was far too narrow; GARCH was closest to 80% out of sample. That's why the daily page uses a calibrated GARCH by default and keeps Kronos as an experimental toggle. Equity curves for the three test rules (MNQ, after costs; research only, not investment advice):</p>
+    <p class="acc-p">Verdict: raw Kronos's band was far too narrow; GARCH was closest to 80% out of sample. That's why the daily page used a calibrated GARCH (HAR-RV since Nov 2026) and keeps Kronos as an experimental toggle. Equity curves for the three test rules (MNQ, after costs; research only, not investment advice):</p>
     <figure><img src="lab/equity_1_vol_sized_trend.png" alt="Equity curves, strategy 1: vol-sized trend" loading="lazy"><figcaption>1 · Vol-sized trend (MA 20/100, always in the market)</figcaption></figure>
     <figure><img src="lab/equity_2_stops_targets.png" alt="Equity curves, strategy 2: distribution stops and targets" loading="lazy"><figcaption>2 · Distribution stops and targets</figcaption></figure>
     <figure><img src="lab/equity_3_band_break.png" alt="Equity curves, strategy 3: band break, fade vs follow" loading="lazy"><figcaption>3 · Band break: fade vs follow</figcaption></figure>
@@ -91,7 +91,7 @@
 
   <footer>
     <p class="disclaimer">Volatility only, not direction. Past hit rates are not a guarantee. Not investment advice.</p>
-    <p>Backfilled days were forecast afterwards using only data before each 7:00–8:00am New York bar (1pm London). Research write-ups: <code>lab/results/vol_contest.md</code> (GARCH kept) and <code>lab/results/regime.md</code> (no regime chip). Data: Yahoo Finance <code>NQ=F</code>, delayed and unofficial.</p>
+    <p>Backfilled days were forecast afterwards using only data before each 7:00–8:00am New York bar (1pm London). Research write-ups: <code>lab/results/vol_contest.md</code> (GARCH kept), <code>lab/results/vol_fix.md</code> (HAR-RV replaced GARCH: faster after shocks) and <code>lab/results/regime.md</code> (no regime chip). Data: Yahoo Finance <code>NQ=F</code>, delayed and unofficial.</p>
   </footer>
 
   <script src="accuracy.js"></script>

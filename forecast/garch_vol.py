@@ -1,4 +1,10 @@
-"""Daily NQ volatility forecast (1pm -> 1pm London, 23 tradable hours) with GARCH(1,1), Student-t (volatility only, not direction).
+"""Daily NQ volatility forecast (1pm -> 1pm London, 23 tradable hours) (volatility only, not direction).
+
+Raw sigma model: VOL_MODEL. Since 9 Nov 2026 it is "har": HAR-RV (see har_sigmas; chosen by
+NQ_VOL_FIX_PLAN.md, lab/results/vol_fix.md, because hourly GARCH forgot shocks within a day and its
+90% misses clustered after them). "garch" is the GARCH(1,1) described below, which is still fitted
+at every forecast as a diagnostic. The calibration (k, measured multipliers), the cash session and
+the fan below apply to either model's raw sigma.
 
 Model choices are copied from the Phase 6 lab (lab/baselines.py):
 
@@ -68,11 +74,14 @@ ORIGIN_NY_HOUR = 7     # the 07:00-08:00 NY bar: the last complete bar before 08
 CASH_NY_HOURS = range(9, 16)   # bars starting 09:00..15:00 NY = 7 hours 09:00-16:00
 REGIME_DAYS = 252
 CANDLES = 48                   # bars before the origin shown on the chart
+VOL_MODEL = "har"              # raw sigma model: "har" (HAR-RV, since Nov 2026) or "garch" (hourly GARCH, before)
+HAR_TRAIN, HAR_MIN = 250, 100  # HAR-RV: OLS on the trailing matured daily origins, minimum
 K_DAYS, K_MIN = 250, 60        # calibration factor lookback (matured daily forecasts), minimum
 PROFILE_DAYS = 60              # trading days for the intraday variance profile
 Z80 = 1.2816                   # normal P90
 CARRY = 294.0 / 29560.0        # quarterly calendar spread as a share of price (Sep 2026, measured)
 ROLL_PAD_BEFORE, ROLL_PAD_AFTER = pd.Timedelta(days=1), pd.Timedelta(days=4)
+MODEL_NAME = {"har": "HAR-RV", "garch": "GARCH"}
 EVENTS_FILE = Path(__file__).resolve().parent / "events_2026_2027.yaml"
 
 
@@ -227,22 +236,69 @@ def daily_origins(df: pd.DataFrame) -> np.ndarray:
     return np.array([p for p in pos if cal.is_tradable_hour(df.index[p].to_pydatetime())], dtype=int)
 
 
-def prior_forecasts(bars: pd.DataFrame, n: int = 330) -> pd.DataFrame:
+def har_sigmas(bars: pd.DataFrame, pos: np.ndarray, only_last: bool = False) -> tuple[np.ndarray, dict | None]:
+    """HAR-RV raw sigma (%) for the next HORIZON bars at each origin position in `pos` (ascending,
+    one per daily origin). Walk-forward, as lab/vol_contest.py (candidate D, lab/results/vol_fix.md):
+
+      log RV(next HORIZON bars) = b0 + b1 log RV1 + b5 log RV5 + b22 log RV22
+      RV1 = sum of the HORIZON squared hourly % returns ending at the origin (known then);
+      RV5 / RV22 = mean RV1 over the last 5 / 22 origins (this one included)
+
+    OLS on the trailing HAR_TRAIN origins whose HORIZON bars had closed by this origin (min
+    HAR_MIN); raw sigma = sqrt(exp(fitted log RV)). Returns the sigmas and the last fit's details."""
+    r2 = np.nan_to_num(log_returns(bars["close"]).to_numpy()) ** 2
+    cs = np.concatenate([[0.0], np.cumsum(r2)])
+    n = len(bars)
+    rv1 = cs[pos + 1] - cs[pos - HORIZON + 1]
+    fut = pos + HORIZON < n
+    y = np.full(len(pos), np.nan)
+    y[fut] = np.log(cs[pos[fut] + HORIZON + 1] - cs[pos[fut] + 1])
+    s = pd.Series(rv1)
+    X = np.log(np.column_stack([rv1, s.rolling(5).mean().to_numpy(), s.rolling(22).mean().to_numpy()]))
+    good = np.isfinite(X).all(axis=1)
+    out, info = np.full(len(pos), np.nan), None
+    for i in ([len(pos) - 1] if only_last else range(len(pos))):
+        if not good[i]:
+            continue
+        j = np.flatnonzero((pos[:i] + HORIZON <= pos[i]) & np.isfinite(y[:i]))[-HAR_TRAIN:]
+        j = j[good[j]]
+        if len(j) < HAR_MIN:
+            continue
+        A = np.column_stack([np.ones(len(j)), X[j]])
+        beta, *_ = np.linalg.lstsq(A, y[j], rcond=None)
+        out[i] = float(np.sqrt(np.exp(beta[0] + X[i] @ beta[1:])))
+        info = {"b0": float(beta[0]), "b1": float(beta[1]), "b5": float(beta[2]), "b22": float(beta[3]),
+                "n": int(len(j)), "rv1": float(rv1[i]), "rv5": float(np.exp(X[i, 1])), "rv22": float(np.exp(X[i, 2]))}
+    return out, info
+
+
+def har_origins(bars: pd.DataFrame) -> np.ndarray:
+    """The HAR origin sequence: daily origins from WINDOW on (as prior_forecasts), plus the last bar."""
+    pos = daily_origins(bars)
+    pos = pos[pos >= WINDOW]
+    return pos if len(pos) and pos[-1] == len(bars) - 1 else np.append(pos, len(bars) - 1).astype(int)
+
+
+def prior_forecasts(bars: pd.DataFrame, n: int = 330, model: str | None = None) -> pd.DataFrame:
     """Raw sigma and realised HORIZON-bar move for up to `n` daily 07:00 NY origins before the last
-    bar, each fitted only on the WINDOW returns up to its own origin. `move` is NaN until the
-    forecast's HORIZON bars have closed (by the last bar of `bars`). 330 leaves K_DAYS matured
-    forecasts after the ~18% that touch a roll window are excluded from k."""
+    bar, each made only from data up to its own origin (GARCH: the WINDOW returns to it; HAR-RV:
+    see har_sigmas). `move` is NaN until the forecast's HORIZON bars have closed (by the last bar
+    of `bars`). 330 leaves K_DAYS matured forecasts after the ~18% that touch a roll window are
+    excluded from k. `model` defaults to VOL_MODEL; the lab asks for "garch" explicitly."""
+    model = model or VOL_MODEL
     close = bars["close"].to_numpy()
     r = log_returns(bars["close"]).to_numpy()
-    pos = daily_origins(bars)
-    pos = pos[(pos >= WINDOW) & (pos < len(bars) - 1)][-n:]
+    pos_all = daily_origins(bars)
+    pos_all = pos_all[(pos_all >= WINDOW) & (pos_all < len(bars) - 1)]
+    pos = pos_all[-n:]
+    har = har_sigmas(bars, pos_all)[0][-len(pos):] if model == "har" and len(pos) else None
     windows = roll_windows_for(bars.index[0], bars.index[-1] + pd.Timedelta(days=3))
     rows = []
-    for p in pos:
+    for j, p in enumerate(pos):
         matured = p + HORIZON < len(close)
         rows.append({
             "origin_utc": bars.index[p], "pos": int(p),
-            "sigma_raw_pct": sigma_only(r[p - WINDOW + 1:p + 1]),
+            "sigma_raw_pct": float(har[j]) if har is not None else sigma_only(r[p - WINDOW + 1:p + 1]),
             "move_pct": float(100 * np.log(close[p + HORIZON] / close[p])) if matured else np.nan,
             "roll": touches_roll(bars.index[p + 1:p + HORIZON + 1], windows),
         })
@@ -251,7 +307,7 @@ def prior_forecasts(bars: pd.DataFrame, n: int = 330) -> pd.DataFrame:
 
 def calibration_k(prior: pd.DataFrame) -> tuple[float, int]:
     """RMS(move / raw sigma) over the trailing K_DAYS matured, roll-free daily forecasts."""
-    m = prior[prior["move_pct"].notna() & ~prior["roll"]].tail(K_DAYS)
+    m = prior[prior["move_pct"].notna() & ~prior["roll"] & prior["sigma_raw_pct"].notna()].tail(K_DAYS)
     if len(m) < K_MIN:
         raise ValueError(f"only {len(m)} matured daily forecasts for the calibration factor (< {K_MIN})")
     z = m["move_pct"] / m["sigma_raw_pct"]
@@ -268,7 +324,7 @@ def tail_multipliers(prior: pd.DataFrame, k: float) -> tuple[dict[int, float], i
     roll-free forecasts as k. Only forecasts matured before the origin are in `prior`, so there
     is no look-ahead. The 99th percentile of ~250 rests on 2-3 observations: rough.
     The 80% range keeps the normal +-1.2816 (returned as 80 for convenience)."""
-    m = prior[prior["move_pct"].notna() & ~prior["roll"]].tail(K_DAYS)
+    m = prior[prior["move_pct"].notna() & ~prior["roll"] & prior["sigma_raw_pct"].notna()].tail(K_DAYS)
     z = (m["move_pct"] / m["sigma_raw_pct"]).abs().to_numpy() / k
     out = {lv: float(np.quantile(z, lv / 100)) for lv in (85, 90, 95, 99)}
     out[80] = Z80
@@ -298,8 +354,8 @@ def intraday_profile(bars: pd.DataFrame, days: int = PROFILE_DAYS) -> dict[int, 
 
 # ---- scheduled events (forecast/events_2026_2027.yaml) ----------------------------------
 
-EVENT_NOTE = "Scheduled release today: realised move often exceeds the GARCH range."
-EVENT_NOTE_HORIZON = "Scheduled release inside the forecast window: realised move often exceeds the GARCH range."
+EVENT_NOTE = "Scheduled release today: realised move often exceeds the forecast range."
+EVENT_NOTE_HORIZON = "Scheduled release inside the forecast window: realised move often exceeds the forecast range."
 
 
 @lru_cache(maxsize=1)
@@ -377,9 +433,16 @@ def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
     origin = bars.index[-1]
     last = float(bars["close"].iloc[-1])
     r = log_returns(bars["close"]).iloc[-WINDOW:].to_numpy()
-    res = fit(r)
-    var = step_variances(res)
-    raw = float(np.sqrt(var.sum()))
+    res = fit(r)                                   # GARCH: the model when VOL_MODEL = "garch", else a diagnostic
+    garch_raw = float(np.sqrt(step_variances(res).sum()))
+    har_info = None
+    if VOL_MODEL == "har":
+        hs, har_info = har_sigmas(bars, har_origins(bars), only_last=True)
+        if not np.isfinite(hs[-1]):
+            raise ValueError(f"no HAR-RV sigma (needs {HAR_MIN} matured daily origins after 22 days)")
+        raw = float(hs[-1])
+    else:
+        raw = garch_raw
     prior = prior_forecasts(bars) if prior is None else prior
     k, k_n = calibration_k(prior)
     sigma = k * raw
@@ -400,7 +463,7 @@ def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
     end = simulate(res, last, sims, seed)[:, -1]
     sim_sigma = float(np.std(100 * np.log(end / last)))
 
-    s_prev = prior["sigma_raw_pct"].tail(REGIME_DAYS).to_numpy()
+    s_prev = prior["sigma_raw_pct"].dropna().tail(REGIME_DAYS).to_numpy()
     pctile = float(100 * (s_prev < raw).mean()) if len(s_prev) else None
     matured = prior[prior["move_pct"].notna()]
     def rms(n):
@@ -452,14 +515,20 @@ def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
                     for t, r in bars.tail(CANDLES).iterrows()],
         "events": events_between(origin + pd.Timedelta(hours=1), pd.Timestamp(future[-1]) + pd.Timedelta(hours=1),
                                  origin.tz_convert(cal.NY).date()),
-        "model": {"spec": "GARCH(1,1), zero mean, Student-t", "n_returns": len(r),
+        "model": {"vol_model": VOL_MODEL,
+                  "spec": ("HAR-RV: log RV of the next 23 hours on log RV of the last 1 / 5 / 22 days"
+                           if VOL_MODEL == "har" else "GARCH(1,1), zero mean, Student-t"),
+                  "har": ({k: round(v, 4) if isinstance(v, float) else v for k, v in har_info.items()}
+                          if har_info else None),
+                  "garch_spec": "GARCH(1,1), zero mean, Student-t", "garch_sigma_raw_pct": round(garch_raw, 4),
+                  "n_returns": len(r),
                   "omega": float(p["omega"]), "alpha": float(p["alpha[1]"]),
                   "beta": float(p["beta[1]"]), "nu": float(p["nu"]),
                   "persistence": float(p["alpha[1]"] + p["beta[1]"]),
                   "loglik": float(res.loglikelihood)},
         "sim_raw": {"sims": sims, "seed": seed, "p10": round(float(np.percentile(end, 10)), 2),
                     "p90": round(float(np.percentile(end, 90)), 2),
-                    "sigma_pct": round(sim_sigma, 4), "vs_analytic": round(sim_sigma / raw, 4)},
+                    "sigma_pct": round(sim_sigma, 4), "vs_analytic": round(sim_sigma / garch_raw, 4)},
     }
 
 
@@ -478,7 +547,7 @@ def print_table(f: dict) -> None:
     end = pd.Timestamp(f["horizon_end_utc"])
     last = f["last_close"]
     close_t = o + pd.Timedelta(hours=1)
-    print(f"\nNQ volatility forecast, next {HORIZON} tradable hours (GARCH, calibrated) — volatility only, not direction")
+    print(f"\nNQ volatility forecast, next {HORIZON} tradable hours ({MODEL_NAME[VOL_MODEL]}, calibrated) — volatility only, not direction")
     print(f"  as of bar         {o.tz_convert(cal.NY):%a %d %b %Y %H:%M}-{close_t.tz_convert(cal.NY):%H:%M} NY "
           f"({close_t.tz_convert(cal.LONDON):%H:%M} London close)   last close {last:,.2f}")
     print(f"  horizon           next {HORIZON} tradable hours, to the bar starting {end.tz_convert(cal.NY):%a %d %b %H:%M} NY")
@@ -516,10 +585,17 @@ def print_table(f: dict) -> None:
     else:
         rows.append(("Event flag", ev["note"] or "no scheduled release in the forecast window"))
     rows.append(("Roll", f["roll_note"] or "no roll in the horizon"))
-    rows.append(("Calibration", f"raw GARCH σ {cal_['sigma_raw_pct']:.2f}% × k {cal_['k']:.3f} "
+    rows.append(("Calibration", f"raw {MODEL_NAME[VOL_MODEL]} σ {cal_['sigma_raw_pct']:.2f}% × k {cal_['k']:.3f} "
                                 f"(RMS move/σ, last {cal_['n']} matured daily forecasts)"))
     m = f["model"]
-    rows.append(("Model", f"{m['spec']}, last {m['n_returns']:,} hourly returns"))
+    h = m.get("har")
+    if h:
+        rows.append(("Model", f"{m['spec']}; OLS on the last {h['n']} matured daily forecasts"))
+        rows.append(("  coefficients", f"b0 {h['b0']:+.3f}  b1 {h['b1']:.3f}  b5 {h['b5']:.3f}  b22 {h['b22']:.3f}   "
+                                       f"RV 1d {h['rv1']:.2f}  5d {h['rv5']:.2f}  22d {h['rv22']:.2f} (%², 23h)"))
+        rows.append(("GARCH (diagnostic)", f"raw σ {m['garch_sigma_raw_pct']:.2f}%, last {m['n_returns']:,} hourly returns"))
+    else:
+        rows.append(("Model", f"{m['spec']}, last {m['n_returns']:,} hourly returns"))
     rows.append(("  parameters", f"ω {m['omega']:.4f}  α {m['alpha']:.3f}  β {m['beta']:.3f}  "
                                  f"ν {m['nu']:.2f}  persistence α+β {m['persistence']:.3f}"))
     s = f["sim_raw"]

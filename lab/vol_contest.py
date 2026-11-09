@@ -286,5 +286,243 @@ def main() -> int:
     return 0
 
 
+# ==== vol fix (NQ_VOL_FIX_PLAN.md): clustered misses after shocks ===========================
+#
+#   python lab/vol_contest.py --fix     # writes lab/results/vol_fix.md
+#
+# Scored on every origin where all fix candidates have a calibrated forecast (the production
+# calibration needs K_MIN matured forecasts; candidates that fit a parameter need TRAIN_MIN
+# matured origins first), plus the last-250 view. Extra measures: Christoffersen independence
+# test on the 90% misses, miss-after-miss share, stress coverage, calm width, last-60 coverage.
+
+FIX_OUT = ROOT / "lab" / "results" / "vol_fix.md"
+DAILY_MIN, DAILY_MAX = 120, 500          # 23h returns in the daily GARCH fit
+NEAR = 5                                 # "miss after miss": a previous miss within 5 origins
+C_GRID = np.round(np.arange(0, 3.0001, 0.05), 2)
+
+
+def daily_returns(close: np.ndarray, p: int, n: int = DAILY_MAX) -> np.ndarray:
+    """Non-overlapping 23-bar % log returns ending at position p (oldest first). Known at p."""
+    idx = np.arange(p, -1, -H)[: n + 1][::-1]
+    return 100 * np.diff(np.log(close[idx]))
+
+
+def best_scale_qlike(rv, s2) -> float:
+    c = np.mean(rv / s2)
+    return float(np.mean(qlike(rv, c * s2)))
+
+
+def fit_param(t, s_of, grid):
+    """Walk-forward: for each origin pick the grid value whose sigma (s_of(g) -> array) has the
+    lowest best-scale QLIKE over the trailing TRAIN matured origins (min TRAIN_MIN)."""
+    rv = t["rv_fut"].to_numpy()
+    S = {g: s_of(g) for g in grid}
+    out, chosen = np.full(len(t), np.nan), np.full(len(t), np.nan)
+    for i in range(len(t)):
+        tr = trailing(t, i).index.to_numpy()
+        tr = tr[np.all([np.isfinite(S[g][tr]) for g in grid], axis=0)] if len(tr) else tr
+        if len(tr) < TRAIN_MIN or not all(np.isfinite(S[g][i]) for g in grid):
+            continue
+        g = min(grid, key=lambda g: best_scale_qlike(rv[tr], S[g][tr] ** 2))
+        out[i], chosen[i] = S[g][i], g
+    return out, chosen
+
+
+def rv_nd(t, bars, n):
+    close = bars["close"].to_numpy()
+    return np.array([np.sqrt(np.mean(daily_returns(close, p, n) ** 2)) if p >= n * H else np.nan
+                     for p in t["pos"].to_numpy()])
+
+
+def cand_floor(t, bars, n):
+    sg, rv = t["sigma_raw_pct"].to_numpy(), rv_nd(t, bars, n)
+    return fit_param(t, lambda c: np.maximum(sg, c * rv), list(C_GRID))
+
+
+def daily_garch_sigma(t, bars):
+    from arch import arch_model
+    import warnings
+    close = bars["close"].to_numpy()
+    out = np.full(len(t), np.nan)
+    for i, p in enumerate(t["pos"].to_numpy()):
+        r = daily_returns(close, p)
+        if len(r) < DAILY_MIN:
+            continue
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            res = arch_model(r, mean="Zero", vol="GARCH", p=1, q=1, dist="t", rescale=False).fit(
+                disp="off", show_warning=False)
+        out[i] = float(np.sqrt(res.forecast(horizon=1, reindex=False).variance.values[-1, 0]))
+    return out
+
+
+def cand_two_speed(t, bars):
+    sg, sd = np.log(t["sigma_raw_pct"].to_numpy()), np.log(daily_garch_sigma(t, bars))
+    return fit_param(t, lambda w: np.exp(w * sg + (1 - w) * sd), list(np.round(np.linspace(0, 1, 21), 2)))
+
+
+def calibrate_all(t, s) -> pd.DataFrame:
+    """Production calibration at every matured origin with a raw sigma: k and measured
+    multipliers from the trailing K_DAYS matured, roll-free forecasts (min K_MIN)."""
+    rows = calibrate(t, s, [i for i in range(len(t)) if np.isfinite(t["move_pct"].iat[i])])
+    return pd.DataFrame([r for r in rows if r is not None]).set_index("i")
+
+
+def christoffersen(miss: np.ndarray) -> tuple[float, float]:
+    """LR test of independence of the miss sequence (Christoffersen 1998); returns (LR, p)."""
+    from scipy.special import xlogy
+    from scipy.stats import chi2
+    a, b = miss[:-1].astype(int), miss[1:].astype(int)
+    n00, n01 = np.sum((a == 0) & (b == 0)), np.sum((a == 0) & (b == 1))
+    n10, n11 = np.sum((a == 1) & (b == 0)), np.sum((a == 1) & (b == 1))
+    p01 = n01 / max(n00 + n01, 1)
+    p11 = n11 / max(n10 + n11, 1)
+    p = (n01 + n11) / max(n00 + n01 + n10 + n11, 1)
+    l0 = xlogy(n00 + n10, 1 - p) + xlogy(n01 + n11, p)
+    l1 = xlogy(n00, 1 - p01) + xlogy(n01, p01) + xlogy(n10, 1 - p11) + xlogy(n11, p11)
+    lr = float(max(-2 * (l0 - l1), 0.0))
+    return lr, float(chi2.sf(lr, 1))
+
+
+def miss_after_miss(miss: np.ndarray) -> float:
+    j = np.flatnonzero(miss)
+    if not len(j):
+        return np.nan
+    return float(np.mean([np.any((j < x) & (j >= x - NEAR)) for x in j]))
+
+
+def stress_flags(t, garch_cal: pd.DataFrame) -> np.ndarray:
+    """Known at the origin: the previous matured origin's |move| > 2x its calibrated GARCH sigma,
+    or VXN (last close before the origin's date) in the top quartile of its trailing year."""
+    vxn = dor.daily_close("^VXN")
+    pos, move = t["pos"].to_numpy(), t["move_pct"].to_numpy()
+    out = np.zeros(len(t), dtype=bool)
+    for i in range(len(t)):
+        prev = [j for j in range(i - 1, max(i - 4, -1), -1) if pos[j] + H <= pos[i]]
+        shock = bool(prev) and prev[0] in garch_cal.index and abs(move[prev[0]]) > 2 * garch_cal.at[prev[0], "sigma"]
+        yr = vxn[vxn.index < t["day"].iat[i]].tail(252)
+        high = len(yr) >= 200 and yr.iloc[-1] >= np.quantile(yr, 0.75)
+        out[i] = shock or high
+    return out
+
+
+def fix_measures(c: pd.DataFrame, stress: np.ndarray) -> dict:
+    c = c.sort_index()
+    half = len(c) // 2
+    parts = {"all": c, "older": c.iloc[:half], "newer": c.iloc[half:], "last60": c.iloc[-60:]}
+    out = {"n": len(c)}
+    for nm, p in parts.items():
+        for lv in (80, 90):
+            out[f"{nm}_in{lv}"] = 100 * p[f"in{lv}"].mean()
+        out[f"{nm}_qlike"] = p["qlike"].mean()
+        out[f"{nm}_width"] = p["width90"].mean()
+    miss = ~c["in90"].to_numpy(bool)
+    out["misses"] = int(miss.sum())
+    out["lr"], out["p_ind"] = christoffersen(miss)
+    out["mam"] = 100 * miss_after_miss(miss)
+    st = stress[c.index.to_numpy()]
+    out["n_stress"] = int(st.sum())
+    out["stress_in90"] = 100 * c["in90"].to_numpy(bool)[st].mean()
+    out["calm_width"] = c["width90"].to_numpy()[~st].mean()
+    return out
+
+
+def fix_main() -> int:
+    logging.basicConfig(level=logging.WARNING)
+    t, bars = dor.build()
+    t = t.reset_index(drop=True)
+    raw = {}
+    raw["A. GARCH"] = (cand_garch(t), None)
+    raw["B. GARCH + floor 5d"] = cand_floor(t, bars, 5)
+    raw["B. GARCH + floor 10d"] = cand_floor(t, bars, 10)
+    raw["C. GARCH + VXN"] = (cand_vxn(t), None)
+    raw["D. HAR-RV"] = (cand_har(t), None)
+    raw["E. Two-speed GARCH"] = cand_two_speed(t, bars)
+    cal_ = {k: calibrate_all(t, v[0]) for k, v in raw.items()}
+    common = sorted(set.intersection(*[set(c.index) for c in cal_.values()]))
+    stress = stress_flags(t, cal_["A. GARCH"])
+    res = {k: fix_measures(c.loc[common], stress) for k, c in cal_.items()}
+    last = common[-250:]
+    res250 = {k: fix_measures(c.loc[last], stress) for k, c in cal_.items()}
+    for k, r in res.items():
+        print(f"{k:22} n {r['n']} 90% {r['older_in90']:.1f}/{r['newer_in90']:.1f} p_ind {r['p_ind']:.3f} "
+              f"mam {r['mam']:.0f}% stress {r['stress_in90']:.1f}% (n {r['n_stress']}) calm {r['calm_width']:.0f} "
+              f"qlike {r['all_qlike']:.4f} last60 {r['last60_in90']:.1f}", flush=True)
+
+    g = res["A. GARCH"]
+    gates = {}
+    for k, r in res.items():
+        if k == "A. GARCH":
+            continue
+        g1 = all(75 <= r[f"{h}_in80"] <= 85 and 86 <= r[f"{h}_in90"] <= 94 for h in ("older", "newer"))
+        g2 = r["p_ind"] > 0.05 or r["mam"] <= 2 / 3 * g["mam"]
+        g3 = r["stress_in90"] >= 85 and r["stress_in90"] >= g["stress_in90"] + 5
+        g4 = r["calm_width"] <= 1.05 * g["calm_width"]
+        g5 = all(r[f"{h}_qlike"] <= g[f"{h}_qlike"] for h in ("all", "older", "newer"))
+        gates[k] = (g1, g2, g3, g4, g5)
+    order = ["B. GARCH + floor 5d", "B. GARCH + floor 10d", "C. GARCH + VXN", "E. Two-speed GARCH", "D. HAR-RV"]
+    winners = [k for k in order if all(gates[k])]
+    winner = winners[0] if winners else None
+
+    d0, d1 = t["origin_utc"].iat[common[0]], t["origin_utc"].iat[common[-1]]
+    yn = lambda b: "yes" if b else "no"  # noqa: E731
+
+    def table(rs, title):
+        L = [f"## {title}", "",
+             "| model | 80% older / newer | 90% older / newer | 90% last 60 | misses | Christoffersen LR (p) "
+             "| miss after miss | stress 90% | calm width (pts) | QLIKE all / older / newer |",
+             "|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|"]
+        for k, r in rs.items():
+            L.append(f"| {k} | {r['older_in80']:.1f} / {r['newer_in80']:.1f} | {r['older_in90']:.1f} / {r['newer_in90']:.1f} "
+                     f"| {r['last60_in90']:.1f} | {r['misses']} | {r['lr']:.2f} ({r['p_ind']:.3f}) | {r['mam']:.0f}% "
+                     f"| {r['stress_in90']:.1f}% | {r['calm_width']:,.0f} | {r['all_qlike']:.4f} / {r['older_qlike']:.4f} / "
+                     f"{r['newer_qlike']:.4f} |")
+        return L
+
+    L = ["# Vol fix: clustered misses after shocks", "",
+         f"Scored on {len(common)} daily 07:00 NY origins ({d0:%d %b %Y} – {d1:%d %b %Y}): every matured origin where "
+         "all candidates have a production-calibrated forecast (k and measured multipliers from the trailing 250 "
+         f"matured, roll-free forecasts, min {gv.K_MIN}). Halves = first / last {len(common) // 2} origins. "
+         f"Stress origins: {res['A. GARCH']['n_stress']} of {len(common)} (previous origin's |move| > 2x its "
+         "calibrated GARCH sigma, or VXN in the top quartile of its trailing 252 closes; both known at the origin).", ""]
+    L += table(res, "Full sample")
+    L += ["", f"Christoffersen: LR of independence of the 90% misses, chi-squared(1); p < 0.05 means the misses "
+          f"cluster. Miss after miss: share of 90% misses with another miss in the previous {NEAR} origins.", ""]
+    L += table(res250, f"Last 250 origins ({t['origin_utc'].iat[last[0]]:%d %b %Y} – {d1:%d %b %Y})")
+    L += ["", "## Gate (full sample; to replace GARCH all five must hold)", "",
+          "| model | 1 coverage both halves | 2 clustering better | 3 stress ≥ 85% and ≥ GARCH + 5 | 4 calm width ≤ +5% "
+          "| 5 QLIKE ≤ GARCH all and halves | passes |", "|---|---|---|---|---|---|---|"]
+    for k in order:
+        v, r = gates[k], res[k]
+        L.append(f"| {k} | {yn(v[0])} | {yn(v[1])} (p {r['p_ind']:.3f}, {r['mam']:.0f}% vs {g['mam']:.0f}%) "
+                 f"| {yn(v[2])} ({r['stress_in90']:.1f}% vs {g['stress_in90']:.1f}%) "
+                 f"| {yn(v[3])} ({100 * (r['calm_width'] / g['calm_width'] - 1):+.1f}%) | {yn(v[4])} | **{yn(all(v))}** |")
+    fit_notes = []
+    for k in ("B. GARCH + floor 5d", "B. GARCH + floor 10d", "E. Two-speed GARCH"):
+        ch = raw[k][1][common]
+        fit_notes.append(f"{k}: fitted {'c' if 'floor' in k else 'w (weight on hourly GARCH)'} median "
+                         f"{np.nanmedian(ch):.2f}, range {np.nanmin(ch):.2f}–{np.nanmax(ch):.2f}")
+    L += ["", "## Verdict", "",
+          (f"**{winner} replaces GARCH** ({'the only candidate' if len(winners) == 1 else 'the simplest of the candidates'} "
+           "that passes all five)." if winner else
+           "**GARCH is kept.** No candidate passed all five tests. The page footer gets a \"Last 20 days\" line "
+           "so clusters of misses are visible."), "",
+          "## Candidates", "",
+          "- A. GARCH: production (hourly GARCH(1,1)-t on 2,000 returns, 23-step analytic sigma).",
+          "- B. GARCH + daily floor: sigma = max(sigma_GARCH, c x RV_nd), RV_nd = RMS of the last n non-overlapping "
+          "23-bar % returns ending at the origin; c (grid 0–3, step 0.05) minimises best-scale QLIKE over the trailing "
+          "250 matured origins (min 100).",
+          "- C. GARCH + VXN: log blend with VXN / sqrt(252), weight fitted the same way (see vol_contest.md).",
+          "- D. HAR-RV: log RV(next 23h) on log RV of the last 1 / 5 / 22 days, OLS on the trailing 250 (min 100).",
+          f"- E. Two-speed GARCH: log sigma = w log sigma_GARCH(hourly) + (1 - w) log sigma_daily, sigma_daily = "
+          f"one-step forecast of GARCH(1,1)-t on the last {DAILY_MIN}–{DAILY_MAX} non-overlapping 23-bar returns "
+          "ending at the origin; w (grid 0–1, step 0.05) fitted like B.", "",
+          *[f"- {n}" for n in fit_notes], "",
+          "Run: `python lab/daily_origins.py && python lab/vol_contest.py --fix`."]
+    FIX_OUT.write_text("\n".join(L) + "\n")
+    print("\n".join(L))
+    return 0
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(fix_main() if "--fix" in sys.argv else main())

@@ -3,10 +3,10 @@
 ## Purpose
 
 A free, self-updating page for Nasdaq-100 futures (NQ) at https://ssslithy.github.io/nq-kronos/.
-Once per US trading day, at 1pm London, it publishes a **calibrated GARCH volatility forecast for
+Once per US trading day, at 1pm London, it publishes a **calibrated HAR-RV volatility forecast for
 1pm → 1pm London** (23 trading hours; size of the move, never direction) with five prediction
-intervals (90% is the headline), the cash-session range, the US calendar, Treasuries and tech
-headlines, a phone alert and an accuracy log. Kronos-small runs from the same bar as an
+intervals (90% is the headline), the cash-session range, the US calendar, Treasuries, Polymarket
+Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-small runs from the same bar as an
 **experimental** overlay only. Research tool, not investment advice.
 
 ## Daily schedule (everything runs once per trading day)
@@ -15,19 +15,19 @@ headlines, a phone alert and an accuracy log. Kronos-small runs from the same ba
   lands in 08:00–09:25 New York in both EST and EDT; `forecast/run_vol.py` decides, the other exits
   "not a forecast window".
 - Origin = the **07:00–08:00 NY bar** (closed 08:00 NY). Jobs:
-  1. `vol`: `run_vol.py`: GARCH forecast → `site/data/vol_latest.json`, `vol_history.jsonl`,
+  1. `vol`: `run_vol.py`: vol forecast → `site/data/vol_latest.json`, `vol_history.jsonl`,
      `vol_status.json`; fills in earlier forecasts' accuracy; sends the ntfy alert (secret `NTFY_TOPIC`);
-     THEN `page_data.py` writes `calendar.json`, `treasuries.json`, `news.json` (fail-soft: a failed
+     THEN `page_data.py` writes `calendar.json`, `treasuries.json`, `fed_odds.json`, `news.json` (fail-soft: a failed
      source writes `"ok": false` and the page hides that block; never fails or delays the forecast);
      commits and pushes those files.
-  2. `deploy`: Pages deploy of the GARCH forecast, straight away.
+  2. `deploy`: Pages deploy of the vol forecast, straight away.
   3. `kronos` (only if a forecast was made): `run_forecast.py --origin <that bar> --horizon 23`, 100 paths, its own
      **15-minute limit**. If it fails or times out, `--mark-stale` flags only Kronos (`latest.json`
-     `stale`, `status.json` ok=false); GARCH is never touched. Commits `latest.json`, `history.jsonl`,
+     `stale`, `status.json` ok=false); the vol forecast is never touched. Commits `latest.json`, `history.jsonl`,
      `band_check.json`, `status.json`.
-  4. `deploy-kronos`: second Pages deploy (after the GARCH one). All deploys share the
+  4. `deploy-kronos`: second Pages deploy (after the vol one). All deploys share the
      `pages-deploy` concurrency group with `forecast.yml`.
-- Timing: GARCH (alert + deploy) is live within ~5 min of the start; Kronos ~8–10 min after that.
+- Timing: the vol forecast (alert + deploy) is live within ~5 min of the start; Kronos ~8–10 min after that.
   Even a 20-minute-late start with a Kronos timeout finishes well before 09:30 NY.
 - `forecast.yml` has **no schedule**: manual Kronos run from the latest bar, and a deploy on pushes to
   `site/**` (not `site/data/**`). A push that only changes `site/data` does not deploy by itself.
@@ -36,16 +36,26 @@ headlines, a phone alert and an accuracy log. Kronos-small runs from the same ba
 
 ## Key design decisions (don't change without re-running the backfill and saying why)
 
-- **GARCH(1,1), zero mean, Student-t** (`arch`), fitted on the trailing **2,000 hourly log returns**
-  (percent) of the roll-adjusted close, refitted every day. **Horizon = 23 bars** (`HORIZON`): the
+- **Model: HAR-RV since 9 Nov 2026** (`VOL_MODEL = "har"` in garch_vol.py; `"garch"` switches back).
+  log RV(next 23 bars) = b0 + b1 log RV1 + b5 log RV5 + b22 log RV22, RV1 = sum of the 23 squared hourly
+  % returns ending at the origin, RV5 / RV22 = mean RV1 over the last 5 / 22 daily origins; OLS on the
+  trailing **250 origins matured by the origin** (min 100), refitted every day; raw σ = sqrt(exp(fit)).
+  Why (NQ_VOL_FIX_PLAN.md, `lab/results/vol_fix.md`): hourly GARCH (persistence ~0.86 per hour) forgot a
+  shock within a day, so misses clustered in the Oct–Nov 2026 sell-off (rated "Calm" throughout). On all
+  304 scorable origins (19 Aug 2025 – 5 Nov 2026) HAR-RV vs GARCH: 90% 89.5 / 89.5 vs 90.8 / 90.1 (halves);
+  stress-origin 90% coverage **92.6% vs 86.1%**; miss-after-miss 38% vs 52% (Christoffersen p 0.12);
+  calm-day 90% width **−12.8%**; QLIKE 0.331 vs 0.441 (lower in both halves). The only one of 5
+  candidates (daily floor 5d / 10d, GARCH+VXN, HAR-RV, two-speed GARCH) to pass all five gates.
+  The GARCH(1,1)-t on the trailing 2,000 hourly returns is still fitted daily as a diagnostic (CLI table,
+  `model.garch_*` in vol_latest.json). **Horizon = 23 bars** (`HORIZON`): the
   origin bar's close (1pm London, 12pm in US/UK clock-change mismatch weeks) to the next trading
   day's origin bar close. The page still says "Next 24 hours"; every time label is built from the
   data, never hard-coded. (Until Nov 2026 it was 24 bars.)
-- **Calibration:** raw GARCH σ is too wide, so σ = **k × raw σ**, k = RMS(move / raw σ) over the
+- **Calibration:** σ = **k × raw σ** (k ≈ 1.18 for HAR-RV; it was ≈ 0.66 for GARCH, whose raw σ was too wide), k = RMS(move / raw σ) over the
   trailing **250 matured, roll-free daily forecasts** (min 60), only forecasts whose 23 bars closed
   before the origin. **No look-ahead anywhere**: backfills must use only data before each origin.
 - **Five ranges:** 80% = last × exp(±1.2816 σ); **85 / 90 / 95 / 99% = ±mXX σ**, mXX = the XXth
-  percentile of |move / kσ| over the same 250 (measured multipliers ≈1.31 / 1.55 / 1.94 / 3.06).
+  percentile of |move / kσ| over the same 250 (measured multipliers ≈1.36 / 1.59 / 2.16 / 2.73).
   **90% is the headline** (card, alert, footer hit rate; `HEADLINE` in garch_vol.py). 99% is rough.
 - **Cash session:** σ_cash = window variance × the cash hours' share of the hour-of-day profile
   (trailing 60 days); no k_cash. The page shows the **cash 90% range** = ±cash_m90 σ_cash, centred on
@@ -53,22 +63,40 @@ headlines, a phone alert and an accuracy log. Kronos-small runs from the same ba
   sessions before that date (min 60; `vol_accuracy.assign_k_cash`). `CASH_LEVEL = 80` in
   vol_accuracy.py switches the page back to ±1.28 σ_cash ("Based on the 80% PI"). Measured from the
   9:00am NY bar close (half an hour before the open); labelled 2:30pm–9:00pm London (the real open).
-- **Gates (Nov 2026 redesign, NQ_REDESIGN_PLAN.md), all on the 250-forecast backfill, older / newer half:**
-  A: 80% 79.2 / 79.2 (needs 75–85), 90% 88.8 / 88.8 (needs 86–94): pass.
-  B: cash 90% 92.6 / 86.5 (191 days with a multiplier; needs 86–94): pass, so the cash block shows 90%.
-  C: volatility contest (`lab/vol_contest.py`, `lab/results/vol_contest.md`): **GARCH kept**; GARCH+VXN,
-  HAR-RV, XGBoost, GARCH+regime all failed (none ≥5% narrower with lower QLIKE in both halves).
+- **Gates, all on the 250-forecast backfill, older / newer half.** With HAR-RV (Nov 2026 vol fix):
+  A: 80% 80.0 / 79.2 (needs 75–85), 90% 90.4 / 88.0 (needs 86–94): pass.
+  B: cash 90% 87.4 / 91.7 (191 days with a multiplier; needs 86–94): pass, so the cash block shows 90%.
+  (With GARCH, Nov 2026 redesign: A 79.2 / 79.2 and 88.8 / 88.8; B 92.6 / 86.5.)
+  C: volatility contest (`lab/vol_contest.py`, `lab/results/vol_contest.md`, redesign): GARCH kept then,
+  because no model was ≥5% narrower with lower QLIKE in both halves. The vol-fix gate (stress coverage,
+  clustering, calm width, QLIKE; `lab/vol_contest.py --fix`) then picked HAR-RV.
   D: regime HMM (`lab/regime.py`, `lab/results/regime.md`): failed stability (median run 3.5 days < 10),
   so **no regime chip** on the page; no direction is shown anywhere.
 - **Chart fan:** analytic bands (kσ × hour-of-day profile) for all five levels, so the last-step band
   edges equal the card's ranges exactly; the 100 paths are normal draws (kept in the JSON, not drawn).
 - **Kronos is experimental:** its lab 80% band held ~46% (target 80%). Off by default; its P10/P90
-  paths are drawn only if `latest.json` is from the same bar as the GARCH forecast and not stale.
+  paths are drawn only if `latest.json` is from the same bar as the vol forecast and not stale.
 - **Events:** `forecast/events_2026_2027.yaml` (FOMC 14:00; CPI, NFP, PCE, GDP advance, retail sales
   08:30 NY). `covered_from` 2026-01-01 / `covered_until` 2027-12-31; outside that the flag says
   "not loaded". **Update every January** from the official calendars cited in the file.
-- **Backfill results (3 Nov 2025 – 5 Nov 2026, 250 forecasts, 23h window, older / newer half):**
-  80% 79.2 / 79.2, 85% 83.2 / 84.0, 90% 88.8 / 88.8, 95% 93.6 / 95.2, 99% 98.4 / 97.6.
+- **Backfill results, HAR-RV (3 Nov 2025 – 5 Nov 2026, 250 forecasts, 23h window, older / newer half):**
+  80% 80.0 / 79.2, 85% 83.2 / 83.2, 90% 90.4 / 88.0, 95% 93.6 / 96.0, 99% 98.4 / 99.2.
+- **Chart Cash toggle:** with Cash on, the forecast part ends at the last cash bar (4pm NY = 9pm London)
+  and is re-spaced to fill the forecast area; right-edge labels show the bands at that bar; the cash box's
+  left edge pairs the cash levels with the 24h bands' values there ("Cash 27,922 · 90% 27,959"). On
+  phones those go in one line under the chart. Levels checkboxes: "24h" (band numbers), "Cash".
+- **Fed odds (`fed_odds.json`):** Polymarket crowd betting odds for the next FOMC decision after the
+  origin (date from the events YAML). Gamma `/public-search` finds "Fed decision in <Month>?" (checked
+  against the market questions' "<Month> <year>" or the end date, never a hard-coded slug), Gamma
+  `/events/{id}` gives the outcome markets, CLOB `/prices-history` (fidelity 60) the hourly "Yes"
+  prices; Hike / Cut = sum of all increase / decrease markets, Hold = no change. Use the default
+  `requests` User-Agent (Cloudflare returns 403 to urllib's). Sparklines have a 10-point minimum scale.
+- **News:** round-robin across the Yahoo and CNBC feeds, newest first within each. Why 6 Nov showed
+  only CNBC: not a live-run bug. That news.json came from a re-run for a past time (`--now` Fri 13:10,
+  run on Sun night); Yahoo's headline feed only holds its ~20 newest items (about 3 hours), all newer
+  than the cutoff, while CNBC's holds ~30 items over ~3 days. Re-runs for a past time will still
+  show CNBC only (or nothing); live runs get both. Headlines not from the origin's London day show
+  the day ("Thu 11:39pm").
 - **Times are London only, 12-hour ("1:00pm")**, on the page and in the alert; New York appears only
   in Details. The disclaimer "Volatility only, not direction. Not investment advice." lives in Details.
 
@@ -78,7 +106,7 @@ headlines, a phone alert and an accuracy log. Kronos-small runs from the same ba
 |---|---|
 | Model, calibration, fan, events, CLI table | `forecast/garch_vol.py` |
 | Daily run (window check, retries, outputs, alert, cash range) | `forecast/run_vol.py` |
-| Calendar / Treasuries / news files (fail-soft) | `forecast/page_data.py` |
+| Calendar / Treasuries / Fed odds / news files (fail-soft) | `forecast/page_data.py` |
 | Accuracy log, cash-session backtest, backfill | `forecast/vol_accuracy.py` |
 | ntfy alert | `forecast/vol_alert.py` |
 | Kronos run, band check | `forecast/run_forecast.py`, `forecast/band_check.py` |
@@ -86,7 +114,7 @@ headlines, a phone alert and an accuracy log. Kronos-small runs from the same ba
 | Page (vanilla JS, no build; design in `design/`) | `site/index.html`, `vol.js` (data + everything but the chart), `app.js` (SVG chart), `style.css` (`body.nq` = main page) |
 | Accuracy page | `site/accuracy.html`, `site/accuracy.js`, `site/lab/*.png` |
 | Phase 6 lab (research) | `lab/`, report in `lab/results/report.md` |
-| Vol contest, regime study (lab only; `lab/requirements-lab.txt`) | `lab/daily_origins.py`, `lab/vol_contest.py`, `lab/regime.py` |
+| Vol contest, vol fix, regime study (lab only; `lab/requirements-lab.txt`) | `lab/daily_origins.py`, `lab/vol_contest.py` (`--fix`), `lab/regime.py` |
 
 ## Commands (from the repo root, `.venv` is Python 3.11)
 
@@ -97,6 +125,7 @@ headlines, a phone alert and an accuracy log. Kronos-small runs from the same ba
 ./.venv/bin/python forecast/vol_accuracy.py --out /tmp/vol                  # hit-rate report: 80-99% ranges and cash
 ./.venv/bin/python forecast/vol_accuracy.py --backfill --all --out /tmp/vol_a  # redo the 1-year backfill (scratch first)
 ./.venv/bin/python lab/regime.py && ./.venv/bin/python lab/vol_contest.py   # research gates C and D
+./.venv/bin/python lab/vol_contest.py --fix                                 # vol-fix scoring (lab/results/vol_fix.md)
 ./.venv/bin/python forecast/run_forecast.py --origin 2026-11-06T12:00:00Z --horizon 23   # Kronos (writes site/data!)
 ./.venv/bin/python forecast/vol_alert.py [--send | --new-topic]             # alert text / test send
 ./.venv/bin/python -m http.server 8765 -d site                              # preview the page
@@ -108,7 +137,7 @@ alerts; tick **test alert** to check the secret). Actions → forecast → Run w
 ## Rules for future changes
 
 - Wait for the user's OK after each step; show it working (tables, screenshots) first. Don't push
-  without being asked (unless a plan explicitly says to, like NQ_REDESIGN_PLAN.md did).
+  without being asked (unless a plan explicitly says to, like NQ_REDESIGN_PLAN.md and NQ_VOL_FIX_PLAN.md did).
 - Never introduce look-ahead. Any change to the model, calibration or ranges: re-run
   `vol_accuracy.py --backfill --all` into a scratch folder first and report 80/95/99 (and cash) hit
   rates on both halves. If the 80% range leaves 75–85% or the 90% range leaves 86–94% on either

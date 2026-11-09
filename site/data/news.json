@@ -28,5 +28,9 @@
  "feeds": [
   "Yahoo Finance",
   "CNBC"
- ]
+ ],
+ "per_feed": {
+  "Yahoo Finance": 0,
+  "CNBC": 8
+ }
 }

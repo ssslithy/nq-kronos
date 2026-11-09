@@ -1,4 +1,4 @@
-// Accuracy page: reads data/vol_history.jsonl (one line per daily GARCH forecast) and draws
+// Accuracy page: reads data/vol_history.jsonl (one line per daily vol forecast) and draws
 // the 1pm -> 1pm and cash-session hit charts, the hit-rate tables (80/85/90/95/99%) and the
 // rolling 60-day hit rate of the 90% range (the headline). Also the live Kronos daily check.
 "use strict";
@@ -182,7 +182,7 @@
       .sort((a, b) => Date.parse(a.origin_utc) - Date.parse(b.origin_utc));
     const m = ROWS.filter((x) => typeof x.inside90 === "boolean");
     const h = rate(m, "inside90"), c = rate(ROWS, "cash_inside90");
-    $("acc-intro").innerHTML = `Daily GARCH forecasts made from the 7:00–8:00am New York bar (1pm London), each using only data available then, ` +
+    $("acc-intro").innerHTML = `Daily volatility forecasts (HAR-RV since Nov 2026; the whole year is re-forecast with it) made from the 7:00–8:00am New York bar (1pm London), each using only data available then, ` +
       `for the 23 trading hours to 1pm London the next trading day. ` +
       `${m.length} matured forecasts (${day.format(new Date(m[0].origin_utc))} to ${day.format(new Date(m[m.length - 1].origin_utc))}): ` +
       `the actual move landed inside the 90% range <b>${pct(h.v)}</b> of the time; cash session <b>${pct(c.v)}</b> of ${c.n}.`;

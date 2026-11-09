@@ -1,4 +1,4 @@
-"""Phone alert for the daily GARCH vol forecast via ntfy.sh (free, no account).
+"""Phone alert for the daily vol forecast via ntfy.sh (free, no account).
 
 After a successful forecast (scheduled, or a manual forced run), run_vol.py POSTs one line
 to https://ntfy.sh/<NTFY_TOPIC>, leading with the 90% range and the 1pm -> 1pm London window:

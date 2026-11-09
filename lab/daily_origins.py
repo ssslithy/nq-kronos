@@ -61,7 +61,7 @@ def build(refresh: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
         return pd.read_parquet(TABLE), pd.read_parquet(BARS)
     CACHE.mkdir(parents=True, exist_ok=True)
     bars, _ = gv.load_bars()
-    prior = gv.prior_forecasts(bars, n=10 ** 6)
+    prior = gv.prior_forecasts(bars, n=10 ** 6, model="garch")
     close = bars["close"].to_numpy()
     r = gv.log_returns(bars["close"]).to_numpy()
     r2 = np.nan_to_num(r) ** 2
