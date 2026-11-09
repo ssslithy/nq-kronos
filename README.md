@@ -23,11 +23,12 @@ All times are London, 12-hour ("1:00pm"); New York appears only in Details.
 - **Header:** forecast time and the 1pm price, next update time, link to the accuracy page.
 - **Top card:** "Next 24 hours" (the 1pm → 1pm window, 23 trading hours) and "NYC Cash Session"
   (2:30pm – 9:00pm London): ± points, ± %, and the price range, from the **90% prediction
-  interval (PI)**. Beside them: the next 3 US releases (impact bars) and the 2Y / 10Y Treasury note
-  futures' 1pm → 1pm move with a sparkline and yields, and Polymarket's odds for the next Fed
-  decision (Hike / Hold / Cut, 1pm → 1pm sparkline, change in points; crowd betting odds, not a
-  forecast from this site). Below, full width: 3 tech headlines (links only; the day is shown for
-  any not from the forecast's day).
+  interval (PI)**, with 3 tech headlines listed under them (links only; the day is shown for any
+  not from the forecast's day). In the right column: the next 3 US releases (impact bars), the
+  2Y / 10Y Treasury note futures' 1pm → 1pm move with a sparkline and yields, and Polymarket's
+  odds for the next Fed decision (Hike / Hold / Cut, 1pm → 1pm sparkline, change in points;
+  crowd betting odds, not a forecast from this site). On phones the headlines come before the
+  right column's blocks.
 - **Chart:** 48 hourly candles, then the forecast fan to the end of the window. Buttons 99 / 95 /
   90 / 85 / 80% (multi-select, 90% on by default) draw stacked bands; at the last step each band
   equals that range exactly, and every selected band's upper and lower price is labelled at the

@@ -19,7 +19,16 @@ data changes. The `CLAUDE.md` rules apply.
    - Delete the unused cash and levels code, state and CSS.
    - Keep the **NYC Cash Session** block in the top card, and the cash data in
      `vol_latest.json`.
-5. **Check:**
+5. **Tech news moves into the left column** of the top card. Match `design/Main.dc.html`.
+   - It sits under "Based on the 90% PI", below the Next 24 hours and NYC Cash Session
+     blocks, with about 14px gap above.
+   - It's a vertical list: one headline per row, source in teal and time on the right, a thin
+     divider between rows.
+   - The right column (US calendar, Treasuries, Fed odds) is unchanged and sits beside it,
+     so the top card is two columns with nothing full width below.
+   - At 375 px the order is: the two forecast blocks, Based on 90%, tech news, then the right
+     column's blocks.
+6. **Check:**
    - Playwright screenshots at 1280 px and 375 px: default state, then all five bands on.
    - No console errors, no sideways scroll.
 6. Run `git pull --rebase`, commit, push and deploy. Confirm on the live site.
