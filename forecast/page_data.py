@@ -21,7 +21,7 @@ with "ok": false and the page hides that block; nothing here can fail or delay t
   fed_odds.json    Polymarket crowd betting odds for the next FOMC decision after the origin (date
                    from the events YAML): Hike / Hold / Cut = summed "Yes" prices of the event's
                    increase / no change / decrease markets, hourly over the same 1pm -> 1pm window
-                   as the Treasuries, sampled at the ZT=F bar times (weekend hours skipped like the
+                   as the Treasuries (bid-ask midpoints, normalised to 100%), sampled at the ZT=F bar times (weekend hours skipped like the
                    yields; if ZT=F fails, the NQ trading hours). Free public APIs, no key: Gamma /public-search and /events
                    (find the event by title month + year; the slug has a random suffix), CLOB
                    /prices-history (hourly points).
@@ -217,23 +217,65 @@ def load_news_rules(path: Path = NEWS_RULES) -> dict:
                                 ("market", raw["market_words"]), ("macro", raw["macro"]),
                                 ("earnings", raw["earnings_result"]), ("major", raw["major_event"]),
                                 ("rating", raw["rating"]), ("always_1", raw["always_1"]),
-                                ("shock", raw["market_shock"]),
+                                ("shock", raw["market_shock"]), ("hard", raw["hard_action"]),
+                                ("listicle", raw["listicle_shape"]),
                                 ("ex_title", raw["exclude_title"]), ("ex_link", raw["exclude_link"]))}
     R["companies"] = ([(name, re.compile(pat(a), re.I)) for name, al in raw["top_names"].items() for a in al] +
                       [(a.lower(), re.compile(pat(a), re.I)) for a in raw["other_names"]])
     R["events"] = {k: rx(v) for k, v in raw["event_words"].items()}
     R["source_rank"] = {s_: i for i, s_ in enumerate(raw["source_rank"])}
+    R["blocked_publishers"] = [x.lower() for x in raw["blocked_publishers"]]
+    R["blocked_domains"] = [x.lower() for x in raw["blocked_domains"]]
+    R["listicle_publishers"] = [x.lower() for x in raw["listicle_publishers"]]
+    # one-word aliases (company names, tickers) are not "proper names" for clustering; people's
+    # names inside multi-word aliases ("jensen huang") still are
+    R["alias_words"] = {a.lower() for al in raw["top_names"].values() for a in al if re.fullmatch(r"[a-z.\-]+", a)} | \
+        {a.lower() for a in raw["other_names"] if re.fullmatch(r"[a-z.\-]+", a)}
     return R
 
 
+def blocked_publisher(publisher: str | None, link: str, title: str, R: dict) -> bool:
+    """A syndicated low-quality publisher (by name or link domain), or a listicle from a
+    listicle_publishers outlet."""
+    from urllib.parse import urlparse
+    dom = urlparse(link or "").netloc.lower()
+    pub = (publisher or "").lower()
+    if any(dom == d or dom.endswith("." + d) for d in R["blocked_domains"]):
+        return True
+    if pub and any(b in pub for b in R["blocked_publishers"]):
+        return True
+    listy = any(b in pub or b in dom for b in R["listicle_publishers"])
+    return listy and bool(R["listicle"].search(title))
+
+
+YAHOO_PAGE = re.compile(r"^https?://finance\.yahoo\.com/(?:[a-z-]+/)*(?:articles/|m/)")
+
+
+def yahoo_publisher(link: str) -> str | None:
+    """The publisher Yahoo names on a syndicated article page (e.g. "Simply Wall St.",
+    "GuruFocus.com", "Barrons.com", "MT Newswires"); None if it can't be read."""
+    import requests
+    try:
+        r = requests.get(link, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+        m = (re.search(r'"provider"\s*:\s*\{[^}]{0,200}?"name"\s*:\s*"([^"]{2,40})"', r.text)
+             or re.search(r'"provider(?:Name)?"\s*:\s*"([^"]{2,40})"', r.text))
+        return html.unescape(m.group(1)).strip() if m else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def publisher_label(pub: str | None) -> str | None:
+    if not pub:
+        return None
+    return {"barrons.com": "Barron's", "gurufocus.com": "GuruFocus"}.get(pub.lower(), re.sub(r"\.com$", "", pub).strip())
+
+
 def news_relevant(title: str, summary: str, link: str, R: dict) -> bool:
-    """A Nasdaq-100 company (headline or summary), a macro term in the headline, or a sector term
-    with a market word in the headline; and no exclusion."""
+    """A Nasdaq-100 company, a macro term, or a sector term with a market word, all in the headline
+    (a company only in the summary doesn't count); and no exclusion."""
     if R["ex_title"].search(title) or R["ex_link"].search(link or ""):
         return False
     if R["top"].search(title) or R["other"].search(title):
-        return True
-    if R["top"].search(summary[:300]) or R["other"].search(summary[:300]):
         return True
     if R["macro"].search(title):
         return True
@@ -258,11 +300,17 @@ def news_impact(title: str, R: dict) -> int:
     sector_move = bool(R["sector"].search(title) and R["market"].search(title))
     if (R["macro"].search(title) or (ndx_subj and R["earnings"].search(title))
             or (top_subj and R["major"].search(title))
-            or (R["shock"].search(title) and (top or sector_move or re.search(r"\bnasdaq\b", title, re.I)))):
+            or (R["shock"].search(title) and (top or re.search(r"\bnasdaq\b", title, re.I)))):
         return 3
-    if top or other or sector_move:
+    sector = bool(R["sector"].search(title))
+    if (ndx_subj or sector) and (R["hard"].search(title) or R["rating"].search(title) or R["earnings"].search(title)):
         return 2
     return 1
+
+
+def companies(title: str, R: dict) -> set[str]:
+    """Every Nasdaq-100 company named in the headline (canonical names for the top 8)."""
+    return {name for name, rx in R["companies"] if rx.search(title)}
 
 
 def main_company(title: str, R: dict) -> str | None:
@@ -273,6 +321,28 @@ def main_company(title: str, R: dict) -> str | None:
         if m and (best is None or m.start() < best[0]):
             best = (m.start(), name)
     return best[1] if best else None
+
+
+NAME_STOP = {"the", "and", "for", "with", "after", "says", "said", "new", "inc", "corp", "stock", "stocks", "shares", "wall",
+             "street", "nasdaq", "dow", "ceo", "cfo", "fed", "u.s", "us", "ai", "chip", "chips", "tech", "monday", "tuesday",
+             "wednesday", "thursday", "friday", "saturday", "sunday", "january", "february", "march", "april", "may", "june",
+             "july", "august", "september", "october", "november", "december", "china", "europe", "trump", "why", "how",
+             "what", "here", "this", "its", "his", "her", "their", "big", "top", "market", "markets", "investors"}
+
+
+def proper_names(title: str, R: dict) -> set[str]:
+    """Capitalised words after the first one (people, products, places), minus company aliases and
+    common words: a shared one ties two headlines about the same company to one story."""
+    words = re.findall(r"\b[A-Z][a-zA-Z]{2,}(?:'s)?\b", title)[1:]
+    long_words = re.findall(r"\b[a-zA-Z]{4,}\b", title)
+    if long_words and sum(w[0].isupper() for w in long_words) / len(long_words) > 0.6:
+        return set()                                   # Title Case headline: capitals say nothing
+    out = set()
+    for w in words:
+        w = re.sub(r"'s$", "", w).lower()
+        if w not in NAME_STOP and w not in R["alias_words"]:
+            out.add(w)
+    return out
 
 
 def event_groups(title: str, R: dict) -> set[str]:
@@ -332,12 +402,24 @@ def _fetch_feed(outlet_url):
     return out
 
 
+CLUSTER_HOURS = 24
+
+
+def _split(impacts: list[int]) -> dict:
+    """Count and share of 3 / 2 / 1-bar items (target over a typical day: ~20 / 40 / 40 %)."""
+    n = len(impacts)
+    return {"n": n, **{f"bars{k}": impacts.count(k) for k in (3, 2, 1)},
+            **{f"pct{k}": round(100 * impacts.count(k) / n) if n else None for k in (3, 2, 1)}}
+
+
 def news(f: dict, prev_origin, now, n: int = NEWS_MAX) -> dict:
     """Up to n relevant stories in the news window (news_window), each with a significance 1-3
     (news_rules.yaml): the most significant first, then the newest, at most NEWS_PER_OUTLET per
-    outlet; listed newest first. Headlines about the same story within 12 hours (same main company
-    and a shared event group, or near-identical titles) are one story: the highest-ranked source's
-    headline at the earliest time."""
+    outlet; listed newest first. Headlines about the same story within 24 hours (same main company
+    and a shared event group or proper name, or near-identical titles) are one story: the
+    highest-ranked source's headline at the earliest time. Syndicated low-quality publishers are
+    dropped (Yahoo-hosted items: the publisher read from the article page). "split" logs the
+    3 / 2 / 1-bar mix of all stories and of the listed ones."""
     from concurrent.futures import ThreadPoolExecutor
     start, end = news_window(f, prev_origin)
     R = load_news_rules()
@@ -353,38 +435,56 @@ def news(f: dict, prev_origin, now, n: int = NEWS_MAX) -> dict:
     if not ok_feeds:
         raise RuntimeError("; ".join(errors) or "no feeds")
     lo, hi = start.to_pydatetime(), end.to_pydatetime()
-    seen_links, stories = set(), []
-    stats = {"fetched": len(items), "in_window": 0, "relevant": 0, "clustered": 0}
+    seen_links, cand = set(), []
+    stats = {"fetched": len(items), "in_window": 0, "relevant": 0, "blocked_publisher": 0, "clustered": 0}
     rank = lambda it: R["source_rank"].get(it["_feed"], len(R["source_rank"]))  # noqa: E731
     for it in sorted(items, key=lambda x: x["_t"]):                 # oldest first
         if not (lo <= it["_t"] <= hi) or it["link"] in seen_links:
             continue
         stats["in_window"] += 1
         seen_links.add(it["link"])
-        if not news_relevant(it["title"], it["summary"], it["link"], R):
+        if news_relevant(it["title"], it["summary"], it["link"], R):
+            cand.append(it)
+    # the real publisher of Yahoo-hosted syndicated items (from the article page), in parallel
+    yahoo = [it for it in cand if YAHOO_PAGE.match(it["link"])]
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        for it, pub in zip(yahoo, ex.map(lambda x: yahoo_publisher(x["link"]), yahoo)):
+            it["publisher"] = pub
+    stories = []
+    for it in cand:
+        if blocked_publisher(it.get("publisher"), it["link"], it["title"], R):
+            stats["blocked_publisher"] += 1
             continue
         stats["relevant"] += 1
-        comp, ev = main_company(it["title"], R), event_groups(it["title"], R)
+        if it.get("publisher"):
+            it["source"] = publisher_label(it["publisher"])
+        comp, ev, names = main_company(it["title"], R), event_groups(it["title"], R), proper_names(it["title"], R)
+        comps = companies(it["title"], R)
         home = None
-        for st in stories:                                          # same story within 12 hours?
-            if (it["_t"] - st["first"]).total_seconds() > 12 * 3600:
+        for st in stories:                                          # same story within 24 hours?
+            if (it["_t"] - st["first"]).total_seconds() > CLUSTER_HOURS * 3600:
                 continue
-            if (comp and comp == st["company"] and ev & st["events"]) or \
+            if (comps & st["companies"] and ev & st["events"]) or \
+                    (comp and comp == st["company"] and names & st["names"]) or \
                     any(_near_duplicate(it["title"], m["title"]) for m in st["members"]):
                 home = st
                 break
         if home is None:
-            stories.append({"company": comp, "events": set(ev), "first": it["_t"], "members": [it]})
+            stories.append({"company": comp, "companies": set(comps), "events": set(ev), "names": set(names),
+                            "first": it["_t"], "members": [it]})
         else:
             home["members"].append(it)
             home["events"] |= ev
+            home["names"] |= names
+            home["companies"] |= comps
             stats["clustered"] += 1
     kept = []
-    for st in stories:                     # the highest-ranked source's headline, the earliest time
-        best = min(st["members"], key=lambda m: (rank(m), m["_t"]))
+    for st in stories:          # the most significant headline (ties: source rank, earliest), the earliest time
+        for m in st["members"]:
+            m["impact"] = news_impact(m["title"], R)
+        best = min(st["members"], key=lambda m: (-m["impact"], rank(m), m["_t"]))
         kept.append(dict(best, _t=st["first"], cluster=len(st["members"])))
-    for it in kept:
-        it["impact"] = news_impact(it["title"], R)
+    split = {"stories": _split([it["impact"] for it in kept])}
     # pick the n most significant (then newest), at most NEWS_PER_OUTLET from one outlet so the
     # 16 busy Yahoo feeds can't crowd out CNBC / MarketWatch / Nasdaq; then show newest first
     picked, per = [], {}
@@ -400,8 +500,9 @@ def news(f: dict, prev_origin, now, n: int = NEWS_MAX) -> dict:
         out.append({"source": it["source"], "title": it["title"], "link": it["link"],
                     "published_utc": iso(it["_t"]), "time_london": london_time(it["_t"]),
                     "impact": it["impact"], "cluster": it["cluster"]})
+    split["listed"] = _split([it["impact"] for it in out])
     return {"ok": True, "generated_utc": iso(now), "window_start_utc": iso(start), "window_end_utc": iso(end),
-            "items": out, "stats": stats, "feeds_ok": ok_feeds, "feeds_total": len(FEEDS),
+            "items": out, "split": split, "stats": stats, "feeds_ok": ok_feeds, "feeds_total": len(FEEDS),
             "errors": errors or None, "rules": NEWS_RULES.name}
 
 
@@ -479,13 +580,37 @@ def window_times(prev_origin: pd.Timestamp, origin: pd.Timestamp) -> pd.Datetime
     return pd.DatetimeIndex([t + pd.Timedelta(hours=1) for t in hrs if cal.is_tradable_hour(t.to_pydatetime())])
 
 
+MIDPOINT_FRESH = pd.Timedelta(minutes=30)   # use the live bid-ask midpoint only this close to the window end
+
+
+def round_to_100(shares) -> list[int]:
+    """Whole percentages that add up to exactly 100 (largest remainder): floor each share x 100,
+    then give the missing points to the largest remainders."""
+    x = np.asarray(shares, dtype=float) * 100
+    base = np.floor(x).astype(int)
+    for k in np.argsort(-(x - base))[: 100 - int(base.sum())]:
+        base[k] += 1
+    return base.tolist()
+
+
 def fed_odds(f: dict, prev_origin: pd.Timestamp, now) -> dict:
+    """Hike / Hold / Cut for the next FOMC decision over the Treasuries window.
+
+    Each outcome bucket's price is its bid-ask midpoint: the CLOB /midpoint endpoint for the
+    window end when the job runs within MIDPOINT_FRESH of it (a later re-run never uses prices
+    from after the origin), otherwise Polymarket's price history, which is the displayed price
+    = the midpoint (the last trade only when the spread is wider than $0.10). The buckets are
+    summed into Hike / Hold / Cut and normalised to add up to 1 at every point; the shown whole
+    percentages are rounded to add up to exactly 100, and "pts" = the shown end minus the shown
+    start, so they add up to 0."""
     origin = pd.Timestamp(f["origin_utc"])
     meeting = next_fomc(origin)
     ev = find_fed_event(meeting["time_utc"])
     w0, w1 = prev_origin + pd.Timedelta(hours=1), origin + pd.Timedelta(hours=1)
     grid = window_times(prev_origin, origin)
-    sums = {k: np.zeros(len(grid)) for k in ("Hike", "Hold", "Cut")}
+    live = pd.Timestamp(now) - grid[-1] <= MIDPOINT_FRESH
+    names = ("Hike", "Hold", "Cut")
+    sums = {k: np.zeros(len(grid)) for k in names}
     used = {k: [] for k in sums}
     for m in ev.get("markets") or []:
         b = _bucket(m)
@@ -501,21 +626,39 @@ def fed_odds(f: dict, prev_origin: pd.Timestamp, now) -> dict:
             if m.get("closed"):
                 continue
             raise ValueError(f"no price history for {m.get('groupItemTitle')}")
-        s = pd.Series([float(x["p"]) for x in h], index=pd.to_datetime([x["t"] for x in h], unit="s", utc=True)).sort_index()
-        v = s.reindex(s.index.union(grid)).ffill().reindex(grid)
+        s_ = pd.Series([float(x["p"]) for x in h], index=pd.to_datetime([x["t"] for x in h], unit="s", utc=True)).sort_index()
+        v = s_.reindex(s_.index.union(grid)).ffill().reindex(grid)
         if v.isna().all():
             raise ValueError(f"no price before the window for {m.get('groupItemTitle')}")
-        sums[b] += v.bfill().to_numpy()
+        v = v.bfill().to_numpy()
+        if live:
+            mid = _get(f"{CLOB}/midpoint", {"token_id": tokens[0]}).get("mid")
+            if mid is None:
+                raise ValueError(f"no midpoint for {m.get('groupItemTitle')}")
+            v[-1] = float(mid)
+        sums[b] += v
         used[b].append(m.get("groupItemTitle") or m.get("question"))
     if not all(used.values()):
         raise ValueError(f"missing outcome buckets: {[k for k, v in used.items() if not v]}")
+    raw = np.vstack([sums[k] for k in names])                    # 3 x points, unnormalised
+    total = raw.sum(axis=0)
+    if np.any(total <= 0):
+        raise ValueError("bucket prices sum to zero")
+    norm = raw / total
+    end_pct, start_pct = round_to_100(norm[:, -1]), round_to_100(norm[:, 0])
     md = meeting["time_utc"].tz_convert(cal.NY)
-    rows = [{"label": k, "p": round(float(v[-1]), 4), "change_pts": round(float(100 * (v[-1] - v[0])), 1),
-             "spark": [round(float(x), 4) for x in v], "markets": used[k]} for k, v in sums.items()]
+    rows = [{"label": k, "p": round(float(norm[i, -1]), 4), "pct": end_pct[i],
+             "change_pts": end_pct[i] - start_pct[i], "pct_start": start_pct[i],
+             "raw_p": round(float(raw[i, -1]), 4), "spark": [round(float(x), 4) for x in norm[i]],
+             "markets": used[k]} for i, k in enumerate(names)]
     return {"ok": True, "generated_utc": iso(now), "origin_utc": iso(origin),
             "meeting_utc": iso(meeting["time_utc"]), "meeting_label": f"{MONTHS[md.month - 1][:3]} {md.day}",
             "window_start_utc": iso(grid[0]), "window_end_utc": iso(grid[-1]), "points": len(grid),
             "sampling": "ZT=F hourly bar closes (as the Treasuries)",
+            "price": ("bid-ask midpoint: CLOB /midpoint at the window end, price history before it"
+                      if live else "price history (Polymarket's midpoint price) throughout: run too late for a live midpoint"),
+            "normalised": {"raw_sum_end": round(float(total[-1]), 4), "raw_sum_start": round(float(total[0]), 4),
+                           "method": "Hike + Hold + Cut scaled to 1 at every point; shown % rounded to total 100"},
             "event": {"id": ev.get("id"), "title": ev.get("title"), "slug": ev.get("slug"),
                       "url": f"https://polymarket.com/event/{ev.get('slug')}"},
             "rows": rows, "source": "Polymarket (crowd betting odds; Gamma + CLOB public APIs)"}

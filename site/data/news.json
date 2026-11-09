@@ -1,38 +1,47 @@
 {
  "ok": true,
- "generated_utc": "2026-11-09T17:31:58Z",
+ "generated_utc": "2026-11-09T17:49:28Z",
  "window_start_utc": "2026-11-06T21:00:00Z",
  "window_end_utc": "2026-11-09T13:00:00Z",
  "items": [
   {
-   "source": "Yahoo Finance",
-   "title": "Alphabet Has $75.7 Billion of Data-Center Backstops. Lenders Just Started Doubting Them",
-   "link": "https://www.tikr.com/blog/alphabet-has-75-7-billion-of-data-center-backstops-lenders-just-started-doubting-them?ref=yahoofinance&tlnk=yf-261109-7m64wc2q&.tsrc=rss",
-   "published_utc": "2026-11-09T12:44:41Z",
-   "time_london": "12:44pm",
-   "impact": 2,
+   "source": "MT Newswires",
+   "title": "US Equity Futures Higher Pre-Bell as Traders Assess Oil Price Drop, Await AI-Related Earnings This Week",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/us-equity-futures-higher-pre-125311861.html?.tsrc=rss",
+   "published_utc": "2026-11-09T12:53:11Z",
+   "time_london": "12:53pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Barron's",
+   "title": "Markets Rally as Nvidia Fears Subside and Rotation Gathers Pace",
+   "link": "https://finance.yahoo.com/m/28536364-a7ca-370f-a180-5ef6c5371807/markets-rally-as-nvidia-fears.html?.tsrc=rss",
+   "published_utc": "2026-11-09T11:50:40Z",
+   "time_london": "11:50am",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "MT Newswires",
+   "title": "US Equity Investors to Monitor Key Tech Earnings, Inflation This Week as Democrats Midterm Victory Hits AI Trade",
+   "link": "https://finance.yahoo.com/technology/ai/articles/us-equity-investors-monitor-key-105739479.html?.tsrc=rss",
+   "published_utc": "2026-11-09T10:57:39Z",
+   "time_london": "10:57am",
+   "impact": 1,
    "cluster": 1
   },
   {
    "source": "Yahoo Finance",
-   "title": "Nvidia, Palantir, and Tesla Are Sending Shockwaves Through Wall Street With This $53 Billion Warning",
-   "link": "https://www.fool.com/investing/2026/11/09/nvidia-palantir-tesla-sending-shockwaves-through-wall-street-with-53-billion-warning/?.tsrc=rss",
-   "published_utc": "2026-11-09T12:26:02Z",
-   "time_london": "12:26pm",
-   "impact": 2,
+   "title": "US Stock Futures Mixed as Investors Assess Berkshire Hathaway Earnings, Nvidia Reports and AI Regulation Plans: Dow Jones, S&P, Nasdaq, Wall Street",
+   "link": "https://investorshub.advfn.com/market-news/article/39501/us-stock-futures-mixed-as-investors-assess-berkshire-hathaway-earnings-nvidia-reports-and-ai-regulation-plans-dow-jones-sp-nasdaq-wall-street?.tsrc=rss",
+   "published_utc": "2026-11-09T09:59:52Z",
+   "time_london": "9:59am",
+   "impact": 1,
    "cluster": 1
   },
   {
-   "source": "CNBC",
-   "title": "Nasdaq defies Nvidia impact as Huang faces espionage affair probe",
-   "link": "https://www.cnbc.com/2026/11/09/nasdaq-defies-nvidia-impact-huang-faces-espionage-affair-probe.html",
-   "published_utc": "2026-11-09T11:04:49Z",
-   "time_london": "11:04am",
-   "impact": 3,
-   "cluster": 5
-  },
-  {
-   "source": "Yahoo Finance",
+   "source": "Bloomberg",
    "title": "Citi Strategists Cut US Stocks, Upgrade Europe After AI Turmoil",
    "link": "https://finance.yahoo.com/markets/stocks/articles/citi-strategists-cut-us-stocks-095547644.html?.tsrc=rss",
    "published_utc": "2026-11-09T09:55:47Z",
@@ -41,48 +50,21 @@
    "cluster": 1
   },
   {
-   "source": "Yahoo Finance",
-   "title": "T-Mobile US (TMUS) Backed A 10% Dividend Increase At Its Parent",
-   "link": "https://finance.yahoo.com/markets/stocks/articles/t-mobile-us-tmus-backed-080858376.html?.tsrc=rss",
-   "published_utc": "2026-11-09T08:08:58Z",
-   "time_london": "8:08am",
-   "impact": 2,
-   "cluster": 1
-  },
-  {
-   "source": "Yahoo Finance",
-   "title": "Netflix boss says creativity and regulation 'are not happy bedfellows' in Europe",
-   "link": "https://www.euronews.com/2026/11/09/netflix-boss-says-creativity-and-regulation-are-not-happy-bedfellows-when-in-europe?.tsrc=rss",
-   "published_utc": "2026-11-09T05:35:16Z",
-   "time_london": "5:35am",
-   "impact": 2,
-   "cluster": 1
-  },
-  {
-   "source": "Yahoo Finance",
-   "title": "Palantir vs. Snowflake: The AI Sell-Off Is Exposing a Critical Difference for 2027",
-   "link": "https://www.fool.com/coverage/better-buy/2026/11/08/palantir-vs-snowflake-the-ai-sell-off-is-exposing-a-critical-difference-for-2027/?.tsrc=rss",
-   "published_utc": "2026-11-09T04:20:02Z",
-   "time_london": "4:20am",
-   "impact": 2,
-   "cluster": 1
-  },
-  {
    "source": "CNBC",
    "title": "Nvidia CEO Jensen Huang faces bipartisan congressional scrutiny over reported China spy link",
    "link": "https://www.cnbc.com/2026/11/08/jensen-huang-nvidia-china-spy-congress.html",
-   "published_utc": "2026-11-08T22:49:46Z",
-   "time_london": "10:49pm",
-   "impact": 3,
-   "cluster": 3
-  },
-  {
-   "source": "CNBC",
-   "title": "Read Huang's email to his staff and statement from Nvidia's board of directors",
-   "link": "https://www.cnbc.com/2026/11/08/nvidia-jensen-huang-email-board-of-directors-statement.html",
    "published_utc": "2026-11-08T22:19:00Z",
    "time_london": "10:19pm",
-   "impact": 2,
+   "impact": 3,
+   "cluster": 6
+  },
+  {
+   "source": "MarketWatch",
+   "title": "Economic calendar: CPI, PPI and a flotilla of Fed speakers on weekly agenda",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=9622b187-7dd2-4086-87d2-b9448dd2298a&mod=mw_rss_bulletins",
+   "published_utc": "2026-11-08T18:14:41Z",
+   "time_london": "6:14pm",
+   "impact": 1,
    "cluster": 1
   },
   {
@@ -91,6 +73,15 @@
    "link": "https://www.cnbc.com/2026/11/07/dave-wehner-meta-fireworks-cfo.html",
    "published_utc": "2026-11-07T22:01:17Z",
    "time_london": "10:01pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Yahoo Finance",
+   "title": "T-Mobile launches new internet plan after customer losses",
+   "link": "https://www.thestreet.com/retail/t-mobile-fiber-5-gig-plan-90-dollars-month-customer-losses?.tsrc=rss",
+   "published_utc": "2026-11-07T17:03:00Z",
+   "time_london": "5:03pm",
    "impact": 2,
    "cluster": 1
   },
@@ -109,15 +100,36 @@
    "link": "https://www.cnbc.com/2026/11/06/tesdonald-harrison.html",
    "published_utc": "2026-11-06T22:30:22Z",
    "time_london": "10:30pm",
-   "impact": 2,
+   "impact": 1,
    "cluster": 1
   }
  ],
+ "split": {
+  "stories": {
+   "n": 20,
+   "bars3": 1,
+   "bars2": 3,
+   "bars1": 16,
+   "pct3": 5,
+   "pct2": 15,
+   "pct1": 80
+  },
+  "listed": {
+   "n": 11,
+   "bars3": 1,
+   "bars2": 3,
+   "bars1": 7,
+   "pct3": 9,
+   "pct2": 27,
+   "pct1": 64
+  }
+ },
  "stats": {
-  "fetched": 422,
-  "in_window": 104,
-  "relevant": 48,
-  "clustered": 8
+  "fetched": 424,
+  "in_window": 103,
+  "relevant": 25,
+  "blocked_publisher": 15,
+  "clustered": 5
  },
  "feeds_ok": 23,
  "feeds_total": 23,

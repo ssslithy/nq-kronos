@@ -170,6 +170,7 @@ body.nq { background: #0A0E11; color: #E8EEF1; font: 14px/1.4 Inter, system-ui, 
 .nq-fed .y { font-family: "JetBrains Mono", monospace; min-width: 48px; }
 .nq a.nq-h-link { color: #93A1A9; }
 .nq-h-win { display: block; font-size: 11px; font-weight: 500; color: #93A1A9; text-transform: uppercase; letter-spacing: 0.06em; margin: -2px 0 4px; }
+.nq-win-top { margin: 0; padding: 12px 0 2px; }      /* shared Treasuries + Fed window label */
 .nq a.nq-h-link:hover { color: #C9D4D9; text-decoration: underline; }
 
 .nq-news { display: flex; flex-direction: column; gap: 4px; min-width: 0; }

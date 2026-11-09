@@ -28,8 +28,9 @@ All times are London, 12-hour ("1:00pm"); New York appears only in Details.
   with 1–3 significance bars (rules in `forecast/news_rules.yaml`). In the right column: the next
   3 US releases (impact bars), the 2Y / 10Y Treasury note futures' 1pm → 1pm move with a
   sparkline and yields, and Polymarket's odds for the next Fed decision (Hike / Hold / Cut, over
-  the same window and hours as the Treasuries, change in points; crowd betting odds, not a
-  forecast from this site). On phones the headlines come before the
+  the same window and hours as the Treasuries, from bid–ask midpoints scaled to add up to 100%,
+  change in points; crowd betting odds, not a forecast from this site). One shared label above
+  them shows that window (e.g. "Fri 1pm – Mon 1pm"). On phones the headlines come before the
   right column's blocks.
 - **Chart:** 48 hourly candles, then the forecast fan to the end of the window. Buttons 99 / 95 /
   90 / 85 / 80% (multi-select, 90% on by default) draw stacked bands; at the last step each band

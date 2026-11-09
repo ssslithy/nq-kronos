@@ -103,8 +103,13 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   prices; Hike / Cut = sum of all increase / decrease markets, Hold = no change. Use the default
   `requests` User-Agent (Cloudflare returns 403 to urllib's). Sparklines have a 10-point minimum scale.
   Window and sampling = the Treasuries': the ZT=F hourly bar closes from the previous origin bar to this
-  one, so weekend hours are skipped (fallback if ZT=F fails: NQ trading hours). Heading
-  "Fed · Dec 9 Decision · Polymarket" with the window on a second small line.
+  one, so weekend hours are skipped (fallback if ZT=F fails: NQ trading hours). Prices are bid-ask
+  midpoints: CLOB `/midpoint` at the window end when the job runs within 30 min of it (a later re-run
+  uses the history, never prices after the origin), the price history (Polymarket's displayed price =
+  midpoint, last trade only if the spread > $0.10) before it. Buckets summed into Hike / Hold / Cut and
+  normalised to 1 at every point (they sum to ~101-102%); shown % rounded (largest remainder) to total
+  exactly 100; "pts" = shown end minus shown start (sums to 0). One shared window label ("Fri 1pm –
+  Mon 1pm", from the Treasuries' window) sits above "US Treasuries"; both headings are plain.
 - **News (`news.json`):** headlines published from the previous cash-session close (4pm New York on the
   previous trading day) to the origin bar close (1pm London), **never after it**, however late the job
   runs (on 9 Nov the forced 4pm run showed 3:59pm headlines; fixed). 23 free RSS feeds: Yahoo per-ticker
@@ -113,18 +118,26 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   since Oct 2026), MarketWatch MarketPulse (stopped 2025). Nasdaq.com's firewall drops requests whose
   User-Agent contains a URL, so it gets its own UA (`SLOW_FEEDS`: 30 s timeout, one retry).
   Everything else lives in `forecast/news_rules.yaml` (tune there, no code change):
-  relevance = a Nasdaq-100 company (headline or summary), a macro term in the headline, or a sector
-  term with a market word (generic AI / workplace pieces are dropped); exclusions (live blogs, video,
-  opinion, any "?" headline, listicles, promo pieces, ETF-flow notices). Bars: **3** = Fed / macro data /
-  tariffs / export controls, or earnings results or guidance with a Nasdaq-100 company as the subject
-  (named in the first 25 characters), or a major event (probe, ruling, M&A, outage, CEO exit) with a
-  top-8 company as the subject, or a market shock (worst day, meltdown, rout) about a top-8 name, the
-  Nasdaq or chips; **1** = earnings-date notices, previews, "stocks to watch" / movers roundups and index
-  wraps (`always_1`), whatever else they mention; **2** = other Nasdaq-100 or sector news. Measured on
-  9 Nov: 2 of the 12 listed at 3 bars (17%); over 6 days of feed items, 10 of 135 stories.
-  Clustering: headlines within 12 h with the same main company (first named) and a shared
-  `event_words` group, or near-identical titles, are one story, shown with the highest-ranked source
-  (`source_rank`: CNBC, MarketWatch, Nasdaq, Yahoo) at the earliest time (`cluster` = how many).
+  relevance = a Nasdaq-100 company, a macro term, or a sector term with a market word, all in the
+  **headline**; dropped: live blogs, video, opinion, any "?" headline, listicles and promo shapes ("X vs. Y",
+  "This $N Billion Warning", "Is X a Buy", "N stocks to"), and syndicated low-quality publishers
+  (Motley Fool, Zacks, Simply Wall St, Insider Monkey, GuruFocus, InvestorPlace, 24/7 Wall St, TIKR,
+  Trefis, MarketBeat, Stocktwits, press-release wires; Benzinga only for listicles) by link domain or,
+  for Yahoo-hosted items, by the publisher named on the article page (fetched in parallel; the list
+  then shows that publisher, e.g. "Barron's", "MT Newswires"). Bars: **3** = Fed / macro data / tariffs /
+  export controls, or results / guidance with a Nasdaq-100 company as the subject (named in the first
+  25 characters), or a major event at a top-8 subject, or a market shock about a top-8 name or the
+  Nasdaq; **2** = hard news only: a named action (results, guidance, probe, lawsuit / ruling, deal,
+  launch, outage, upgrade / downgrade, layoffs, CEO / CFO exit, buyback, production halt, focus-list
+  change) with a Nasdaq-100 subject or a sector term; **1** = commentary, interviews, features, board
+  changes below C-level, earnings-date notices, previews, roundups, index wraps. `split` in news.json
+  logs the 3 / 2 / 1 mix of all stories and of the listed ones (target ~20 / 40 / 40 on a typical
+  day; measured 9 Nov, a weekend window: 5 / 15 / 80 of 20 stories; over 6 days of feed items:
+  7 / 19 / 74 of 70; most 1s are wraps, roundups and commentary).
+  Clustering: headlines within **24 h** naming a common Nasdaq-100 company with a shared `event_words`
+  group, or the same main company and a shared proper name (e.g. "Huang"; not in Title Case headlines),
+  or near-identical titles, are one story (the 9 Nov Nvidia probe: 20 headlines, one row), shown with
+  its most significant headline (ties: `source_rank`, then the earliest) at the earliest time.
   Up to 12 stories: most significant first, then newest, at most 6 per outlet; listed newest first,
   3 visible, the rest scroll. Yahoo per-ticker feeds hold only ~20 items, so a re-run for a past time
   finds mostly CNBC.
@@ -184,7 +197,7 @@ alerts; tick **test alert** to check the secret). Actions → forecast → Run w
   page and the README.
 - Don't hand-edit `site/data/*`; it's written by the scripts and the bot. Before committing, `git pull
   --rebase`; if the bot has committed data since, take its data files and regenerate rather than merge.
-- Page CSS/JS links carry a version tag (`style.css?v=20261109e`, same in index.html and accuracy.html):
+- Page CSS/JS links carry a version tag (`style.css?v=20261109f`, same in index.html and accuracy.html):
   bump it whenever site code changes, or browsers keep the old file for Pages' 10-minute cache.
 - New page code goes in its own script or a self-contained block; the page must work at 375 px
   wide with no sideways scrolling, London times only. Check with Playwright at 1280 and 375 px

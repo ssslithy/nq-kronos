@@ -3,7 +3,7 @@
 # regular expressions, matched on word boundaries unless they start with 're:' (used as written).
 #
 # Relevance (kept) - none of the exclude patterns, and one of:
-#   a Nasdaq-100 company (top_names / other_names) in the headline or the start of the summary;
+#   a Nasdaq-100 company (top_names / other_names) in the headline;
 #   a macro term in the headline;
 #   a sector term AND a market word in the headline (the piece moves a sector), so generic
 #   AI / workplace pieces without a company are dropped.
@@ -13,11 +13,17 @@
 #   3  a macro term; or a Nasdaq-100 company as the subject (named in the first 25 characters) with
 #      an earnings_result term; or a top-8 company as the subject with a major_event term; or a
 #      market_shock term about a top-8 company, the Nasdaq or chips / AI / tech stocks
-#   2  any other Nasdaq-100 company news (incl. rating changes); a sector term with a market word
-#   1  everything else that passed the filter (e.g. relevant only through its summary)
+#   2  hard news with the company as the subject (named in the first 25 characters) or a sector
+#      term, and a hard_action ( results / guidance, probe, lawsuit or ruling, deal, launch, outage,
+#      upgrade / downgrade, layoffs, CEO / CFO exit, buyback, production halt, export curbs) about a
+#      Nasdaq-100 company or the sector
+#   1  everything else that passed the filter: commentary, interviews, features, lower-level moves
+# Target over a typical day: about 20% 3 bars, 40% 2 bars, 40% 1 bar (news.json logs the split).
 # Target: about 20% of the listed items at 3 bars.
-# Clustering: two headlines within 12 hours with the same main company (the first company named)
-# and a shared event_words group are one story (also near-identical titles). The story keeps the
+# Clustering (the story is shown with its most significant headline, ties: source_rank, then the
+# earliest; at the earliest time): two headlines within 24 hours are one story if they name a common
+# Nasdaq-100 company and share an event_words group, or have the same main company and a shared
+# proper name (e.g. Huang; not for Title Case headlines), or near-identical titles. The story keeps the
 # highest-ranked source (source_rank) and the earliest time.
 
 # The ~8 largest Nasdaq-100 names by index weight (review each quarter).
@@ -276,7 +282,7 @@ earnings_result:
   - 'guidance'
   - '(?:raises?|lifts?|cuts?|lowers?|boosts?|trims?|slashes?|hikes?) (?:its |annual |full-year |\d{4} )?(?:forecast|outlook|guidance)'
   - '(?:weak|weaker|strong|stronger|soft|upbeat|downbeat|disappointing|bleak|rosy|dismal|solid|lower|higher|cautious)(?: \w+)? (?:forecast|guidance|outlook)'
-  - '(?:revenue|profit|sales|earnings|net income) (?:nearly |more than )?(?:doubles?|triples?|rises?|falls?|jumps?|grows?|beats?|misses?|surges?|slumps?|soars?|drops?|declines?|tops?)'
+  - '(?:revenue|profit|earnings|net income) (?:nearly |more than )?(?:doubles?|triples?|rises?|falls?|jumps?|grows?|beats?|misses?|surges?|slumps?|soars?|drops?|declines?|tops?)'
   - 'in q[1-4]'
   - 'results'
 
@@ -318,6 +324,57 @@ market_shock:
   - 'meltdown'
   - 'crash(?:es)?'
   - 'rout'
+
+# Hard news (a named action). 2 bars need one of these with a Nasdaq-100 company or a sector term in
+# the headline; commentary, interviews, features and board changes below C-level are 1 bar.
+hard_action:
+  - 'focus list'
+  - '(?:adds?|drops?|removes?) .{0,40}(?:focus|conviction) list'
+  - 'winds? down'
+  - 'contracts?'
+  - 'kill(?:s|ing)?'
+  - 'discontinu\w+'
+  - 'refunds?'
+  - 'enters? (?:a )?new (?:city|market|country)'
+  - 'expands? (?:to|into)'
+  - 'cuts? (?:prices?|forecast)'
+  - 'raises? prices?'
+  - 'probe'
+  - 'investigat(?:ion|es|ing|ed)'
+  - 'subpoena'
+  - 'lawsuit'
+  - 'sues?|sued'
+  - 'ruling'
+  - 'verdict'
+  - 'settlement'
+  - 'antitrust'
+  - 'fined?'
+  - 'merger'
+  - 'acquires?|acquisitions?|to acquire'
+  - '(?:agrees?|deal|offer|bid|plans?) to (?:buy|acquire)'
+  - 'deal (?:with|to|for)'
+  - 'signs? (?:a )?(?:deal|contract|agreement)'
+  - 'partnership'
+  - 'stake in'
+  - 'launch(?:es|ed)?'
+  - 'unveils?|unveiled'
+  - 'debuts?'
+  - 'rolls? out'
+  - 'outage'
+  - 'disruption'
+  - 'upgrades?|upgraded'
+  - 'downgrades?|downgraded'
+  - 'layoffs'
+  - 'job cuts'
+  - 'cuts? (?:\d[\d,]* )?jobs'
+  - 'buybacks?|repurchase'
+  - 'recall'
+  - '(?:ends?|halts?|halted|winds? down|stops?|pauses?) (?:\w+ ){0,2}production'
+  - '(?:ceo|cfo|chief executive|chief financial officer)\b.{0,30}\b(?:resigns?|steps? down|to step down|departs?|exits?|leaves|ousted|fired|replaced|retires?)'
+  - '(?:resigns?|steps? down) as (?:ceo|cfo|chief executive)'
+  - '(?:names?|appoints?) (?:a )?new (?:ceo|cfo|chief executive)'
+  - 'export (?:curbs?|controls?|licen[cs]es?)'
+  - 'bans?|banned'
 
 # Rating changes: 2 bars (also with a top-8 company).
 rating:
@@ -434,19 +491,6 @@ event_words:
     - 'unveil\w*'
     - 'releas\w*'
     - 'debut'
-  stock_move:
-    - 'shares'
-    - 'stocks?'
-    - 'slid\w*|slides?'
-    - 'fall\w*|fell'
-    - 'drop\w*'
-    - 'jump\w*'
-    - 'surg\w*'
-    - 'tumbl\w*'
-    - 'plung\w*'
-    - 'rall\w*'
-    - 'sink\w*|sank'
-
 # Clustering keeps the highest-ranked source (first = best).
 source_rank:
   - 'CNBC'
@@ -457,6 +501,11 @@ source_rank:
 # Dropped: live blogs, video, opinion, quizzes, lifestyle and product reviews. Any headline with a
 # question mark counts as analysis or opinion and is dropped.
 exclude_title:
+  - 're:\bvs\.?\s'
+  - 're:\bthis \$[\d.,]+ ?(?:billion|trillion|million)\b'
+  - 're:^is .{1,80}\ba (?:buy|sell|good buy|bargain)\b'
+  - 're:\b\d+ (?:\w+ ){0,2}stocks? to\b'
+  - 're:\bshockwaves?\b'
   - 're:\band your (?:money|portfolio|401\(k\)|retirement)\b'
   - 're:^prediction:'
   - 're:\bi''?m (?:betting|buying|selling)\b'
@@ -515,6 +564,57 @@ exclude_title:
   - 'worth (?:buying|holding|owning)'
   - 'etfs? in focus'
   - 'zacks'
+
+# Syndicated low-quality publishers, dropped by name (Yahoo-hosted items: the publisher named on the
+# article page; matched case-insensitively as a substring).
+blocked_publishers:
+  - 'GlobeNewswire'
+  - 'Business Wire'
+  - 'PR Newswire'
+  - 'CNW Group'
+  - 'ACCESS Newswire'
+  - 'Moneywise'
+  - 'Motley Fool'
+  - 'The Motley Fool'
+  - 'Zacks'
+  - 'Simply Wall St'
+  - 'Insider Monkey'
+  - 'GuruFocus'
+  - 'InvestorPlace'
+  - '24/7 Wall St'
+  - 'TIKR'
+  - 'Trefis'
+  - 'MoneyLion'
+  - 'MarketBeat'
+  - 'Stocktwits'
+  - 'Tasting Table'
+
+# The same publishers by link domain (Yahoo items that link straight to the publisher).
+blocked_domains:
+  - 'fool.com'
+  - 'zacks.com'
+  - 'simplywall.st'
+  - 'insidermonkey.com'
+  - 'gurufocus.com'
+  - 'investorplace.com'
+  - '247wallst.com'
+  - 'tikr.com'
+  - 'trefis.com'
+  - 'moneylion.com'
+  - 'marketbeat.com'
+  - 'stocktwits.com'
+  - 'tastingtable.com'
+
+# Publishers dropped only when the headline looks like a listicle (listicle_shape).
+listicle_publishers:
+  - 'Benzinga'
+
+# Listicle headline shapes, for listicle_publishers.
+listicle_shape:
+  - 're:\b\d+ (?:\w+ ){0,2}(?:stocks?|names|picks|things|ways|reasons|charts)\b'
+  - 're:\btop \d+\b'
+  - 're:\bthese\b'
+  - 're:\bbest\b'
 
 # Dropped by link path.
 exclude_link:

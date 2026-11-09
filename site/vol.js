@@ -123,7 +123,8 @@
       `stroke="${color}" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
   };
   const FED_COLOR = { Hike: "#F2B84B", Hold: "#93A1A9", Cut: "#5EE0C6" };
-  const pct = (p) => (p < 0.005 ? "<1%" : `${Math.round(100 * p)}%`);
+  // shown % (normalised, rounded to total 100 in page_data.py); "<1%" for a non-zero share rounded to 0
+  const pct = (r) => { const v = r.pct != null ? r.pct : Math.round(100 * r.p); return v === 0 && r.p > 0 ? "<1%" : `${v}%`; };
   const ptsChange = (x) => { const r = Math.round(x); return r === 0 ? "0 pts" : `${r > 0 ? "+" : "−"}${Math.abs(r)} pts`; };
 
   function side(D) {
@@ -138,29 +139,33 @@
     }
     const rows = t && t.ok ? (t.rows || []).filter((r) => r.move_pct != null && r.spark && r.spark.length > 1) : [];
     if (rows.length) {
-      const a = T(t.window_start_utc), b = T(t.window_end_utc);
-      $("tsy-h").textContent = `US Treasuries · ${day(a)} ${hourOnly(a)} – ${day(b)} ${hourOnly(b)}`;
+      $("tsy-h").textContent = "US Treasuries";
       $("tsy-rows").innerHTML = rows.map((r) =>
         `<div class="nq-tsy"><span class="l">${esc(r.label)}</span>${spark(r.spark)}` +
         `<span class="m${r.move_pct < 0 ? " neg" : ""}">${r.move_pct >= 0 ? "+" : "−"}${Math.abs(r.move_pct).toFixed(2)}%</span>` +
         `<span class="y">${r.yield_pct != null ? `Yield ${r.yield_pct.toFixed(2)}%` : ""}</span></div>`).join("");
       $("tsy").hidden = false;
-      $("tsy-h").classList.toggle("nq-h2", !$("cal").hidden);
     }
     const fd = D.fed;
     const frows = fd && fd.ok ? (fd.rows || []).filter((r) => r.p != null && r.spark && r.spark.length > 1) : [];
     if (frows.length) {
       $("fed-h").textContent = `Fed · ${fd.meeting_label} Decision · Polymarket`;
-      const fa = T(fd.window_start_utc), fb = T(fd.window_end_utc);         // same window as the Treasuries
-      $("fed-w").textContent = `${day(fa)} ${hourOnly(fa)} – ${day(fb)} ${hourOnly(fb)}`;
       if (fd.event && fd.event.url) $("fed-h").href = fd.event.url;
       $("fed-h").title = `${fd.event ? fd.event.title : ""} Crowd betting odds, not a forecast from this site.`.trim();
       $("fed-rows").innerHTML = frows.map((r) =>
         `<div class="nq-tsy nq-fed"><span class="l">${esc(r.label)}</span>${spark(r.spark, FED_COLOR[r.label], 0.10)}` +
-        `<span class="m" style="color:${FED_COLOR[r.label] || "#C9D4D9"}">${pct(r.p)}</span>` +
+        `<span class="m" style="color:${FED_COLOR[r.label] || "#C9D4D9"}">${pct(r)}</span>` +
         `<span class="y">${ptsChange(r.change_pts)}</span></div>`).join("");
       $("fed").hidden = false;
-      $("fed-h").classList.toggle("nq-h2", !($("cal").hidden && $("tsy").hidden));
+      $("fed-h").classList.toggle("nq-h2", !$("tsy").hidden);
+    }
+    // one shared window label for the Treasuries and the Fed odds (built from the Treasuries' window)
+    const win = rows.length ? t : (frows.length ? fd : null);
+    if (win) {
+      const a = T(win.window_start_utc), b = T(win.window_end_utc);
+      $("mkt-win").textContent = `${day(a)} ${hourOnly(a)} – ${day(b)} ${hourOnly(b)}`;
+      $("mkt-win").hidden = false;
+      if ($("tsy").hidden) $("fed-h").classList.remove("nq-h2");
     }
     $("side").hidden = $("cal").hidden && $("tsy").hidden && $("fed").hidden;
   }
@@ -236,6 +241,8 @@
       "the bars are a rule-based significance (Fed and macro, the biggest Nasdaq names' earnings and major news = 3)."]);
     if (D.fed && D.fed.ok) rows.push(["Fed odds", `Polymarket crowd betting odds for the ${D.fed.meeting_label} FOMC decision ` +
       "(Hike = all increase outcomes, Cut = all decrease outcomes), hourly over the same 1pm → 1pm window. " +
+      "Each outcome's price is its bid–ask midpoint; the three are scaled to add up to 100% (Polymarket's buckets usually sum to a " +
+      "little over 100%), and the shown whole numbers are rounded to total exactly 100. " +
       "They are what bettors are pricing, not a forecast from this site."]);
     rows.push(["Updated", `${at(T(v.generated_utc))} London`]);
     $("details").innerHTML = rows.map(([k, x]) => `<dt>${esc(k)}</dt><dd>${esc(x)}</dd>`).join("") +
