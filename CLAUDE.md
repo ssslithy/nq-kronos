@@ -231,7 +231,7 @@ alerts; tick **test alert** to check the secret). Actions → forecast → Run w
   page and the README.
 - Don't hand-edit `site/data/*`; it's written by the scripts and the bot. Before committing, `git pull
   --rebase`; if the bot has committed data since, take its data files and regenerate rather than merge.
-- Page CSS/JS links carry a version tag (`style.css?v=20261109i`, same in index.html and accuracy.html):
+- Page CSS/JS links carry a version tag (`style.css?v=20261109j`, same in index.html and accuracy.html):
   bump it whenever site code changes, or browsers keep the old file for Pages' 10-minute cache.
 - New page code goes in its own script or a self-contained block; the page must work at 375 px
   wide with no sideways scrolling, London times only. Check with Playwright at 1280 and 375 px

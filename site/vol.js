@@ -219,7 +219,9 @@
     const fit = () => {
       const rows = [...box.children].slice(0, 3);
       if (!rows.length) return;
-      const h = rows.reduce((a, r) => a + r.getBoundingClientRect().height, 0);
+      box.style.height = "";
+      // from the list's top to the third row's bottom (margins included, e.g. the raised brief row)
+      const h = rows[rows.length - 1].getBoundingClientRect().bottom - box.getBoundingClientRect().top + 1;
       box.style.height = box.children.length > 3 ? `${Math.ceil(h)}px` : "";
     };
     fit();
