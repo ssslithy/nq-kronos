@@ -1,160 +1,204 @@
-// 24h volatility card (GARCH): reads data/vol_latest.json, vol_history.jsonl, vol_status.json.
-// Self-contained (own helpers inside this function) so it can't clash with app.js.
+// NQ forecasts: data loading and everything on the page except the chart (app.js draws that).
+// Reads data/vol_latest.json (daily GARCH forecast), vol_history.jsonl, vol_status.json,
+// calendar.json, treasuries.json, news.json, and Kronos's latest.json / status.json.
+// All times are London, 12-hour ("1:00pm"); New York appears only in Details.
 (() => {
   "use strict";
-
-  const POLL_MS = 5 * 60 * 1000;
-  const SPARK_DAYS = 60;          // sparkline length, trading days
-  const CALIB_MIN = 20;           // matured forecasts needed before the calibration line shows
-  const Z80 = 1.2816;             // the 80% range is last x exp(+-1.2816 sigma)
-  const OVERDUE_MS = 90 * 60e3;   // warn if no forecast this long after it was due
-  const NOW_OVERRIDE = new URLSearchParams(location.search).get("now");   // same ?now= as app.js
-  const nowMs = () => (NOW_OVERRIDE ? Date.parse(NOW_OVERRIDE) : Date.now());
   const $ = (id) => document.getElementById(id);
+  const OVERDUE_MS = 90 * 60e3;          // the daily forecast is "late" this long after it was due
+  const LON = "Europe/London", NYC = "America/New_York";
 
-  const num = (v, dp = 0) => v.toLocaleString("en-GB", { minimumFractionDigits: dp, maximumFractionDigits: dp });
-  const dtf = (tz, o) => new Intl.DateTimeFormat("en-GB", { timeZone: tz, hourCycle: "h23", ...o });
-  const hm = { ny: dtf("America/New_York", { hour: "2-digit", minute: "2-digit" }),
-               lon: dtf("Europe/London", { hour: "2-digit", minute: "2-digit" }) };
-  const dayNY = dtf("America/New_York", { weekday: "short", day: "2-digit", month: "short" });
-  const ymdNY = dtf("America/New_York", { year: "numeric", month: "2-digit", day: "2-digit" });
-  const dayNYshort =dtf("America/New_York", { day: "2-digit", month: "short" });
-  // "Mon 09 Nov 08:00 New York (13:00 London)"; the day is New York's.
-  const both = (iso, withDay = true) => {
-    const d = new Date(iso);
-    return `${withDay ? dayNY.format(d).replace(",", "") + " " : ""}${hm.ny.format(d)} New York (${hm.lon.format(d)} London)`;
+  // ---- formatting -------------------------------------------------------------------------
+  const parts = (d, tz) => {
+    const o = {};
+    for (const p of new Intl.DateTimeFormat("en-GB", { timeZone: tz, weekday: "short", day: "numeric", month: "short",
+      hour: "numeric", minute: "2-digit", hourCycle: "h23" }).formatToParts(d)) o[p.type] = p.value;
+    return o;
   };
-  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const clock = (d, tz = LON) => {               // 1:00pm, 12:42pm, 11:58am
+    const p = parts(d, tz), h = +p.hour;
+    return `${h % 12 || 12}:${p.minute}${h < 12 ? "am" : "pm"}`;
+  };
+  const hourOnly = (d, tz = LON) => clock(d, tz).replace(":00", "");      // 1pm, 12am
+  const day = (d, tz = LON) => parts(d, tz).weekday;                      // Fri
+  const date = (d, tz = LON) => { const p = parts(d, tz); return `${p.weekday} ${p.day} ${p.month}`; };   // Fri 6 Nov
+  const at = (d) => `${day(d)} ${clock(d)}`;
+  const num = (x, dp = 0) => x.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const T = (iso) => new Date(iso);
+  const plusH = (iso, h) => new Date(T(iso).getTime() + h * 3600e3);
 
-  async function get(url, parse = "json") {
-    const r = await fetch(`${url}?t=${Date.now()}`, { cache: "no-store" });
-    if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
-    return parse === "json" ? r.json() : r.text();
-  }
-
-  async function load() {
-    let f;
-    try { f = await get("data/vol_latest.json"); } catch (e) { $("vol").hidden = true; return; }
-    const [status, histText] = await Promise.all([
-      get("data/vol_status.json").catch(() => null),
-      get("data/vol_history.jsonl", "text").catch(() => ""),
-    ]);
-    const hist = histText.split("\n").filter((s) => s.trim()).map((s) => JSON.parse(s))
-      .sort((a, b) => Date.parse(a.origin_utc) - Date.parse(b.origin_utc));
-    render(f, status, hist);
-  }
-
-  function render(f, status, hist) {
-    $("vol").hidden = false;
-
-    // headline
-    $("vol-pts").textContent = `±${num(f.sigma_pts)} pts`;
-    $("vol-pct").textContent = `(±${num(f.sigma_pct, 2)}%)`;
-    $("vol-r80").textContent = `${num(f.range80[0])} – ${num(f.range80[1])}`;
-    $("vol-r68").textContent = `${num(f.range68[0])} – ${num(f.range68[1])}`;
-    $("vol-r95").textContent = f.range95 ? `${num(f.range95[0])} – ${num(f.range95[1])}` : "—";
-    $("vol-s99").textContent = f.stress99 ? `±${num(f.stress99.pts)} pts (${num(f.stress99.range[0])} – ${num(f.stress99.range[1])})` : "—";
-    $("vol-cash").textContent = f.cash && f.cash.sigma_pts != null ? `±${num(f.cash.sigma_pts)} pts` : "—";
-
-    const reg = $("vol-regime");
-    reg.className = `vol-regime ${f.regime.toLowerCase()}`;
-    reg.innerHTML = `${esc(f.regime)}<span class="p">${Math.round(f.percentile)}th pct</span>`;
-    reg.title = `today's σ vs the last ${f.regime_days} daily forecasts: Calm < 25th, Elevated > 75th, High > 90th percentile`;
-
-    $("vol-when").textContent = `Forecast at ${both(f.forecast_time_utc)} · next forecast ${both(f.next_forecast_utc)}`;
-
-    // event flag
-    const ev = f.events, evEl = $("vol-event");
-    if (ev && ev.items && ev.items.length) {
-      // "today" only when the release falls on the viewer's current New York date;
-      // otherwise its date, so an older forecast never claims a past release is today.
-      const todayNY = ymdNY.format(new Date(nowMs()));
-      const isToday = (i) => ymdNY.format(new Date(i.time_utc)) === todayNY;
-      const items = ev.items.map((i) => `<b>${esc(i.name)}</b> ${isToday(i) ? "today " + esc(i.ny.slice(-5)) : esc(i.ny)} NY`);
-      const note = ev.items.some(isToday)
-        ? "Scheduled release today: realised move often exceeds the GARCH range."
-        : "Scheduled release inside the 24h horizon: realised move often exceeds the GARCH range.";
-      evEl.className = "vol-event on";
-      evEl.innerHTML = items.join("<br>") + `<span class="ev-note">${note}</span>`;
-    } else {
-      evEl.className = "vol-event";
-      evEl.textContent = ev ? (ev.note || "No scheduled release in the 24h horizon.") : "Event flag not available for this forecast.";
-    }
-
-    // vs realised, model
-    $("vol-real").textContent = `RMS 24h move ${num(f.realised_rms_5d_pct, 2)}% (5d) · ${num(f.realised_rms_20d_pct, 2)}% (20d)`;
-    const m = f.model;
-    $("vol-model").textContent = `${m.spec}, last ${num(m.n_returns)} hourly returns · ω ${num(m.omega, 3)} α ${num(m.alpha, 2)} β ${num(m.beta, 2)} ν ${num(m.nu, 1)} · α+β ${num(m.persistence, 2)} · σ scaled ×${num(f.calibration.k, 2)} (calibration)`;
-
-    // warnings: failed run (stale) or overdue
-    const warn = [];
-    if (f.stale || (status && status.ok === false)) {
-      warn.push(`Stale: the latest run failed${status && status.error ? ` (${status.error})` : ""}. Showing the forecast from ${both(f.forecast_time_utc)}.`);
-    } else if (nowMs() > Date.parse(f.next_forecast_utc) + OVERDUE_MS) {
-      warn.push(`Overdue: the forecast due ${both(f.next_forecast_utc)} hasn't arrived. Showing the one from ${both(f.forecast_time_utc)}.`);
-    }
-    if (f.roll_note) warn.push(f.roll_note);
-    $("vol-warn").textContent = warn.join(" ");
-    $("vol-warn").hidden = !warn.length;
-
-    spark(hist.slice(-SPARK_DAYS));
-    calib(hist);
-  }
-
-  // forecast sigma as a line, the 80% edge (1.2816 sigma) dashed, actual |24h move| as dots
-  let lastRows = [];
-  function spark(rows) {
-    lastRows = rows;
-    const box = $("vol-spark-svg");
-    if (rows.length < 2) {
-      box.innerHTML = `<div class="empty">builds up daily (${rows.length} forecast${rows.length === 1 ? "" : "s"} so far)</div>`;
-      return;
-    }
-    const W = Math.max(200, Math.round(box.clientWidth || 400)), H = 84, padL = 30, padR = 4, padT = 4, padB = 14;
-    const n = rows.length, pw = W - padL - padR, ph = H - padT - padB;
-    const vals = rows.flatMap((r) => [r.sigma_pct * Z80, r.move_pct != null ? Math.abs(r.move_pct) : 0]);
-    const top = Math.max(...vals) * 1.08;
-    const X = (i) => padL + (n === 1 ? pw / 2 : (i * pw) / (n - 1));
-    const Y = (v) => padT + ph - (v / top) * ph;
-    const poly = (k) => rows.map((r, i) => `${X(i).toFixed(1)},${Y(r.sigma_pct * k).toFixed(1)}`).join(" ");
-    const tick = top > 2 ? 1 : 0.5;
-    let grid = "";
-    for (let v = tick; v < top; v += tick) {
-      grid += `<line x1="${padL}" x2="${W - padR}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#172025"/>` +
-        `<text x="${padL - 4}" y="${(Y(v) + 3).toFixed(1)}" text-anchor="end">${v}%</text>`;
-    }
-    const dots = rows.map((r, i) => {
-      if (r.move_pct == null) return "";
-      const out = r.inside80 === false;
-      const day = dayNY.format(new Date(r.origin_utc)).replace(",", "");
-      return `<circle cx="${X(i).toFixed(1)}" cy="${Y(Math.abs(r.move_pct)).toFixed(1)}" r="2.4" fill="${out ? "#f05252" : "#9fb0b6"}">` +
-        `<title>${day}: σ ${r.sigma_pct.toFixed(2)}%, actual ${r.move_pct >= 0 ? "+" : "−"}${Math.abs(r.move_pct).toFixed(2)}%${out ? " (outside 80% range)" : ""}</title></circle>`;
-    }).join("");
-    const first = dayNYshort.format(new Date(rows[0].origin_utc)), last = dayNYshort.format(new Date(rows[n - 1].origin_utc));
-    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Forecast sigma and actual moves, last ${n} trading days">
-      <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" fill="#73858c">${grid}
-        <text x="${padL}" y="${H - 2}">${first}</text><text x="${W - padR}" y="${H - 2}" text-anchor="end">${last}</text></g>
-      <polyline points="${poly(Z80)}" fill="none" stroke="rgba(45,212,191,0.55)" stroke-width="1" stroke-dasharray="3 2"/>
-      <polyline points="${poly(1)}" fill="none" stroke="#2dd4bf" stroke-width="1.6"/>
-      ${dots}</svg>`;
-  }
-
-  function calib(hist) {
-    const matured = hist.filter((r) => typeof r.inside80 === "boolean").slice(-SPARK_DAYS);
-    const el = $("vol-calib");
-    if (matured.length < CALIB_MIN) {
-      el.textContent = `Calibration line after ${CALIB_MIN} matured forecasts (${matured.length} so far).`;
-      return;
-    }
-    const hit = (100 * matured.filter((r) => r.inside80).length) / matured.length;
-    el.innerHTML = `Last ${matured.length} forecasts: actual move inside 80% range <b>${hit.toFixed(0)}%</b> of the time.`;
-  }
-
-  $("vol-model-btn").addEventListener("click", (e) => {
-    const open = e.currentTarget.closest(".vol-mid").classList.toggle("show-model");
-    e.currentTarget.setAttribute("aria-expanded", String(open));
+  // ---- data -------------------------------------------------------------------------------
+  const getJSON = (p) => fetch(`${p}?t=${Date.now()}`, { cache: "no-store" }).then((r) => {
+    if (!r.ok) throw new Error(`${p}: HTTP ${r.status}`);
+    return r.json();
   });
-  new ResizeObserver(() => { if (lastRows.length > 1) spark(lastRows); }).observe($("vol-spark-svg"));
-  load();
-  setInterval(load, POLL_MS);
+  const getLines = (p) => fetch(`${p}?t=${Date.now()}`, { cache: "no-store" })
+    .then((r) => (r.ok ? r.text() : ""))
+    .then((t) => t.split("\n").filter((s) => s.trim()).map((s) => JSON.parse(s)))
+    .catch(() => []);
+  const soft = (p) => getJSON(p).catch(() => null);
+
+  const ready = Promise.all([
+    getJSON("data/vol_latest.json"), soft("data/vol_status.json"), getLines("data/vol_history.jsonl"),
+    soft("data/calendar.json"), soft("data/treasuries.json"), soft("data/news.json"),
+    soft("data/latest.json"), soft("data/status.json"),
+  ]).then(([vol, status, hist, calendar, tsy, news, kronos, kstatus]) =>
+    ({ vol, status, hist, calendar, tsy, news, kronos, kstatus }));
+
+  // Kronos is usable only if it was made from the same bar as the GARCH forecast and isn't stale.
+  const kronosState = (D) => {
+    const k = D.kronos, v = D.vol;
+    if (!k || !k.last_bar_utc) return { ok: false, why: "not run today" };
+    if (T(k.last_bar_utc).getTime() !== T(v.origin_utc).getTime()) return { ok: false, why: "not run today" };
+    if (k.stale || (D.kstatus && D.kstatus.ok === false)) return { ok: false, why: "not run today (last run failed)" };
+    return { ok: true };
+  };
+
+  // ---- render -----------------------------------------------------------------------------
+  function header(D) {
+    const v = D.vol, close = T(v.forecast_time_utc);
+    $("h-when").innerHTML = `${esc(date(close))} · ${esc(clock(close))} London · <span class="nq-price">${num(v.last_close)}</span>`;
+    const next = v.next_forecast_utc ? T(v.next_forecast_utc) : null;
+    $("h-sub").textContent = `Nasdaq-100 futures${next ? ` · next update ${at(next)}` : ""}`;
+    document.title = `NQ ${date(close)} · ±${num(v.headline_pts)} pts`;
+    // stale / late: the only warning on the page
+    const failed = (D.status && D.status.ok === false) || v.stale;
+    const late = next && Date.now() > next.getTime() + OVERDUE_MS;
+    const b = $("banner");
+    if (failed || late) {
+      b.textContent = failed
+        ? `The latest daily run failed. Showing the forecast from ${at(close)}.`
+        : `The daily forecast due ${at(next)} hasn't arrived yet. Showing the one from ${at(close)}.`;
+      b.hidden = false;
+    }
+  }
+
+  function blocks(D) {
+    const v = D.vol, lv = v.headline || 90;
+    const a = T(v.forecast_time_utc), b = plusH(v.horizon_end_utc, 1);
+    $("b-24h-when").textContent = `${at(a)} – ${at(b)}`;
+    $("b-24h-pts").textContent = `±${num(v.headline_pts)} pts`;
+    $("b-24h-pct").textContent = `±${v.headline_pct.toFixed(2)}%`;
+    const r = v[`range${lv}`];
+    $("b-24h-range").textContent = `${num(r[0])} – ${num(r[1])}`;
+    $("b-note").textContent = `Based on the ${lv}% PI`;
+    const c = v.cash || {};
+    if (c.pts && c.range && c.start_utc && c.end_utc) {
+      const open = new Date(T(c.start_utc).getTime() + 30 * 60e3);        // the 9:30am New York open
+      $("b-cash-when").textContent = `${at(open)} – ${at(T(c.end_utc))}`;
+      $("b-cash-pts").textContent = `±${num(c.pts)} pts`;
+      $("b-cash-pct").textContent = `±${c.pct.toFixed(2)}%`;
+      $("b-cash-range").textContent = `${num(c.range[0])} – ${num(c.range[1])}`;
+      if (c.level !== lv) { $("b-cash-note").textContent = `Based on the ${c.level}% PI`; $("b-cash-note").hidden = false; }
+      $("b-cash").hidden = false;
+    }
+  }
+
+  const signal = (n) => {
+    const fill = (i) => (i < n ? "#5EE0C6" : "#2A353C");
+    const lbl = n >= 3 ? "High impact" : "Medium impact";
+    return `<svg width="13" height="10" viewBox="0 0 13 10" role="img" aria-label="${lbl}"><title>${lbl}</title>` +
+      `<rect x="0" y="6" width="3" height="4" rx="1" fill="${fill(0)}"/><rect x="5" y="3" width="3" height="7" rx="1" fill="${fill(1)}"/>` +
+      `<rect x="10" y="0" width="3" height="10" rx="1" fill="${fill(2)}"/></svg>`;
+  };
+
+  const spark = (pts) => {
+    const lo = Math.min(...pts), hi = Math.max(...pts), n = pts.length;
+    const y = (p) => (hi > lo ? 18 - 16 * (p - lo) / (hi - lo) : 10);
+    const xy = pts.map((p, i) => `${(84 * i / (n - 1)).toFixed(1)},${y(p).toFixed(1)}`).join(" ");
+    return `<svg viewBox="0 0 84 20" preserveAspectRatio="none" aria-hidden="true"><polyline points="${xy}" fill="none" ` +
+      `stroke="#5EE0C6" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>`;
+  };
+
+  function side(D) {
+    const c = D.calendar, t = D.tsy;
+    if (c && c.ok && c.items && c.items.length) {
+      $("cal-rows").innerHTML = c.items.map((e) => {
+        const tm = T(e.time_utc);
+        return `<div class="nq-cal${e.today ? " today" : ""}"><span class="d">${e.today ? "Today" : esc(date(tm))}</span>` +
+          `<span class="t">${esc(clock(tm))}</span><span class="n">${esc(e.name)}</span>${signal(e.impact)}</div>`;
+      }).join("");
+      $("cal").hidden = false;
+    }
+    const rows = t && t.ok ? (t.rows || []).filter((r) => r.move_pct != null && r.spark && r.spark.length > 1) : [];
+    if (rows.length) {
+      const a = T(t.window_start_utc), b = T(t.window_end_utc);
+      $("tsy-h").textContent = `US Treasuries · ${day(a)} ${hourOnly(a)} – ${day(b)} ${hourOnly(b)}`;
+      $("tsy-rows").innerHTML = rows.map((r) =>
+        `<div class="nq-tsy"><span class="l">${esc(r.label)}</span>${spark(r.spark)}` +
+        `<span class="m${r.move_pct < 0 ? " neg" : ""}">${r.move_pct >= 0 ? "+" : "−"}${Math.abs(r.move_pct).toFixed(2)}%</span>` +
+        `<span class="y">${r.yield_pct != null ? `Yield ${r.yield_pct.toFixed(2)}%` : ""}</span></div>`).join("");
+      $("tsy").hidden = false;
+      $("tsy-h").classList.toggle("nq-h2", !$("cal").hidden);
+    }
+    $("side").hidden = $("cal").hidden && $("tsy").hidden;
+  }
+
+  function news(D) {
+    const n = D.news;
+    if (!(n && n.ok && n.items && n.items.length)) return;
+    $("news-rows").innerHTML = n.items.map((i) =>
+      `<div class="nq-item"><div class="meta"><span class="src">${esc(i.source)}</span><span class="tm">${esc(clock(T(i.published_utc)))}</span></div>` +
+      `<a class="hl" href="${esc(i.link)}" target="_blank" rel="noopener noreferrer">${esc(i.title)}</a></div>`).join("");
+    $("news").hidden = false;
+  }
+
+  function footer(D) {
+    const v = D.vol, lv = v.headline || 90, key = `inside${lv}`;
+    const m = D.hist.filter((r) => typeof r[key] === "boolean").slice(-250);
+    if (m.length) {
+      const hit = (100 * m.filter((r) => r[key]).length) / m.length;
+      $("f-hit").textContent = `${lv}% PI – ${hit.toFixed(0)}% hit rate`;
+      $("f-hit").parentElement.firstElementChild.textContent = `Last ${m.length} days:`;
+    }
+    const a = T(v.forecast_time_utc), b = plusH(v.horizon_end_utc, 1), mu = v.multipliers, c = v.cash || {};
+    const ks = kronosState(D);
+    const ev = (v.events && v.events.items) || [];
+    const rows = [
+      ["Window", `${at(a)} – ${at(b)} London: ${v.horizon || 23} trading hours, to the same time the next trading day ` +
+        `(New York ${clock(a, NYC)} to ${clock(b, NYC)}). The daily break and weekends are skipped.`],
+      ["PI", "Prediction interval: the range the price should end inside, with that probability, at the end of the window. " +
+        "The chart can show the 99, 95, 90, 85 and 80% intervals; the card shows the 90%."],
+      ["Model", `GARCH(1,1), Student-t, ${num(v.model.n_returns)} hourly returns, calibrated ×${v.calibration.k.toFixed(2)} ` +
+        `(last ${v.calibration.n} forecasts); 85 / 90 / 95 / 99% use measured multipliers (fat tails): ` +
+        `×${mu.m85.toFixed(2)} / ×${mu.m90.toFixed(2)} / ×${mu.m95.toFixed(2)} / ×${mu.m99.toFixed(2)} of σ ${v.sigma_pct.toFixed(2)}%; ` +
+        `80% = ±1.28σ. The 99% rests on few observations (rough).`],
+      ["Recent moves", v.realised_rms_5d_pct && v.realised_rms_20d_pct
+        ? `average 1pm → 1pm move ${v.realised_rms_5d_pct.toFixed(2)}% (5 days) · ${v.realised_rms_20d_pct.toFixed(2)}% (20 days), root mean square`
+        : "not enough history"],
+    ];
+    if (c.pts) {
+      const open = new Date(T(c.start_utc).getTime() + 30 * 60e3);
+      rows.push(["Cash session", `New York ${clock(open, NYC)}–${clock(T(c.end_utc), NYC)} = ${clock(open)}–${clock(T(c.end_utc))} London. ` +
+        `The cash window is measured from the 9:00am New York bar, half an hour before the open. ` +
+        `The cash range is centred on the ${clock(a)} price. ${c.level}% range = ` +
+        (c.level === 90 ? `measured multiplier ×${c.mult.toFixed(2)}` : "±1.28") + ` × the cash σ (${c.variance_share ? Math.round(100 * c.variance_share) : "?"}% of the window's variance).`]);
+    }
+    if (ev.length) rows.push(["Releases", ev.map((e) => `${e.name} ${at(T(e.time_utc))}`).join(" · ") +
+      ". Realised moves are often bigger on release days."]);
+    if (v.roll_note) rows.push(["Roll", v.roll_note]);
+    rows.push(["Fridays", "On Fridays the window runs over the weekend: weekend gap risk isn't fully in Friday's range."]);
+    rows.push(["Kronos", "Kronos-small (experimental) can be overlaid on the chart (its P10 and P90 paths). Its 80% band held ~46% of the time vs the 80% target. " +
+      (ks.ok ? "Today's run is from the same bar." : `Today: ${ks.why}.`)]);
+    rows.push(["Data", "Yahoo Finance NQ=F, hourly, delayed and unofficial, roll-adjusted. Treasuries: ZT=F and ZN=F note futures (Yahoo), " +
+      "yields FRED DGS2 (2Y) and Yahoo ^TNX (10Y), latest close before the forecast. Calendar: BLS, BEA, Census and the Fed schedules. " +
+      "Headlines: Yahoo Finance and CNBC RSS, a 1pm snapshot."]);
+    rows.push(["Updated", `${at(T(v.generated_utc))} London`]);
+    $("details").innerHTML = rows.map(([k, x]) => `<dt>${esc(k)}</dt><dd>${esc(x)}</dd>`).join("") +
+      `<dt></dt><dd class="disc">Volatility only, not direction. Not investment advice.</dd>`;
+  }
+
+  window.NQ = { ready, kronosState, fmt: { clock, hourOnly, day, date, at, num, esc, T, plusH } };
+
+  ready.then((D) => {
+    for (const f of [header, blocks, side, news, footer]) {
+      try { f(D); } catch (e) { console.error(f.name, e); }
+    }
+  }).catch((e) => {
+    $("h-when").textContent = "Forecast unavailable";
+    const b = $("banner");
+    b.textContent = `Couldn't load the forecast (${e.message}).`;
+    b.hidden = false;
+  });
 })();

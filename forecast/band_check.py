@@ -21,7 +21,7 @@ NY = "America/New_York"
 DAILY_WINDOW = 60          # daily (07:00 NY origin) live forecasts in the GARCH-vs-Kronos panel
 
 WINDOW = 30
-HORIZONS = (1, 6, 12, 24)
+HORIZONS = (1, 6, 12, 23, 24)
 TABLE_ROWS = 8
 
 
@@ -87,9 +87,14 @@ def evaluate(history: list[dict], df: pd.DataFrame, rolls: list, now_utc: str) -
 
     h24 = matured[24]
     # Daily comparison with the GARCH forecast: only live forecasts made from the 07:00-08:00
-    # NY bar (the daily origin), whichever workflow made them.
-    daily = [r for r in h24 if not r["backfill"]
-             and pd.Timestamp(r["made_for_bar"]).tz_convert(NY).hour == 7]
+    # NY bar (the daily origin), whichever workflow made them. Since Nov 2026 the daily run is
+    # 23 steps (1pm -> 1pm London) and scored at +23h; older daily lines only have +24h.
+    is_daily = lambda r: (not r["backfill"]                                  # noqa: E731
+                          and pd.Timestamp(r["made_for_bar"]).tz_convert(NY).hour == 7)
+    d23 = [r for r in matured[23] if is_daily(r)]
+    have23 = {r["made_for_bar"] for r in d23}
+    daily = sorted(d23 + [r for r in h24 if is_daily(r) and r["made_for_bar"] not in have23],
+                   key=lambda r: r["made_for_bar"])
     return {
         "daily": {**summary(daily, DAILY_WINDOW), "window": DAILY_WINDOW, "matured": len(daily)},
         "generated_utc": now_utc,

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NQ forecast accuracy</title>
-  <meta name="description" content="How often NQ's actual 24h and cash-session moves landed inside the daily GARCH forecast ranges, plus the Kronos lab results.">
+  <meta name="description" content="How often NQ's actual 1pm-to-1pm (London) and cash-session moves landed inside the daily GARCH forecast ranges, plus the Kronos lab results.">
   <meta name="theme-color" content="#090c0e">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -21,21 +21,21 @@
 
   <p class="acc-intro" id="acc-intro">Daily GARCH forecasts made from the 07:00–08:00 New York bar, each using only data available then. Loading…</p>
 
-  <section class="band acc-card" aria-label="24h moves vs the forecast range">
+  <section class="band acc-card" aria-label="1pm to 1pm moves vs the forecast range">
     <div class="band-head">
-      <h2>24h move vs forecast range</h2>
-      <span class="band-sub">last 250 forecasts · actual move from the 08:00 NY close to the close 24 tradable hours later</span>
+      <h2>1pm → 1pm move vs forecast range</h2>
+      <span class="band-sub">last 250 forecasts · actual move from the 1pm London close to the same time the next trading day (23 trading hours)</span>
     </div>
-    <div class="acc-legend"><span><i class="sw sw-band"></i>80% range</span><span><i class="sw sw-outer"></i>95% range</span><span><i class="dot"></i>inside 80%</span><span><i class="dot out"></i>outside 80%</span><span><i class="dot ev"></i>scheduled release in the 24h</span></div>
+    <div class="acc-legend"><span><i class="sw sw-band"></i>90% range</span><span><i class="sw sw-outer"></i>95% range</span><span><i class="dot"></i>inside 90%</span><span><i class="dot out"></i>outside 90%</span><span><i class="dot ev"></i>scheduled release in the window</span></div>
     <div class="acc-chart" id="chart-24h"></div>
   </section>
 
   <section class="band acc-card" aria-label="Cash-session moves vs the forecast range">
     <div class="band-head">
       <h2>Cash session 09:00–16:00 NY</h2>
-      <span class="band-sub">move from the 09:00 close to the 16:00 close vs ±1.28 × the forecast's cash-session σ</span>
+      <span class="band-sub">2:00–9:00pm London · move from the 9:00am New York close to the 4:00pm close vs the measured 90% multiplier × the forecast's cash σ</span>
     </div>
-    <div class="acc-legend"><span><i class="sw sw-band"></i>80% cash range</span><span><i class="dot"></i>inside</span><span><i class="dot out"></i>outside</span><span><i class="dot ev"></i>release that day</span><span><i class="tick"></i>session high/low went outside</span></div>
+    <div class="acc-legend"><span><i class="sw sw-band"></i>90% cash range</span><span><i class="dot"></i>inside</span><span><i class="dot out"></i>outside</span><span><i class="dot ev"></i>release that day</span><span><i class="tick"></i>session high/low went outside</span></div>
     <div class="acc-chart" id="chart-cash"></div>
   </section>
 
@@ -44,7 +44,7 @@
       <h2>Hit rates</h2>
       <span class="band-sub">share of days the actual move landed inside each range (target = the range's %)</span>
     </div>
-    <h3 class="acc-h3">24h</h3>
+    <h3 class="acc-h3">1pm → 1pm (23 hours)</h3>
     <div class="acc-table-wrap"><table class="band-table acc-table" id="table-24h"></table></div>
     <h3 class="acc-h3">Cash session</h3>
     <div class="acc-table-wrap"><table class="band-table acc-table" id="table-cash"></table></div>
@@ -53,10 +53,10 @@
 
   <section class="band acc-card" aria-label="Rolling hit rate">
     <div class="band-head">
-      <h2>Rolling 60-day hit rate (80% range)</h2>
-      <span class="band-sub">dashed line = the 80% target</span>
+      <h2>Rolling 60-day hit rate (90% range)</h2>
+      <span class="band-sub">dashed line = the 90% target</span>
     </div>
-    <div class="acc-legend"><span><i class="sw sw-sig"></i>24h</span><span><i class="sw sw-cash"></i>cash session</span><span><i class="sw sw-target"></i>80% target</span></div>
+    <div class="acc-legend"><span><i class="sw sw-sig"></i>1pm → 1pm</span><span><i class="sw sw-cash"></i>cash session</span><span><i class="sw sw-target"></i>90% target</span></div>
     <div class="acc-chart acc-chart-roll" id="chart-roll"></div>
   </section>
 
@@ -85,12 +85,13 @@
     <figure><img src="lab/equity_1_vol_sized_trend.png" alt="Equity curves, strategy 1: vol-sized trend" loading="lazy"><figcaption>1 · Vol-sized trend (MA 20/100, always in the market)</figcaption></figure>
     <figure><img src="lab/equity_2_stops_targets.png" alt="Equity curves, strategy 2: distribution stops and targets" loading="lazy"><figcaption>2 · Distribution stops and targets</figcaption></figure>
     <figure><img src="lab/equity_3_band_break.png" alt="Equity curves, strategy 3: band break, fade vs follow" loading="lazy"><figcaption>3 · Band break: fade vs follow</figcaption></figure>
+    <p class="acc-p" id="kronos-live"></p>
     <p class="acc-p">Caveats from the lab: one ~6-month period, 30 Kronos paths per forecast, estimated roll gaps before Sep 2026, delayed unofficial Yahoo data, and no correction for trying several rules.</p>
   </details>
 
   <footer>
     <p class="disclaimer">Volatility only, not direction. Past hit rates are not a guarantee. Not investment advice.</p>
-    <p>Backfilled days were forecast afterwards using only data before each 07:00–08:00 NY bar. Data: Yahoo Finance <code>NQ=F</code>, delayed and unofficial.</p>
+    <p>Backfilled days were forecast afterwards using only data before each 7:00–8:00am New York bar (1pm London). Research write-ups: <code>lab/results/vol_contest.md</code> (GARCH kept) and <code>lab/results/regime.md</code> (no regime chip). Data: Yahoo Finance <code>NQ=F</code>, delayed and unofficial.</p>
   </footer>
 
   <script src="accuracy.js"></script>

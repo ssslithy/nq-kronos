@@ -1,9 +1,9 @@
-"""Phone alert for the daily GARCH 24h vol forecast via ntfy.sh (free, no account).
+"""Phone alert for the daily GARCH vol forecast via ntfy.sh (free, no account).
 
 After a successful forecast (scheduled, or a manual forced run), run_vol.py POSTs one line
-to https://ntfy.sh/<NTFY_TOPIC>:
+to https://ntfy.sh/<NTFY_TOPIC>, leading with the 90% range and the 1pm -> 1pm London window:
 
-    NQ 24h vol: ±276 pts (±1.02%) · 80%: 26,747–27,454 · 95%: 26,535–27,674 · Calm (19th pct) · NFP 08:30 NY
+    NQ Fri 1:00pm – Mon 1:00pm London: ±444 pts (±1.64%) · 90%: 26,659–27,546 · Cash 2:30pm–9:00pm ±329 pts · Payrolls (NFP) 1:30pm
 
 NTFY_TOPIC comes from the environment (a GitHub Actions secret in the workflow). If it isn't
 set, nothing is sent and nothing is logged. A failed send is logged as a warning and never
@@ -22,7 +22,8 @@ import logging
 import os
 import secrets
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import requests
@@ -31,29 +32,43 @@ log = logging.getLogger("vol_alert")
 
 ROOT = Path(__file__).resolve().parent.parent
 SERVER = "https://ntfy.sh"
+LONDON = ZoneInfo("Europe/London")
 TIMEOUT = 15
 
 
-def _ordinal(n: int) -> str:
-    return f"{n}{'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"
+def london(t) -> str:
+    """12-hour London clock: 1:00pm, 11:58am."""
+    lt = datetime.fromisoformat(str(t).replace("Z", "+00:00")).astimezone(LONDON)
+    return f"{lt.hour % 12 or 12}:{lt.minute:02d}{'am' if lt.hour < 12 else 'pm'}"
+
+
+def window(f: dict) -> str:
+    """'Fri 1:00pm – Mon 1:00pm' from the origin close to the close of the last horizon bar."""
+    a = datetime.fromisoformat(f["origin_utc"]) + timedelta(hours=1)
+    b = datetime.fromisoformat(f["horizon_end_utc"]) + timedelta(hours=1)
+    return f"{a.astimezone(LONDON):%a} {london(a)} – {b.astimezone(LONDON):%a} {london(b)}"
 
 
 def alert_text(f: dict) -> str:
-    """One line: sigma, 80% range, regime, and any scheduled release in the 24h horizon."""
-    lo, hi = f["range80"]
-    parts = [f"NQ 24h vol: ±{f['sigma_pts']:,.0f} pts (±{f['sigma_pct']:.2f}%)",
-             f"80%: {lo:,.0f}–{hi:,.0f}"]
-    if f.get("range95"):
-        parts.append(f"95%: {f['range95'][0]:,.0f}–{f['range95'][1]:,.0f}")
-    if f.get("regime"):
-        parts.append(f"{f['regime']} ({_ordinal(round(f['percentile']))} pct)")
+    """One line: the 90% (headline) move and range for the 1pm -> 1pm London window, the cash
+    session range, any scheduled release in the window, and a roll warning."""
+    lv = f.get("headline", 90)
+    lo, hi = f[f"range{lv}"]
+    parts = [f"NQ {window(f)} London: ±{f['headline_pts']:,.0f} pts (±{f['headline_pct']:.2f}%)",
+             f"{lv}%: {lo:,.0f}–{hi:,.0f}"]
+    c = f.get("cash") or {}
+    if c.get("pts") and c.get("start_utc"):
+        start = datetime.fromisoformat(c["start_utc"]) + timedelta(minutes=30)   # the 9:30am NY open
+        parts.append(f"Cash {london(start)}–{london(c['end_utc'])} ±{c['pts']:,.0f} pts"
+                     + ("" if c.get("level") == lv else f" ({c['level']}%)"))
     ev = f.get("events") or {}
+    origin_day = datetime.fromisoformat(f["origin_utc"]).astimezone(LONDON).date()
     for i in ev.get("items", []):
-        # "NFP 08:30 NY" today; "CPI Tue 08:30 NY" later in the horizon
-        day, hhmm = i["ny"][:3], i["ny"][-5:]
-        parts.append(f"{i['kind']} {hhmm} NY" if i["today"] else f"{i['kind']} {day} {hhmm} NY")
+        t = datetime.fromisoformat(i["time_utc"])
+        same = t.astimezone(LONDON).date() == origin_day
+        parts.append(f"{i['name']} {london(t)}" if same else f"{i['name']} {t.astimezone(LONDON):%a} {london(t)}")
     if f.get("roll_note"):
-        parts.append("roll in horizon")
+        parts.append("roll in window")
     return " · ".join(parts)
 
 
@@ -62,7 +77,7 @@ def send(text: str, topic: str | None = None, title: str | None = None) -> bool:
     topic = topic or os.environ.get("NTFY_TOPIC", "").strip()
     if not topic:
         return False
-    headers = {"Title": title or "NQ 24h volatility", "Tags": "chart_with_upwards_trend"}
+    headers = {"Title": title or "NQ daily volatility", "Tags": "chart_with_upwards_trend"}
     try:
         r = requests.post(f"{SERVER}/{topic}", data=text.encode("utf-8"), headers=headers, timeout=TIMEOUT)
         r.raise_for_status()
@@ -90,7 +105,7 @@ def main() -> int:
             print("NTFY_TOPIC is not set: nothing sent", file=sys.stderr)
             return 1
         origin = datetime.fromisoformat(f["origin_utc"]).strftime("%a %d %b")
-        ok = send(f"TEST (forecast of {origin}): {text}", title="NQ 24h volatility: test")
+        ok = send(f"TEST (forecast of {origin}): {text}", title="NQ daily volatility: test")
         print("sent" if ok else "send failed (see warning above)")
         return 0 if ok else 1
     return 0

@@ -1,0 +1,32 @@
+{
+ "ok": true,
+ "generated_utc": "2026-11-06T13:10:00Z",
+ "items": [
+  {
+   "source": "CNBC",
+   "title": "Nasdaq sell-off batters Asian chip stocks as SK Hynix, Samsung, Softbank, TSMC tumble",
+   "link": "https://www.cnbc.com/2026/11/06/tech-stocks-sk-hynix-samsung-softbank.html",
+   "published_utc": "2026-11-06T11:06:58Z",
+   "time_london": "11:06am"
+  },
+  {
+   "source": "CNBC",
+   "title": "Elon Musk's Tesla and SpaceX lose over $420 billion in combined market cap after midterms",
+   "link": "https://www.cnbc.com/2026/11/05/tesla-spacex-stocks-fall-after-2026-midterms.html",
+   "published_utc": "2026-11-06T03:20:43Z",
+   "time_london": "3:20am"
+  },
+  {
+   "source": "CNBC",
+   "title": "Magnificent 7 loses $1 trillion. The most eye-popping stats from Thursday's tech stock plunge",
+   "link": "https://www.cnbc.com/2026/11/05/stock-market-selloff-ai-fears.html",
+   "published_utc": "2026-11-05T23:39:32Z",
+   "time_london": "11:39pm"
+  }
+ ],
+ "errors": null,
+ "feeds": [
+  "Yahoo Finance",
+  "CNBC"
+ ]
+}

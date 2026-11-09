@@ -4,150 +4,100 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NQ forecasts</title>
-  <meta name="description" content="Nasdaq-100 futures (NQ): a daily 24h volatility forecast (calibrated GARCH) with its forecast fan, plus an experimental Kronos-small fan from the same bar.">
-  <meta name="theme-color" content="#090c0e">
+  <meta name="description" content="Daily NQ (Nasdaq-100 futures) volatility forecast: how far the price may move from 1pm to 1pm London, with its prediction intervals, the cash-session range, the US calendar, Treasuries and tech headlines.">
+  <meta name="theme-color" content="#0A0E11">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <header class="top">
-    <div class="brand">
-      <span class="ticker">NQ</span>
-      <h1>NQ forecasts</h1>
+<body class="nq">
+<div class="nq-wrap">
+
+  <header class="nq-head">
+    <div class="nq-brand">
+      <span class="nq-badge">NQ</span>
+      <div class="nq-title">
+        <span class="nq-when" id="h-when">Loading…</span>
+        <span class="nq-sub" id="h-sub">Nasdaq-100 futures</span>
+      </div>
     </div>
-    <div class="top-right">
-      <a class="nav-link" href="accuracy.html">accuracy →</a>
-      <span id="status-pill" class="pill">loading…</span>
-      <span class="last-close"><span class="lbl">LAST</span> <span id="last-close">—</span></span>
-    </div>
+    <a class="nq-link" href="accuracy.html">Accuracy →</a>
   </header>
 
-  <div id="stale-banner" class="banner" hidden></div>
+  <p class="nq-banner" id="banner" hidden></p>
 
-  <section class="vol" id="vol" aria-label="24h volatility forecast (GARCH)" hidden>
-    <div class="vol-head">
-      <h2>24h volatility (GARCH)</h2>
-      <span class="vol-regime" id="vol-regime"></span>
-      <span class="vol-when" id="vol-when"></span>
-    </div>
-    <div class="vol-warn" id="vol-warn" hidden></div>
-    <div class="vol-grid">
-      <div class="vol-main">
-        <div class="k">expected 24h move (1σ)</div>
-        <div class="vol-big"><span id="vol-pts">—</span> <span class="vol-pct" id="vol-pct"></span></div>
-        <div class="vol-range"><span class="lbl">80% RANGE</span> <span id="vol-r80">—</span></div>
-        <div class="vol-range vol-range95"><span class="lbl">95% RANGE</span> <span id="vol-r95">—</span></div>
-        <div class="vol-sub"><span class="lbl">68%</span> <span id="vol-r68">—</span> · <span class="lbl">CASH 09–16 NY</span> <span id="vol-cash">—</span></div>
-        <div class="vol-sub"><span class="lbl">99% STRESS</span> <span id="vol-s99">—</span> <i class="rough">rough: few observations</i></div>
-      </div>
-      <div class="vol-mid">
-        <div class="vol-event" id="vol-event"></div>
-        <dl class="vol-dl">
-          <dt>vs realised</dt><dd id="vol-real">—</dd>
-          <dt class="vol-model-row">model</dt><dd class="vol-model-row" id="vol-model">—</dd>
-        </dl>
-        <button type="button" class="vol-model-btn" id="vol-model-btn" aria-expanded="false" aria-controls="vol-model">model details</button>
-      </div>
-      <div class="vol-spark">
-        <div class="vol-spark-head">
-          <span class="k">last 60 trading days</span>
-          <span class="vol-legend"><i class="sw sw-sig"></i>forecast σ <i class="sw sw-edge"></i>80% edge <i class="dot"></i>actual |move| <i class="dot out"></i>outside</span>
+  <section class="nq-card nq-top" aria-label="Today's forecast">
+    <div class="nq-fc">
+      <div class="nq-blocks">
+        <div class="nq-block" id="b-24h">
+          <span class="nq-bl"><b>Next 24 hours,</b> <span id="b-24h-when"></span></span>
+          <div class="nq-bigrow"><span class="nq-big" id="b-24h-pts">—</span><span class="nq-pct" id="b-24h-pct"></span></div>
+          <span class="nq-range" id="b-24h-range"></span>
         </div>
-        <div id="vol-spark-svg" class="vol-spark-svg"></div>
-        <div class="vol-calib" id="vol-calib"></div>
-      </div>
-    </div>
-    <ul class="vol-limits" aria-label="Limits">
-      <li><b>Volatility only, not direction.</b> Not investment advice.</li>
-      <li>GARCH assumes tomorrow looks like the recent past: it reacts to shocks after they happen and ignores scheduled releases (hence the event flag).</li>
-      <li>Yahoo data is delayed and unofficial.</li>
-    </ul>
-  </section>
-
-  <main class="layout">
-    <section class="chart-card" aria-label="Forecast chart">
-      <div class="chart-toolbar">
-        <h2 class="chart-title" id="chart-title">24h forecast · GARCH (daily)</h2>
-        <div class="seg" role="group" aria-label="Horizon">
-          <button type="button" data-h="7">7h</button>
-          <button type="button" data-h="24" class="on">24h</button>
+        <div class="nq-block" id="b-cash" hidden>
+          <span class="nq-bl"><b>NYC Cash Session,</b> <span id="b-cash-when"></span></span>
+          <div class="nq-bigrow"><span class="nq-big" id="b-cash-pts">—</span><span class="nq-pct" id="b-cash-pct"></span></div>
+          <span class="nq-range" id="b-cash-range"></span>
+          <span class="nq-note" id="b-cash-note" hidden>Based on the 80% PI</span>
         </div>
-        <label class="toggle"><input type="checkbox" id="show-paths" checked> <span>paths</span></label>
-        <label class="toggle" title="Kronos-small, same daily origin. Its 80% band held ~46% of the time in the lab vs the 80% target."><input type="checkbox" id="show-kronos"> <span id="kronos-label">Kronos (experimental)</span></label>
-        <div class="legend" id="legend"></div>
       </div>
-      <div class="chart-wrap" id="chart-wrap">
-        <canvas id="chart"></canvas>
-        <div id="tip" class="tip" hidden></div>
+      <span class="nq-note" id="b-note">Based on the 90% PI</span>
+      <!-- Regime row: shown only if Gate D passes (lab/results/regime.md). It failed, so there is none. -->
+    </div>
+
+    <div class="nq-side" id="side" hidden>
+      <div id="cal" hidden>
+        <span class="nq-h">US calendar · London</span>
+        <div id="cal-rows"></div>
       </div>
-      <div class="axis-note">bar start times, London · weekend and daily-break hours are skipped · forecast made once a day from the 07:00–08:00 New York bar</div>
-    </section>
-
-    <aside class="side" aria-label="Model and data details">
-      <h2>Model</h2>
-      <dl>
-        <dt>model</dt><dd id="m-model">—</dd>
-        <dt>context</dt><dd id="m-context">—</dd>
-        <dt>horizon</dt><dd id="m-horizon">—</dd>
-        <dt>samples</dt><dd id="m-samples">—</dd>
-        <dt>sampling</dt><dd id="m-sampling">—</dd>
-      </dl>
-      <h2>Updated</h2>
-      <dl>
-        <dt>London</dt><dd id="u-london">—</dd>
-        <dt>New York</dt><dd id="u-ny">—</dd>
-        <dt>last bar</dt><dd id="u-lastbar">—</dd>
-      </dl>
-      <h2>Data</h2>
-      <dl>
-        <dt>source</dt><dd id="d-source">—</dd>
-      </dl>
-      <div class="badges" id="badges"></div>
-      <p class="note">Data is delayed and unofficial. Direction is close to unpredictable for any model: read the fan's <b>width</b> (the expected range), not the median. The GARCH fan's bands are its published 80% and 95% ranges; Kronos (experimental) is its own sampled paths.</p>
-    </aside>
-  </main>
-
-  <section class="summary" aria-label="Forecast summary">
-    <div class="sum-title" id="sum-title">Next 24h</div>
-    <div class="stat"><div class="k" id="s-k1">—</div><div class="v" id="s-v1">—</div><div class="sub" id="s-sub1"></div></div>
-    <div class="stat"><div class="k" id="s-k2">—</div><div class="v" id="s-v2">—</div><div class="sub" id="s-sub2"></div></div>
-    <div class="stat"><div class="k" id="s-k3">—</div><div class="v" id="s-v3">—</div><div class="sub" id="s-sub3"></div></div>
-  </section>
-
-  <section class="band" id="band" aria-label="Band check" hidden>
-    <div class="band-head">
-      <h2>Band check · daily forecasts</h2>
-      <span class="band-sub">live forecasts only: how often the actual +24h close landed inside each model's 80% band</span>
+      <div id="tsy" hidden>
+        <span class="nq-h nq-h2" id="tsy-h">US Treasuries</span>
+        <div id="tsy-rows"></div>
+      </div>
     </div>
-    <div class="band-stats cmp" id="cmp-stats"></div>
-    <div id="band-detail">
-    <div class="band-head band-head2">
-      <h2>Kronos detail</h2>
-      <span class="band-sub" id="band-sub"></span>
-    </div>
-    <div class="band-stats" id="band-stats"></div>
-    <div class="band-hz" id="band-hz"></div>
-    <div class="band-table-wrap">
-      <table class="band-table">
-        <thead><tr>
-          <th>forecast from</th><th>+24h bar</th><th>P10</th><th>median</th><th>P90</th><th>actual</th><th>in band</th><th>|med err|</th><th>|naive err|</th>
-        </tr></thead>
-        <tbody id="band-rows"></tbody>
-      </table>
-    </div>
-    <p class="band-note" id="band-note"></p>
+
+    <div class="nq-news" id="news" hidden>
+      <div class="nq-news-head"><span class="nq-h nq-h-news">Tech news</span></div>
+      <div id="news-rows"></div>
     </div>
   </section>
 
-  <footer>
-    <p class="disclaimer">Experimental model output on delayed data. Not investment advice.</p>
-    <p class="credits">
-      Forecasts: <a href="https://github.com/shiyu-coder/Kronos" rel="noopener">Kronos</a>
-      (Shi et al., MIT licence), weights <a href="https://huggingface.co/NeoQuasar/Kronos-small" rel="noopener">NeoQuasar/Kronos-small</a>.
-      Data: Yahoo Finance <code>NQ=F</code>, roll-adjusted. Kronos benchmarks are the authors' own and not yet independently replicated.
-    </p>
+  <section class="nq-card nq-chart-card" aria-label="Hourly price and forecast">
+    <div class="nq-chart-head">
+      <span class="nq-chart-title" id="chart-title">Hourly price · forecast</span>
+      <div class="nq-controls">
+        <span class="nq-legend"><span class="nq-lp"></span>Last Price</span>
+        <label class="nq-check" id="kronos-label" title="Kronos-small (experimental): its P10 and P90 paths. Its 80% band held ~46% of the time vs the 80% target.">
+          <input type="checkbox" id="show-kronos" class="ac-purple">Kronos (experimental)</label>
+        <div class="nq-pis" role="group" aria-label="Show prediction intervals">
+          <span class="nq-pi-btns" id="pi-buttons"></span>
+          <span class="nq-div"></span>
+          <button type="button" class="nq-cash-btn" id="cash-btn" aria-pressed="false">Cash</button>
+        </div>
+        <span class="nq-levels" id="levels">Levels
+          <label class="nq-check"><input type="checkbox" id="lv-pi" class="ac-teal" checked>PI</label>
+          <label class="nq-check"><input type="checkbox" id="lv-cash" class="ac-blue" checked>Cash</label>
+        </span>
+      </div>
+    </div>
+    <div id="chart" class="nq-chart" role="img" aria-label="NQ hourly candles with the forecast ranges widening to the end of the window"></div>
+    <span class="nq-axis-note" id="axis-note">Times London · weekend and daily-break hours skipped · forecast made from the 7:00–8:00am New York bar</span>
+  </section>
+
+  <footer class="nq-foot">
+    <div class="nq-foot-row">
+      <span><b>Last 250 days:</b> <span class="nq-mono" id="f-hit">—</span></span>
+      <a class="nq-link" href="accuracy.html">See accuracy →</a>
+    </div>
+    <details class="nq-details">
+      <summary>Details</summary>
+      <dl id="details"></dl>
+    </details>
   </footer>
 
-  <script src="app.js"></script>
-  <script src="vol.js"></script>
+</div>
+<script src="vol.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

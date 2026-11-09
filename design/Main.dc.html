@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NQ daily forecast</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0E11}
+a{color:#5EE0C6}a:hover{color:#9AF0DE}
+summary{cursor:pointer}
+</style>
+</helmet>
+<div style="background: #0A0E11; color: #E8EEF1; font-family: Inter, system-ui, sans-serif; padding: 28px clamp(16px, 4vw, 48px) 40px; box-sizing: border-box; min-height: 100%">
+<div style="max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="background: #34D3B6; color: #06221C; font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 14px; padding: 4px 8px; border-radius: 6px">NQ</span>
+<div style="display: flex; flex-direction: column">
+<span style="font-size: 16px; font-weight: 600">Fri 6 Nov · 1:00pm London · <span style="font-family: 'JetBrains Mono', monospace; color: #F2B84B">27,099</span></span>
+<span style="font-size: 13px; color: #93A1A9">Nasdaq-100 futures · next update Mon 1:00pm</span>
+</div>
+</div>
+<a href="#accuracy" style="font-size: 14px; font-weight: 500; text-decoration: none; padding: 12px 4px">Accuracy →</a>
+</header>
+
+<section style="background: #11171B; border: 1px solid #1E272D; border-radius: 16px; padding: clamp(20px, 3vw, 32px); display: flex; flex-wrap: wrap; gap: 28px 48px; align-items: flex-start">
+<div style="flex: 0 1 auto; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-wrap: wrap; gap: 20px 48px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 15px; color: #93A1A9"><b style="font-weight: 600; color: #E8EEF1">Next 24 hours,</b> Fri 1:00pm – Mon 1:00pm</span>
+<div style="display: flex; align-items: baseline; gap: 12px">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: clamp(36px, 5vw, 48px); font-weight: 600; letter-spacing: -0.02em; line-height: 1">±444 pts</span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 500; color: #93A1A9">±1.64%</span>
+</div>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: clamp(18px, 2.4vw, 22px); font-weight: 600; color: #C9D4D9">26,659 – 27,546</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 15px; color: #93A1A9"><b style="font-weight: 600; color: #E8EEF1">NYC Cash Session,</b> Fri 2:30pm – Fri 9:00pm</span>
+<div style="display: flex; align-items: baseline; gap: 12px">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: clamp(36px, 5vw, 48px); font-weight: 600; letter-spacing: -0.02em; line-height: 1">±329 pts</span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 500; color: #93A1A9">±1.21%</span>
+</div>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: clamp(18px, 2.4vw, 22px); font-weight: 600; color: #C9D4D9">26,773 – 27,429</span>
+</div>
+</div>
+<span style="font-size: 13px; color: #93A1A9">Based on the 90% PI</span>
+<div style="display: flex; align-items: center; gap: 8px; margin-top: 4px">
+<span style="font-size: 13px; color: #93A1A9">Regime</span>
+<span style="font-size: 13px; font-weight: 600; color: #C9D4D9; border: 1px dashed #4A5860; background: #0E1418; border-radius: 999px; padding: 4px 10px">[BULL / BEAR]</span>
+<span style="font-size: 13px; color: #93A1A9">[XX]% model confidence</span>
+</div>
+</div>
+
+<div style="flex: 1 1 220px; max-width: 300px; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid #1E272D; padding-left: 20px">
+<span style="font-size: 12px; font-weight: 600; color: #93A1A9; text-transform: uppercase; letter-spacing: 0.06em; padding-bottom: 4px">US calendar · London</span>
+<div style="display: grid; grid-template-columns: 70px 50px 1fr auto; gap: 8px; padding: 4px 0; font-size: 13px"><span style="color: #F2B84B; font-weight: 600">Today</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #C9D4D9">1:30pm</span><span style="color: #F2B84B; font-weight: 500">Payrolls (NFP)</span><svg width="13" height="10" viewBox="0 0 13 10" role="img" aria-label="High impact"><title>High impact</title><rect x="0" y="6" width="3" height="4" rx="1" fill="#5EE0C6"/><rect x="5" y="3" width="3" height="7" rx="1" fill="#5EE0C6"/><rect x="10" y="0" width="3" height="10" rx="1" fill="#5EE0C6"/></svg></div>
+<div style="display: grid; grid-template-columns: 70px 50px 1fr auto; gap: 8px; padding: 4px 0; font-size: 13px"><span style="color: #93A1A9; font-weight: 400">Tue 10 Nov</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #C9D4D9">1:30pm</span><span style="color: #E8EEF1; font-weight: 500">CPI</span><svg width="13" height="10" viewBox="0 0 13 10" role="img" aria-label="High impact"><title>High impact</title><rect x="0" y="6" width="3" height="4" rx="1" fill="#5EE0C6"/><rect x="5" y="3" width="3" height="7" rx="1" fill="#5EE0C6"/><rect x="10" y="0" width="3" height="10" rx="1" fill="#5EE0C6"/></svg></div>
+<div style="display: grid; grid-template-columns: 70px 50px 1fr auto; gap: 8px; padding: 4px 0; font-size: 13px"><span style="color: #93A1A9; font-weight: 400">Tue 17 Nov</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #C9D4D9">1:30pm</span><span style="color: #E8EEF1; font-weight: 500">Retail sales</span><svg width="13" height="10" viewBox="0 0 13 10" role="img" aria-label="Medium impact"><title>Medium impact</title><rect x="0" y="6" width="3" height="4" rx="1" fill="#5EE0C6"/><rect x="5" y="3" width="3" height="7" rx="1" fill="#5EE0C6"/><rect x="10" y="0" width="3" height="10" rx="1" fill="#2A353C"/></svg></div>
+<span style="font-size: 12px; font-weight: 600; color: #93A1A9; text-transform: uppercase; letter-spacing: 0.06em; padding: 12px 0 4px">US Treasuries · Thu 1pm – Fri 1pm</span>
+<div style="display: grid; grid-template-columns: 34px minmax(60px, 1fr) auto auto; align-items: center; gap: 10px; padding: 3px 0; font-size: 13px"><span style="font-weight: 600">2Y</span><svg width="100%" height="20" viewBox="0 0 84 20" preserveAspectRatio="none" aria-hidden="true" style="display: block"><polyline points="0.0,17.6 3.7,14.4 7.3,16.3 11.0,13.7 14.6,14.0 18.3,14.4 21.9,9.6 25.6,9.0 29.2,8.8 32.9,6.8 36.5,3.9 40.2,3.7 43.8,2.0 47.5,4.0 51.1,4.5 54.8,5.3 58.4,8.1 62.1,11.3 65.7,14.8 69.4,15.1 73.0,15.2 76.7,15.6 80.3,15.2 84.0,18.0" fill="none" stroke="#5EE0C6" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg><span style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #5EE0C6">+0.06%</span><span style="font-size: 11px; color: #93A1A9; text-align: right">Yield 3.52%</span></div>
+<div style="display: grid; grid-template-columns: 34px minmax(60px, 1fr) auto auto; align-items: center; gap: 10px; padding: 3px 0; font-size: 13px"><span style="font-weight: 600">10Y</span><svg width="100%" height="20" viewBox="0 0 84 20" preserveAspectRatio="none" aria-hidden="true" style="display: block"><polyline points="0.0,17.4 3.7,15.4 7.3,15.5 11.0,15.8 14.6,17.9 18.3,18.0 21.9,14.2 25.6,12.4 29.2,8.9 32.9,7.6 36.5,5.9 40.2,4.8 43.8,9.1 47.5,6.0 51.1,4.0 54.8,2.0 58.4,6.3 62.1,10.8 65.7,12.8 69.4,13.6 73.0,12.2 76.7,11.7 80.3,9.7 84.0,10.9" fill="none" stroke="#5EE0C6" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg><span style="font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #5EE0C6">+0.21%</span><span style="font-size: 11px; color: #93A1A9; text-align: right">Yield 4.08%</span></div>
+</div>
+
+<div style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 0 4px"><span style="font-size: 13px; font-weight: 600; color: #93A1A9; text-transform: uppercase; letter-spacing: 0.06em">Tech news</span><span style="font-size: 11px; color: #93A1A9; border: 1px dashed #4A5860; border-radius: 999px; padding: 2px 8px">sample headlines</span></div>
+<div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-top: 1px solid #1E272D"><div style="display: flex; justify-content: space-between; gap: 8px; font-size: 12px"><span style="color: #5EE0C6; font-weight: 600">Reuters</span><span style="color: #93A1A9; font-family: 'JetBrains Mono', monospace">12:42pm</span></div><span style="font-size: 14px; line-height: 1.35">Chip stocks lift Nasdaq futures ahead of US open</span></div>
+<div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-top: 1px solid #1E272D"><div style="display: flex; justify-content: space-between; gap: 8px; font-size: 12px"><span style="color: #5EE0C6; font-weight: 600">Bloomberg</span><span style="color: #93A1A9; font-family: 'JetBrains Mono', monospace">12:15pm</span></div><span style="font-size: 14px; line-height: 1.35">AI spending back in focus as megacap earnings wind down</span></div>
+<div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-top: 1px solid #1E272D"><div style="display: flex; justify-content: space-between; gap: 8px; font-size: 12px"><span style="color: #5EE0C6; font-weight: 600">CNBC</span><span style="color: #93A1A9; font-family: 'JetBrains Mono', monospace">11:58am</span></div><span style="font-size: 14px; line-height: 1.35">Cloud software names slip after cautious guidance</span></div>
+</div>
+
+</section>
+
+<section style="background: #11171B; border: 1px solid #1E272D; border-radius: 16px; padding: 20px clamp(12px, 2.5vw, 28px) 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px">
+<span style="font-size: 15px; font-weight: 600">Hourly price · forecast to Mon 1:00pm London</span>
+<div style="flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; font-size: 13px; color: #93A1A9">
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 14px; height: 2px; background: #F2B84B"></span>Last Price</span>
+<label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 0; color: #C9D4D9"><input type="checkbox" checked="{{kronos}}" onChange="{{toggleKronos}}" style="width: 16px; height: 16px; accent-color: #B79CFF; margin: 0">Kronos (experimental)</label>
+<div role="group" aria-label="Show prediction intervals" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap">
+<sc-for list="{{levels}}" as="lv" hint-placeholder-count="5">
+<button type="button" aria-pressed="{{lv.pressed}}" onClick="{{lv.pick}}" style="{{lv.style}}">{{lv.label}}</button>
+</sc-for>
+<span style="width: 1px; height: 28px; background: #2A353C; margin: 0 4px"></span>
+<button type="button" aria-pressed="{{cashPressed}}" onClick="{{toggleCash}}" style="{{cashStyle}}">Cash</button>
+</div>
+<span style="margin-left: auto; margin-right: 12.8%; display: flex; align-items: center; gap: 12px; color: #C9D4D9">Levels
+<label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 10px 0"><input type="checkbox" checked="{{piLevels}}" onChange="{{togglePiLevels}}" style="width: 16px; height: 16px; accent-color: #34D3B6; margin: 0">PI</label>
+<label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 10px 0"><input type="checkbox" checked="{{cashLevels}}" onChange="{{toggleCashLevels}}" style="width: 16px; height: 16px; accent-color: #7FB3FF; margin: 0">Cash</label>
+</span>
+</div>
+</div>
+<svg viewBox="{{viewBox}}" width="100%" style="display: block; height: auto" role="img" aria-label="NQ hourly candles with a GARCH forecast range widening over the next 24 hours">
+<g stroke="#1E272D" stroke-width="1">
+<line x1="56" y1="87.3" x2="872" y2="87.3"/><line x1="56" y1="150.5" x2="872" y2="150.5"/><line x1="56" y1="213.8" x2="872" y2="213.8"/><line x1="56" y1="277.1" x2="872" y2="277.1"/><line x1="56" y1="340.4" x2="872" y2="340.4"/>
+</g>
+<g fill="#93A1A9" font-size="{{axisFont}}" font-family="JetBrains Mono, monospace" text-anchor="end">
+<text x="48" y="91.3">28,250</text><text x="48" y="154.5">27,750</text><text x="48" y="217.8">27,250</text><text x="48" y="281.1">26,750</text><text x="48" y="344.4">26,250</text>
+</g>
+<path d="{{b99.d}}" opacity="{{b99.op}}" fill="rgba(52,211,182,0.13)" stroke="#34D3B6" stroke-opacity="0.45" stroke-width="1"/>
+<path d="{{b95.d}}" opacity="{{b95.op}}" fill="rgba(52,211,182,0.13)" stroke="#34D3B6" stroke-opacity="0.45" stroke-width="1"/>
+<path d="{{b90.d}}" opacity="{{b90.op}}" fill="rgba(52,211,182,0.13)" stroke="#34D3B6" stroke-opacity="0.45" stroke-width="1"/>
+<path d="{{b85.d}}" opacity="{{b85.op}}" fill="rgba(52,211,182,0.13)" stroke="#34D3B6" stroke-opacity="0.45" stroke-width="1"/>
+<path d="{{b80.d}}" opacity="{{b80.op}}" fill="rgba(52,211,182,0.13)" stroke="#34D3B6" stroke-opacity="0.45" stroke-width="1"/>
+<line x1="538.8" y1="233.0" x2="865.2" y2="233.0" stroke="#F2B84B" stroke-width="2" stroke-dasharray="6 5"/>
+<g opacity="{{cashOpacity}}">
+<rect x="559.2" y="191.1" width="88.4" height="83.1" fill="rgba(127,179,255,0.16)" stroke="#7FB3FF" stroke-width="1.5" stroke-dasharray="4 3"/>
+<g font-family="JetBrains Mono, monospace" font-size="{{axisFont}}" fill="#A9CBFF" opacity="{{cashLevelsOpacity}}">
+<text x="603.4" y="185" text-anchor="middle">Cash 27,429</text>
+<text x="603.4" y="{{cashLoY}}" text-anchor="middle">26,773</text>
+</g>
+</g>
+<g opacity="{{kronosOpacity}}" fill="none" stroke="#B79CFF" stroke-width="2">
+<path d="M538.8,233.0 L552.4,226.5 L566.0,227.7 L579.6,223.4 L593.2,223.2 L606.8,223.3 L620.4,222.1 L634.0,221.5 L647.6,220.3 L661.2,220.9 L674.8,220.3 L688.4,221.3 L702.0,220.1 L715.6,219.9 L729.2,220.4 L742.8,216.0 L756.4,209.4 L770.0,206.4 L783.6,203.4 L797.2,198.8 L810.8,195.3 L824.4,190.9 L838.0,190.8 L851.6,189.4 L865.2,196.2"/>
+<path d="M538.8,233.0 L552.4,238.6 L566.0,241.1 L579.6,244.8 L593.2,253.9 L606.8,258.2 L620.4,258.7 L634.0,255.3 L647.6,249.4 L661.2,261.3 L674.8,256.0 L688.4,260.0 L702.0,267.1 L715.6,257.4 L729.2,262.6 L742.8,259.6 L756.4,258.7 L770.0,254.6 L783.6,254.1 L797.2,245.8 L810.8,248.6 L824.4,249.8 L838.0,244.0 L851.6,246.1 L865.2,242.6"/>
+</g>
+<g stroke="#6FD3B8" fill="#6FD3B8" stroke-width="1.4">
+<line x1="103.6" y1="58.7" x2="103.6" y2="77.0"/><rect x="99.4" y="68.9" width="8.4" height="6.6"/><line x1="158.0" y1="83.1" x2="158.0" y2="97.0"/><rect x="153.8" y="83.4" width="8.4" height="13.1"/><line x1="171.6" y1="74.1" x2="171.6" y2="87.7"/><rect x="167.4" y="81.1" width="8.4" height="2.3"/><line x1="185.2" y1="69.4" x2="185.2" y2="85.1"/><rect x="181.0" y="72.2" width="8.4" height="9.1"/><line x1="198.8" y1="63.4" x2="198.8" y2="84.3"/><rect x="194.6" y="64.3" width="8.4" height="7.7"/><line x1="212.4" y1="62.0" x2="212.4" y2="71.7"/><rect x="208.2" y="64.5" width="8.4" height="1.0"/><line x1="226.0" y1="60.1" x2="226.0" y2="69.7"/><rect x="221.8" y="62.6" width="8.4" height="1.9"/><line x1="294.0" y1="200.2" x2="294.0" y2="265.8"/><rect x="289.8" y="226.0" width="8.4" height="22.7"/><line x1="321.2" y1="244.2" x2="321.2" y2="268.7"/><rect x="317.0" y="250.7" width="8.4" height="3.6"/><line x1="334.8" y1="222.7" x2="334.8" y2="266.2"/><rect x="330.6" y="230.5" width="8.4" height="20.0"/><line x1="389.2" y1="247.4" x2="389.2" y2="293.4"/><rect x="385.0" y="261.3" width="8.4" height="31.8"/><line x1="402.8" y1="244.3" x2="402.8" y2="268.5"/><rect x="398.6" y="248.3" width="8.4" height="12.1"/><line x1="416.4" y1="225.3" x2="416.4" y2="251.9"/><rect x="412.2" y="232.6" width="8.4" height="16.4"/><line x1="443.6" y1="241.0" x2="443.6" y2="255.7"/><rect x="439.4" y="242.6" width="8.4" height="3.3"/><line x1="470.8" y1="245.5" x2="470.8" y2="257.3"/><rect x="466.6" y="247.1" width="8.4" height="5.2"/><line x1="498.0" y1="235.6" x2="498.0" y2="253.3"/><rect x="493.8" y="240.6" width="8.4" height="8.0"/><line x1="511.6" y1="213.6" x2="511.6" y2="241.5"/><rect x="507.4" y="227.8" width="8.4" height="12.9"/><line x1="538.8" y1="217.5" x2="538.8" y2="239.2"/><rect x="534.6" y="223.6" width="8.4" height="13.1"/>
+</g>
+<g stroke="#D9545F" fill="#D9545F" stroke-width="1.4">
+<line x1="62.8" y1="40.4" x2="62.8" y2="53.3"/><rect x="58.6" y="40.5" width="8.4" height="10.9"/><line x1="76.4" y1="45.8" x2="76.4" y2="62.8"/><rect x="72.2" y="51.6" width="8.4" height="9.5"/><line x1="90.0" y1="60.3" x2="90.0" y2="96.1"/><rect x="85.8" y="61.4" width="8.4" height="13.9"/><line x1="117.2" y1="66.3" x2="117.2" y2="80.5"/><rect x="113.0" y="68.9" width="8.4" height="10.2"/><line x1="130.8" y1="76.8" x2="130.8" y2="90.0"/><rect x="126.6" y="79.2" width="8.4" height="5.9"/><line x1="144.4" y1="84.3" x2="144.4" y2="97.7"/><rect x="140.2" y="87.8" width="8.4" height="8.4"/><line x1="239.6" y1="62.8" x2="239.6" y2="81.8"/><rect x="235.4" y="63.2" width="8.4" height="14.2"/><line x1="253.2" y1="71.4" x2="253.2" y2="82.5"/><rect x="249.0" y="77.5" width="8.4" height="2.4"/><line x1="266.8" y1="79.9" x2="266.8" y2="187.6"/><rect x="262.6" y="80.2" width="8.4" height="97.8"/><line x1="280.4" y1="171.1" x2="280.4" y2="279.4"/><rect x="276.2" y="177.8" width="8.4" height="70.2"/><line x1="307.6" y1="226.3" x2="307.6" y2="256.2"/><rect x="303.4" y="226.3" width="8.4" height="27.6"/><line x1="348.4" y1="230.6" x2="348.4" y2="281.1"/><rect x="344.2" y="230.9" width="8.4" height="46.7"/><line x1="362.0" y1="276.6" x2="362.0" y2="299.9"/><rect x="357.8" y="277.5" width="8.4" height="18.0"/><line x1="375.6" y1="281.3" x2="375.6" y2="325.6"/><rect x="371.4" y="291.0" width="8.4" height="1.9"/><line x1="430.0" y1="228.5" x2="430.0" y2="251.5"/><rect x="425.8" y="232.9" width="8.4" height="12.6"/><line x1="457.2" y1="241.7" x2="457.2" y2="257.7"/><rect x="453.0" y="243.0" width="8.4" height="8.9"/><line x1="484.4" y1="240.5" x2="484.4" y2="270.1"/><rect x="480.2" y="247.3" width="8.4" height="1.0"/><line x1="525.2" y1="226.4" x2="525.2" y2="237.9"/><rect x="521.0" y="228.0" width="8.4" height="8.8"/>
+</g>
+<line x1="545.6" y1="24" x2="545.6" y2="372" stroke="#5B6A72" stroke-width="1" stroke-dasharray="3 4"/>
+<text x="552" y="36" fill="#C9D4D9" font-size="{{axisFont}}" font-family="Inter, sans-serif">now</text>
+<g font-family="JetBrains Mono, monospace" font-size="{{axisFont}}">
+<text x="878" y="237.0" fill="#F2B84B">27,099</text>
+<sc-for list="{{labels}}" as="lb" hint-placeholder-count="2">
+<text x="878" y="{{lb.y}}" fill="#5EE0C6">{{lb.text}}</text>
+</sc-for>
+</g>
+<g fill="#93A1A9" font-size="{{axisFont}}" font-family="Inter, sans-serif" text-anchor="middle">
+<text x="185.2" y="396">Thu 8am</text><text x="430.0" y="396">Fri 3am</text><text x="560" y="396">Fri 1pm</text><text x="756.4" y="396">Mon 12am</text><text x="852" y="396">Mon 1pm</text>
+</g>
+</svg>
+<span style="font-size: 12px; color: #93A1A9">Times London · weekend and daily-break hours skipped · forecast made from the 7:00–8:00am New York bar</span>
+</section>
+
+<footer style="display: flex; flex-direction: column; gap: 14px; padding: 4px 4px 0">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; font-size: 14px">
+<span><b style="font-weight: 600">Last 250 days:</b> <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #C9D4D9">90% PI – 90% hit rate</span></span>
+<a href="#accuracy" style="text-decoration: none; padding: 10px 0">See accuracy →</a>
+</div>
+<details style="border-top: 1px solid #1E272D; padding-top: 12px; font-size: 13px; color: #93A1A9">
+<summary style="font-size: 14px; color: #C9D4D9; padding: 8px 0">Details</summary>
+<dl style="margin: 8px 0 0; display: grid; grid-template-columns: minmax(120px, auto) 1fr; gap: 8px 20px">
+<dt>PI</dt><dd style="margin: 0; color: #C9D4D9">Prediction interval: the range the price should end inside, with that probability, 24 trading hours after the forecast</dd>
+<dt>Model</dt><dd style="margin: 0; color: #C9D4D9">GARCH(1,1), Student-t, 2,000 hourly returns, calibrated ×0.61; 95% and 99% use measured multipliers (fat tails)</dd>
+<dt>Recent moves</dt><dd style="margin: 0; color: #C9D4D9">avg 24h move 1.42% (5 days) · 1.30% (20 days)</dd>
+<dt>Data</dt><dd style="margin: 0; color: #C9D4D9">Yahoo Finance NQ=F, delayed, roll-adjusted</dd>
+</dl>
+</details>
+</footer>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"compact":{"editor":"boolean","default":false},"$preview":{"width":1280,"height":1180}}'>
+const BANDS = {
+  99: { range: '26,249 – 27,976', pts: 863, hit: 98, yhi: 122.0, ylo: 340.5, d: 'M538.8,233.0 L552.4,209.4 L566.0,180.9 L579.6,166.7 L593.2,161.7 L606.8,158.5 L620.4,155.9 L634.0,153.5 L647.6,149.3 L661.2,146.4 L674.8,142.7 L688.4,140.6 L702.0,138.1 L715.6,136.8 L729.2,135.9 L742.8,134.8 L756.4,133.5 L770.0,132.3 L783.6,131.3 L797.2,130.2 L810.8,128.3 L824.4,127.4 L838.0,126.6 L851.6,124.6 L865.2,122.0 L865.2,340.5 L851.6,338.0 L838.0,336.1 L824.4,335.5 L810.8,334.6 L797.2,332.8 L783.6,331.7 L770.0,330.8 L756.4,329.6 L742.8,328.4 L729.2,327.4 L715.6,326.6 L702.0,325.3 L688.4,323.0 L674.8,321.0 L661.2,317.4 L647.6,314.7 L634.0,310.7 L620.4,308.4 L606.8,305.9 L593.2,302.8 L579.6,298.1 L566.0,284.3 L552.4,256.4 L538.8,233.0 Z' },
+  95: { range: '26,535 – 27,674', pts: 570, hit: 96, yhi: 160.1, ylo: 304.3, d: 'M538.8,233.0 L552.4,217.5 L566.0,198.7 L579.6,189.3 L593.2,186.1 L606.8,184.0 L620.4,182.3 L634.0,180.7 L647.6,178.0 L661.2,176.1 L674.8,173.7 L688.4,172.3 L702.0,170.7 L715.6,169.8 L729.2,169.2 L742.8,168.5 L756.4,167.7 L770.0,166.9 L783.6,166.2 L797.2,165.5 L810.8,164.3 L824.4,163.6 L838.0,163.2 L851.6,161.8 L865.2,160.1 L865.2,304.3 L851.6,302.7 L838.0,301.4 L824.4,301.0 L810.8,300.4 L797.2,299.2 L783.6,298.5 L770.0,297.8 L756.4,297.1 L742.8,296.3 L729.2,295.6 L715.6,295.0 L702.0,294.2 L688.4,292.7 L674.8,291.3 L661.2,289.0 L647.6,287.1 L634.0,284.5 L620.4,282.9 L606.8,281.3 L593.2,279.2 L579.6,276.1 L566.0,266.9 L552.4,248.4 L538.8,233.0 Z' },
+  90: { range: '26,659 – 27,546', pts: 444, hit: 90, yhi: 175.1, ylo: 289.9, d: 'M538.8,233.0 L552.4,220.6 L566.0,205.7 L579.6,198.3 L593.2,195.7 L606.8,194.1 L620.4,192.7 L634.0,191.4 L647.6,189.3 L661.2,187.8 L674.8,185.8 L688.4,184.7 L702.0,183.5 L715.6,182.8 L729.2,182.3 L742.8,181.8 L756.4,181.1 L770.0,180.5 L783.6,179.9 L797.2,179.3 L810.8,178.4 L824.4,177.9 L838.0,177.5 L851.6,176.5 L865.2,175.1 L865.2,289.9 L851.6,288.6 L838.0,287.6 L824.4,287.2 L810.8,286.7 L797.2,285.8 L783.6,285.2 L770.0,284.7 L756.4,284.1 L742.8,283.5 L729.2,282.9 L715.6,282.5 L702.0,281.8 L688.4,280.6 L674.8,279.5 L661.2,277.6 L647.6,276.2 L634.0,274.0 L620.4,272.8 L606.8,271.5 L593.2,269.9 L579.6,267.3 L566.0,260.0 L552.4,245.3 L538.8,233.0 Z' },
+  85: { range: '26,704 – 27,498', pts: 397, hit: 86, yhi: 182.4, ylo: 282.9, d: 'M538.8,233.0 L552.4,222.2 L566.0,209.1 L579.6,202.6 L593.2,200.4 L606.8,198.9 L620.4,197.8 L634.0,196.7 L647.6,194.8 L661.2,193.4 L674.8,191.8 L688.4,190.8 L702.0,189.7 L715.6,189.1 L729.2,188.7 L742.8,188.2 L756.4,187.6 L770.0,187.1 L783.6,186.6 L797.2,186.1 L810.8,185.2 L824.4,184.8 L838.0,184.5 L851.6,183.6 L865.2,182.4 L865.2,282.9 L851.6,281.7 L838.0,280.8 L824.4,280.5 L810.8,280.1 L797.2,279.3 L783.6,278.8 L770.0,278.3 L756.4,277.8 L742.8,277.2 L729.2,276.7 L715.6,276.3 L702.0,275.8 L688.4,274.7 L674.8,273.7 L661.2,272.1 L647.6,270.8 L634.0,268.9 L620.4,267.9 L606.8,266.7 L593.2,265.3 L579.6,263.1 L566.0,256.7 L552.4,243.8 L538.8,233.0 Z' },
+  80: { range: '26,747 – 27,454', pts: 353, hit: 81, yhi: 188.0, ylo: 277.4, d: 'M538.8,233.0 L552.4,223.4 L566.0,211.8 L579.6,206.0 L593.2,204.0 L606.8,202.7 L620.4,201.6 L634.0,200.7 L647.6,199.0 L661.2,197.8 L674.8,196.3 L688.4,195.4 L702.0,194.5 L715.6,193.9 L729.2,193.6 L742.8,193.1 L756.4,192.6 L770.0,192.1 L783.6,191.7 L797.2,191.3 L810.8,190.5 L824.4,190.1 L838.0,189.8 L851.6,189.0 L865.2,188.0 L865.2,277.4 L851.6,276.4 L838.0,275.6 L824.4,275.3 L810.8,274.9 L797.2,274.2 L783.6,273.8 L770.0,273.4 L756.4,272.9 L742.8,272.4 L729.2,272.0 L715.6,271.6 L702.0,271.1 L688.4,270.1 L674.8,269.3 L661.2,267.8 L647.6,266.7 L634.0,265.0 L620.4,264.1 L606.8,263.0 L593.2,261.7 L579.6,259.8 L566.0,254.1 L552.4,242.6 L538.8,233.0 Z' }
+};
+const ORDER = [99, 95, 90, 85, 80];
+const BTN = 'min-width: 52px; min-height: 44px; padding: 0 10px; border-radius: 10px; font-family: JetBrains Mono, monospace; font-size: 14px; font-weight: 600; cursor: pointer; ';
+const ON = BTN + 'background: #34D3B6; color: #06221C; border: 1px solid #34D3B6';
+const OFF = BTN + 'background: #0E1418; color: #C9D4D9; border: 1px solid #2A353C';
+const CASH_ON = BTN + 'font-family: Inter, sans-serif; background: #7FB3FF; color: #0A1A33; border: 1px solid #7FB3FF';
+const CASH_OFF = BTN + 'font-family: Inter, sans-serif; background: #0E1418; color: #A9CBFF; border: 1px dashed #4A6A99';
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { kronos: false, shown: [90], cash: false, piLevels: true, cashLevels: true }; }
+  renderVals() {
+    const compact = this.props.compact ?? false;
+    const shown = this.state.shown;
+    const on = (l) => shown.indexOf(l) !== -1;
+    const toggle = (l) => this.setState({ shown: on(l) ? shown.filter((x) => x !== l) : shown.concat([l]) });
+    const sel = ORDER.filter(on);
+    const gap = compact ? 22 : 15;
+    const tops = [], bots = [];
+    sel.forEach((l) => {
+      const p = BANDS[l].range.split(' – ');
+      tops.push({ y: BANDS[l].yhi + 4, text: l + '%  ' + p[1] });
+      bots.push({ y: BANDS[l].ylo + 4, text: l + '%  ' + p[0] });
+    });
+    tops.sort((a, b) => a.y - b.y).forEach((t, i, a) => { if (i) t.y = Math.max(t.y, a[i - 1].y + gap); });
+    bots.sort((a, b) => b.y - a.y).forEach((t, i, a) => { if (i) t.y = Math.min(t.y, a[i - 1].y - gap); });
+    const labels = this.state.piLevels ? tops.concat(bots).map((t) => ({ y: t.y.toFixed(1), text: t.text })) : [];
+    const band = (l) => ({ d: BANDS[l].d, op: on(l) ? 1 : 0 });
+    return {
+      kronos: this.state.kronos,
+      kronosOpacity: this.state.kronos ? 0.9 : 0,
+      toggleKronos: () => this.setState({ kronos: !this.state.kronos }),
+      cashPressed: this.state.cash ? 'true' : 'false',
+      cashStyle: this.state.cash ? CASH_ON : CASH_OFF,
+      cashOpacity: this.state.cash ? 1 : 0,
+      cashLoY: compact ? 296 : 290,
+      toggleCash: () => this.setState({ cash: !this.state.cash }),
+      piLevels: this.state.piLevels,
+      cashLevels: this.state.cashLevels,
+      piLevelsOpacity: this.state.piLevels ? 1 : 0,
+      cashLevelsOpacity: this.state.cashLevels ? 1 : 0,
+      togglePiLevels: () => this.setState({ piLevels: !this.state.piLevels }),
+      toggleCashLevels: () => this.setState({ cashLevels: !this.state.cashLevels }),
+      levels: ORDER.map((l) => ({
+        label: l + '%',
+        pressed: on(l) ? 'true' : 'false',
+        style: on(l) ? ON : OFF,
+        pick: () => toggle(l)
+      })),
+      b99: band(99), b95: band(95), b90: band(90), b85: band(85), b80: band(80),
+      labels: labels,
+      viewBox: compact ? '400 16 600 392' : '0 0 1000 408',
+      axisFont: compact ? 20 : 13
+    };
+  }
+}
+</script>
+</body>
+</html>

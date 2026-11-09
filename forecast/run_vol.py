@@ -1,4 +1,4 @@
-"""Daily 08:00 NY GARCH 24h vol forecast: decide whether to run, forecast, write site/data.
+"""Daily 08:00 NY (1pm London) GARCH vol forecast: decide whether to run, forecast, write site/data.
 
 Run by .github/workflows/garch_vol.yml at 12:05 and 13:05 UTC on weekdays. One of the two
 lands between 08:00 and 09:25 New York whatever the US/UK daylight-saving state; the other
@@ -16,6 +16,8 @@ Then it loads bars closed by 08:00 NY and needs the 07:00-08:00 NY bar to be the
            site/data/vol_history.jsonl (one per origin) and the accuracy of earlier lines
            filled in (vol_accuracy.py), site/data/vol_status.json ok.
   alert:   if NTFY_TOPIC is set, one line to ntfy.sh (vol_alert.py); not for --now runs or --no-alert.
+  extras:  after the alert, page_data.py writes calendar.json, treasuries.json and news.json;
+           each is fail-soft ("ok": false, the page hides the block) and never fails the run.
   failure: vol_status.json records the error and stale=true; vol_latest.json keeps the
            previous forecast, flagged "stale": true; exit 1 so the run fails.
 
@@ -41,6 +43,8 @@ import fetch  # noqa: E402
 import garch_vol as gv  # noqa: E402
 import nq_calendar as cal  # noqa: E402
 import vol_accuracy as acc  # noqa: E402
+import numpy as np  # noqa: E402
+import page_data  # noqa: E402
 import vol_alert  # noqa: E402
 
 log = logging.getLogger("run_vol")
@@ -136,6 +140,7 @@ def main() -> int:
     ap.add_argument("--no-alert", action="store_true", help="don't send the ntfy phone alert")
     ap.add_argument("--retries", type=int, default=RETRIES)
     ap.add_argument("--retry-wait", type=float, default=RETRY_WAIT)
+    ap.add_argument("--fail", default="", help="test: simulate failed extras, e.g. news,treasuries,calendar")
     args = ap.parse_args()
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
     logging.getLogger("yfinance").setLevel(logging.CRITICAL)   # 404s for expired contracts are expected
@@ -174,14 +179,15 @@ def main() -> int:
               "forecast_time_utc": iso(origin + timedelta(hours=1)),
               "next_forecast_utc": next_forecast_utc(today),
               "stale": False})
-    write_json_atomic(latest_p, f, indent=1)
     rows, replaced = acc.upsert(acc.read_history(hist_p), acc.history_line(f))
     rows.sort(key=lambda r: pd.Timestamp(r["origin_utc"]))
-    matured = acc.update_accuracy(rows, df, now)      # earlier forecasts whose +24h bar has closed
+    matured = acc.update_accuracy(rows, df, now)      # earlier forecasts whose horizon has closed
+    add_cash_range(f, rows)
+    write_json_atomic(latest_p, f, indent=1)
     acc.write_history(hist_p, rows)
-    hit, n = acc.hit_rate(rows[-60:])
+    hit, n = acc.hit_rate(rows[-60:], "inside90")
     hist = (f"{'replaced' if replaced else 'appended'} ({len(rows)} lines, {matured} newly matured"
-            + (f", last 60: {hit:.0f}% of {n} inside 80%" if hit is not None else "") + ")")
+            + (f", last 60: {hit:.0f}% of {n} inside 90%" if hit is not None else "") + ")")
     write_json_atomic(status_p, {"ok": True, "checked_utc": iso(now), "error": None, "stale": False,
                                  "forecast_origin_utc": f["origin_utc"]}, indent=1)
     gv.print_table(f)
@@ -194,7 +200,34 @@ def main() -> int:
         text = vol_alert.alert_text(f)
         if vol_alert.send(text):
             print(f"alert sent: {text}")
+    try:                                            # extras: after the forecast and alert, never fatal
+        t1 = time.perf_counter()
+        skip = {x.strip() for x in args.fail.split(",") if x.strip()}
+        res = page_data.collect(f, out, now, page_data.previous_origin(df), skip)
+        print(f"page data: {res} ({time.perf_counter() - t1:.0f}s)")
+    except Exception as e:  # noqa: BLE001
+        print(f"page data skipped: {type(e).__name__}: {e}", file=sys.stderr)
     return 0
+
+
+def add_cash_range(f: dict, rows: list[dict]) -> None:
+    """Cash-session range on the page: last x exp(+-m x cash sigma), centred on the origin close
+    (1pm London). m = the measured cash 90% multiplier (cash_m90 of this forecast's own history
+    row, from sessions finished before its date) if acc.CASH_LEVEL is 90 and it exists, else 1.2816."""
+    c = f["cash"]
+    if not c.get("sigma_pct"):
+        return
+    row = next((r for r in rows if pd.Timestamp(r["origin_utc"]) == pd.Timestamp(f["origin_utc"])), {})
+    m90 = row.get("cash_m90")
+    level = 90 if (acc.CASH_LEVEL == 90 and m90) else 80
+    last = f["last_close"]
+    rng = lambda m: [round(last * float(np.exp(-m * c["sigma_pct"] / 100)), 2),   # noqa: E731
+                     round(last * float(np.exp(m * c["sigma_pct"] / 100)), 2)]
+    mult = m90 if level == 90 else gv.Z80
+    c.update({"level": level, "m90": m90, "mult": round(mult, 4),
+              "pts": round(last * mult * c["sigma_pct"] / 100, 1), "pct": round(mult * c["sigma_pct"], 4),
+              "range": rng(mult), "range80": rng(gv.Z80), "range90": rng(m90) if m90 else None,
+              "end_utc": c.get("end_utc")})
 
 
 if __name__ == "__main__":

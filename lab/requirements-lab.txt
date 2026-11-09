@@ -1,0 +1,5 @@
+# Lab-only research (lab/regime.py, lab/vol_contest.py); not used by the daily job.
+# On macOS, xgboost needs an OpenMP runtime (libomp.dylib) on the library path.
+hmmlearn==0.3.3
+scikit-learn==1.9.1
+xgboost==3.2.0

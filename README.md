@@ -1,9 +1,11 @@
 # NQ Kronos Forecast
 
-A small self-updating web page for Nasdaq-100 futures (NQ). Once per US trading day,
-from the 07:00–08:00 New York bar, it publishes a calibrated GARCH 24h volatility forecast
-and its forecast fan, plus an experimental [Kronos](https://github.com/shiyu-coder/Kronos)-small
-fan from the same bar, and checks how often reality lands inside each model's band.
+A small self-updating web page for Nasdaq-100 futures (NQ). Once per US trading day, at
+1:00pm London (the close of the 07:00–08:00 New York bar), it publishes a calibrated GARCH
+volatility forecast for the next 23 trading hours (1pm → 1pm London) with five prediction
+intervals, the cash-session range, the US release calendar, Treasuries and tech headlines, plus an
+experimental [Kronos](https://github.com/shiyu-coder/Kronos)-small run from the same bar, and checks
+how often reality lands inside the ranges.
 
 **Live page:** https://ssslithy.github.io/nq-kronos/
 
@@ -15,25 +17,27 @@ delay or block the GARCH forecast.
 
 ## What's on the page
 
-- **24h volatility card (GARCH):** expected 24h move, 80% and 95% ranges, a rough 99% stress
-  figure, cash-session σ, regime, scheduled-release flag, and a 60-day sparkline with the
-  80% hit rate.
-- **Chart (default: GARCH fan):** the last 2 trading days of hourly candles up to the
-  07:00–08:00 NY bar, then 100 simulated paths, the shaded 80% and 95% bands, the median
-  and right-edge labels at +24h. The bands equal the card's ranges at +24h; in between, the
-  variance follows the hour-of-day profile. The **Kronos (experimental)** toggle swaps in
-  Kronos-small's own 100 paths and P10–P90 band from the same bar; in the lab its 80% band
-  held only ~46% of the time.
-- Toggles: show/hide paths; 7h or 24h view. Hover/tap the chart for values.
-- Status pill: "daily · next update <date> 08:00 NY (<London time>)"; "stale" with a
-  banner if the daily run failed or is more than 90 minutes late.
-- **Accuracy page** (`accuracy.html`, linked from the header): 24h and cash-session moves
-  against the forecast ranges for the last 250 days, hit-rate tables (80/95/99, cash
-  inside and touch rates, by half, by event day and by event type), rolling 60-day hit rates,
-  and the Phase 6 Kronos lab results.
-- **Band check:** live daily forecasts only, GARCH next to Kronos: the share of +24h
-  closes inside each 80% band (shows "collecting" until 20 have matured), then the Kronos
-  detail table.
+All times are London, 12-hour ("1:00pm"); New York appears only in Details.
+
+- **Header:** forecast time and the 1pm price, next update time, link to the accuracy page.
+- **Top card:** "Next 24 hours" (the 1pm → 1pm window, 23 trading hours) and "NYC Cash Session"
+  (2:30pm – 9:00pm London): ± points, ± %, and the price range, from the **90% prediction
+  interval (PI)**. Beside them: the next 3 US releases (impact bars) and the 2Y / 10Y Treasury note
+  futures' 1pm → 1pm move with a sparkline and yields. Below: 3 tech headlines (links only).
+- **Chart:** 48 hourly candles, then the forecast fan to the end of the window. Buttons 99 / 95 /
+  90 / 85 / 80% (multi-select, 90% on by default) draw stacked bands; at the last step each band
+  equals that range exactly. "Cash" draws the cash-session box. "Levels" shows or hides the PI and
+  cash labels. "Kronos (experimental)" overlays Kronos-small's P10 / P90 paths when it ran from the
+  same bar (its 80% band held only ~46% in the lab); otherwise it is disabled ("not run today").
+- **Footer:** the 90% PI's hit rate over the last 250 days, and a Details section (window, model and
+  multipliers, recent moves, cash-session notes, Friday weekend-gap note, data sources, and
+  "Volatility only, not direction. Not investment advice.").
+- **Accuracy page** (`accuracy.html`): 1pm → 1pm and cash-session moves against the 90% ranges for
+  the last 250 days, hit-rate tables (80 / 85 / 90 / 95 / 99%, by half, by release day and type; cash
+  90% and 80%, touch rates), rolling 60-day hit rates, the live Kronos daily check and the Phase 6
+  Kronos lab.
+- A banner appears only if the daily run failed or is more than 90 minutes late. If the calendar,
+  Treasuries or news fetch fails, that block is simply hidden.
 
 ## How it works
 
@@ -42,9 +46,11 @@ delay or block the GARCH forecast.
 | Download `NQ=F` hourly bars from Yahoo, drop the in-progress bar and stray off-session bars, back-adjust quarterly contract rolls, filter bad ticks, run sanity checks | `forecast/fetch.py` |
 | NQ trading calendar (Sun 18:00 – Fri 17:00 New York, 17:00 daily break, US holidays), roll dates, session list for the page | `forecast/nq_calendar.py` |
 | Daily GARCH forecast, fan, alert, accuracy log | `forecast/run_vol.py`, `garch_vol.py`, `vol_accuracy.py`, `vol_alert.py` |
-| Kronos-small from the same bar (`--origin`): 100 paths × 24 steps, `site/data/latest.json`, `history.jsonl`, `band_check.json`, `status.json` | `forecast/run_forecast.py` |
+| Calendar, Treasuries and news for the page (after the alert; fail-soft) | `forecast/page_data.py` |
+| Research: volatility contest, regime filter | `lab/vol_contest.py`, `lab/regime.py` → `lab/results/` |
+| Kronos-small from the same bar (`--origin`, `--horizon 23` in the daily job): 100 paths, `site/data/latest.json`, `history.jsonl`, `band_check.json`, `status.json` | `forecast/run_forecast.py` |
 | Score past Kronos forecasts against actual closes | `forecast/band_check.py` |
-| Static page (vanilla JS + canvas, no build step) | `site/` |
+| Static page (vanilla JS + SVG, no build step) | `site/` |
 | Daily job: GARCH + alert, commit, deploy; then Kronos as its own job (15-min limit), commit, deploy | `.github/workflows/garch_vol.yml` |
 | Manual Kronos run from the latest bar; deploy on `site/` code changes | `.github/workflows/forecast.yml` |
 
@@ -60,7 +66,7 @@ Requires Python 3.11.
 git clone --recurse-submodules <this repo> && cd nq-kronos
 python3.11 -m venv .venv && . .venv/bin/activate
 pip install -r forecast/requirements.txt
-python forecast/fetch.py                 # last 5 bars + next 24 forecast hours
+python forecast/fetch.py                 # last 5 bars + the next forecast hours
 python forecast/run_forecast.py          # ~3 min on a laptop CPU; writes site/data/*
 python -m http.server -d site            # then open http://localhost:8000
 ```
@@ -80,23 +86,37 @@ from the CPU run).
 - Sampling cost is ~1.5–2 s per path on CPU, because Kronos recomputes its full 512-bar
   context at every step; 100 paths take about 3–5 minutes on a GitHub runner.
 
-## Daily 24h volatility forecast (GARCH)
+## Daily volatility forecast (GARCH), 1pm → 1pm London
 
 Every US trading day `.github/workflows/garch_vol.yml` (12:05 and 13:05 UTC) runs
-`forecast/run_vol.py`, which forecasts the next 24 tradable hours' volatility as of the
-08:00 New York bar close with a calibrated GARCH(1,1) (`forecast/garch_vol.py`) and writes
-`site/data/vol_latest.json`, `vol_history.jsonl` and `vol_status.json`. Volatility only, not direction.
+`forecast/run_vol.py`. As of the 07:00–08:00 New York bar close (1pm London; 12pm in the few
+weeks when US and UK clocks change on different dates) it forecasts the volatility of the next
+**23 trading hours**, to the same bar's close the next trading day, with a calibrated
+GARCH(1,1) (`forecast/garch_vol.py`). It writes `site/data/vol_latest.json`, `vol_history.jsonl`
+and `vol_status.json`, sends the alert, then writes `calendar.json`, `treasuries.json` and
+`news.json`. Volatility only, not direction.
 
-- 80% range: last × exp(±1.2816 kσ). 95% range: ±m95 kσ, where m95 is the 95th percentile
-  of |24h move / kσ| over the trailing 250 matured forecasts (≈2.05). The 99% stress figure
-  uses the 99th percentile the same way (≈3.1). It is shown as text only, because it rests on
-  2–3 observations.
-- Backfilled hit rates, 3 Nov 2025 – 5 Nov 2026 (250 forecasts): 80% range 80.8%
-  (older/newer half 81.6% / 80.0%); 95% range 96.0% (95.2% / 96.8%); 99% stress 98.4%
-  (99.2% / 97.6%).
+- σ = k × raw GARCH σ, k = RMS(move / raw σ) over the trailing 250 matured forecasts.
+- **Five ranges:** 80% = last × exp(±1.2816 σ); 85 / 90 / 95 / 99% = ±mXX σ, where mXX is the
+  XXth percentile of |move / σ| over the same trailing 250 (measured multipliers, ≈1.31 / 1.55 /
+  1.94 / 3.06). The **90% range is the headline** on the card and in the alert. The 99% rests on
+  2–3 observations: rough.
+- **Cash session:** σ_cash = σ × the cash hours' share of the window's variance (hour-of-day
+  profile). Its 90% range uses its own measured multiplier: the 90th percentile of |cash move /
+  σ_cash| over the trailing 250 finished sessions (≈1.6). The range is centred on the 1pm price.
+- **Backfill (3 Nov 2025 – 5 Nov 2026, 250 forecasts, 23-hour window, older / newer half):**
+  80% 79.2% / 79.2%, 85% 83.2% / 84.0%, **90% 88.8% / 88.8%**, 95% 93.6% / 95.2%,
+  99% 98.4% / 97.6%. Cash 90%: 92.6% / 86.5% (the 191 days with a measured multiplier);
+  cash 80%: 82.4% / 83.3%.
+- **Research (`lab/results/`):** a volatility contest (GARCH vs GARCH + VXN, HAR-RV, XGBoost,
+  GARCH + regime) kept GARCH: no challenger was ≥5% narrower with lower QLIKE in both halves.
+  A 2-state HMM regime filter failed its stability test (median run 3.5 days), so the page has
+  no regime chip.
 
 ```bash
 python forecast/garch_vol.py --now "2026-11-05 08:10"     # forecast table for a past day (NY time)
+python forecast/run_vol.py --now "2026-11-06 08:10" --force --out /tmp/vol   # full daily job, no alert
+python forecast/run_vol.py --now "2026-11-06 08:10" --force --out /tmp/vol --fail=news   # simulate a failed extra
 ```
 
 **Event calendar: update each January.** `forecast/events_2026_2027.yaml` holds the scheduled
@@ -105,26 +125,26 @@ calendars cited in the file (Federal Reserve, BLS, BEA, Census). Add the new yea
 every January (or when an agency revises its calendar); after `covered_until` the page shows
 "event calendar not loaded" instead of flagging releases.
 
-**Accuracy log.** Once a forecast's +24h bar has closed, its line in `vol_history.jsonl` gets
-the actual 24h move (`move_pct`) and whether it landed inside the 80% range (`inside80`). This is
-recorded by the next forecast run after that bar closes, so normally two runs after the forecast.
-The page's sparkline and "Last 60 forecasts" line read these fields. The history started with a
-1-year backfill: each past day was forecast using only the data available before it
-(`"backfill": true`). To redo or extend it:
+**Accuracy log.** Once a forecast's last bar has closed (normally at the next day's run, since
+the window ends at the next origin bar), its line in `vol_history.jsonl` gets the actual move
+(`move_pct`) and whether it landed inside each range (`inside80`, `inside85`, `inside90`,
+`inside95`, `inside99`). The history is a 1-year backfill (each past day forecast using only the
+data before it, `"backfill": true`), redone in Nov 2026 for the 23-hour window:
 
 ```bash
-python forecast/vol_accuracy.py --backfill     # last 252 trading days; live lines are kept
+python forecast/vol_accuracy.py --backfill --all --out /tmp/vol_a   # try it in a scratch folder first
+python forecast/vol_accuracy.py --backfill --all                    # then regenerate site/data
 ```
 
 **Cash-session backtest.** For each forecast, the cash move is 100·ln(close of the 15:00–16:00 NY
-bar / close of the 08:00–09:00 NY bar) on the forecast day. The session high and low come from the
-09:00–16:00 bars. Over the backfill, the move fell inside ±1.28 × cash σ on 82.4% / 83.3% of
-days (older / newer half). The session's high or low touched outside that range on about 35% of
-days. The cash σ is therefore used uncalibrated. A rolling `k_cash` is still stored for monitoring.
+bar / close of the 08:00–09:00 NY bar) on the forecast day, i.e. measured from the 9:00am New York
+bar, half an hour before the 9:30am open (2:00–9:00pm London). Lines get `cash_move_pct`,
+`cash_inside80`, `cash_inside90` (against the measured `cash_m90`), touch flags and a monitoring
+`k_cash`. The page labels the session with the real open, 2:30pm – 9:00pm London.
 
 **Phone alert (optional).** After each forecast, `forecast/vol_alert.py` posts one line to
-[ntfy.sh](https://ntfy.sh), for example
-`NQ 24h vol: ±276 pts (±1.02%) · 80%: 26,747–27,454 · Calm (19th pct) · NFP 08:30 NY`.
+[ntfy.sh](https://ntfy.sh), leading with the 90% range and the window in London time, for example
+`NQ Fri 1:00pm – Mon 1:00pm London: ±448 pts (±1.65%) · 90%: 26,654–27,550 · Cash 2:30pm–9:00pm ±346 pts · Payrolls (NFP) 1:30pm`.
 To turn it on, install the ntfy app and subscribe to a long random topic name
 (`python forecast/vol_alert.py --new-topic` makes one). Then store that name as the repository
 secret `NTFY_TOPIC` (Settings → Secrets and variables → Actions). Anyone who knows the name can
@@ -143,19 +163,23 @@ read the topic, so keep it secret. Without the secret nothing is sent. Manual fo
 - Yahoo has no bars for US holiday sessions, so the calendar treats them as closed.
   Early-close sessions are approximate.
 - Direction on NQ is close to unpredictable for any model. Read the fan's **width**
-  (expected range), not the median, as the main signal — and check the band panel to see
+  (expected range), not a median, as the main signal, and check the accuracy page to see
   whether that width has been realistic.
+- Treasuries: the % move is of the 2Y / 10Y note futures (`ZT=F`, `ZN=F`, Yahoo hourly), not of
+  yields; yields are the latest daily values before the forecast (FRED `DGS2`, Yahoo `^TNX`).
+  Headlines are a 1pm snapshot of free RSS feeds (Yahoo Finance, CNBC): titles and links only.
 - Kronos's published benchmarks come from its authors and are not yet independently
   replicated.
 - Backfilled history lines (`"backfill": true`, marked "bf" on the page) were generated
   afterwards with 30 paths; they drop out of the 30-forecast window as live ones arrive.
 - **GARCH volatility forecast: volatility only, not direction.** It says how far NQ is likely
-  to move in the next 24 tradable hours, not which way. Not investment advice.
+  to move from 1pm to 1pm London (23 trading hours), not which way. Not investment advice.
+- On Fridays the window runs over the weekend; weekend gap risk isn't fully in Friday's range.
 - GARCH assumes tomorrow looks like the recent past: it reacts to shocks only after they
   happen, and it knows nothing about scheduled releases (FOMC, CPI, payrolls…). The event
   flag marks those days; realised moves on them often exceed the range.
 - The GARCH forecast uses the same delayed, unofficial Yahoo data as above, so a bad or late
-  bar affects it too. The 80% range held 80.8% of the time over the 1-year backfill
+  bar affects it too. The 90% range held 88.8% of the time over the 1-year backfill
   (3 Nov 2025 – 5 Nov 2026). That is past behaviour, not a guarantee.
 
 ## Credits

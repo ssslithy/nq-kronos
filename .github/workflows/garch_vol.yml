@@ -3,7 +3,8 @@ name: garch-vol
 # The site's daily run, as of the 08:00 New York bar close. GitHub cron is UTC-only and can
 # start late, so it fires at 12:05 and 13:05 UTC: one lands in 08:00-09:25 NY in both EDT and
 # EST; forecast/run_vol.py decides and the other run exits quietly. When it makes a forecast:
-#   vol     GARCH 24h volatility (run_vol.py) + phone alert, commit, push   (~2-6 min)
+#   vol     GARCH 1pm->1pm London volatility (run_vol.py) + phone alert, then calendar /
+#           Treasuries / news (fail-soft), commit, push   (~2-6 min)
 #   deploy  Pages deploy of the GARCH forecast, straight away
 #   kronos  Kronos-small from the same 07:00-08:00 NY bar (run_forecast.py --origin), its own
 #           job with a 15-minute limit; if it fails or times out, only Kronos is marked stale
@@ -78,12 +79,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- site/data/vol_* 2>/dev/null || true   # GARCH files only; Kronos commits its own
+          git add -- site/data/vol_* site/data/calendar.json site/data/treasuries.json site/data/news.json 2>/dev/null || git add -- site/data/vol_*   # GARCH job files; Kronos commits its own
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"; echo "no data changes"; exit 0
           fi
           ORIGIN=$(python -c "import json;print(json.load(open('site/data/vol_status.json')).get('forecast_origin_utc'))")
-          git commit -q -m "vol: GARCH 24h forecast, origin ${ORIGIN}"
+          git commit -q -m "vol: GARCH daily forecast, origin ${ORIGIN}"
           pushed=false
           for i in 1 2 3; do
             if git pull --rebase -q origin "${GITHUB_REF_NAME}" && git push -q origin "HEAD:${GITHUB_REF_NAME}"; then
@@ -164,7 +165,7 @@ jobs:
         id: kronos
         timeout-minutes: 15
         continue-on-error: true
-        run: python forecast/run_forecast.py --origin "${{ needs.vol.outputs.origin }}"
+        run: python forecast/run_forecast.py --origin "${{ needs.vol.outputs.origin }}" --horizon 23
 
       - name: Mark Kronos stale if it failed or timed out
         if: steps.kronos.outcome != 'success'

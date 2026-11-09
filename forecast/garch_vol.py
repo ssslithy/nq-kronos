@@ -1,4 +1,4 @@
-"""24h NQ volatility forecast with GARCH(1,1), Student-t (volatility only, not direction).
+"""Daily NQ volatility forecast (1pm -> 1pm London, 23 tradable hours) with GARCH(1,1), Student-t (volatility only, not direction).
 
 Model choices are copied from the Phase 6 lab (lab/baselines.py):
 
@@ -8,8 +8,10 @@ Model choices are copied from the Phase 6 lab (lab/baselines.py):
   was tested in lab/garch_vol_calibration.py and changed nothing: hit rates 93-94% either way.)
 - Fit: the trailing 2,000 returns ending at the forecast bar; GARCH(1,1), zero mean,
   Student-t errors, `arch` with rescale=False. Refitted at every forecast.
-- Horizon: the next 24 bars (= the next 24 tradable hours).
-- Raw sigma: square root of the summed 24 analytic variance forecasts.
+- Horizon: the next 23 bars (HORIZON): from the close of the 07:00-08:00 NY origin bar (1pm London)
+  to the close of the next trading day's origin bar, skipping the daily break and weekends.
+  The page still calls it "Next 24 hours". Until Nov 2026 it was 24 bars (to 09:00 NY).
+- Raw sigma: square root of the summed HORIZON analytic variance forecasts.
 - Rolls: additive back-adjustment. Measured from the incoming contract where Yahoo still has
   it; otherwise (expired contracts 404) the switch bar is the largest upward jump in
   [roll date - 1 day, expiry + 4 days] and the gap is CARRY x price. Same as the lab.
@@ -19,20 +21,19 @@ at this origin the raw sigma is too wide (RMS(move / sigma) ~0.63; +-1.28 sigma 
 The cause is GARCH's variance level (forecast variance ~2.4x the realised sum of squared hourly
 returns), not gaps or hourly mean reversion. So:
 - k = RMS(move / raw sigma) over the trailing 250 matured daily forecasts (min 60), using only
-  forecasts whose 24 bars had closed before this origin and that don't touch a roll window.
+  forecasts whose HORIZON bars had closed before this origin and that don't touch a roll window.
 - sigma = k x raw sigma. 80% range = last x exp(+-1.2816 sigma); 68% range = last x exp(+-sigma).
   Out of sample this held 84% / 81% (older / newer half) for the 80% range.
   Alternative tested: q80 = 80th percentile of |move / raw sigma| over the same 250, range
   last x exp(+-q80 x raw sigma). It held 81% / 78%: closer on the older half, further on the
   newer (confirmation) half, so +-1.2816 k sigma is kept.
-- 95% range = last x exp(+-m95 x sigma), m95 = 95th percentile of |move / k sigma| over the same
-  trailing 250 (about 2.05). 99% "stress" uses the 99th percentile (about 3.1; rough, as it rests
-  on 2-3 observations). Backfill Nov 2025 - Nov 2026: 95% held 95.2% / 96.8%, 99% held
-  99.2% / 97.6% (older / newer half).
+- 85 / 90 / 95 / 99% ranges = last x exp(+-mXX x sigma), mXX = the XXth percentile of
+  |move / k sigma| over the same trailing 250 (measured multipliers; fat tails). The 99% one
+  rests on 2-3 observations: rough. The 90% range is the headline (HEADLINE).
 - Chart fan: per-step variance = sigma^2 x the hour-of-day profile's share (see fan_paths).
 - The simulated GARCH quantiles are kept as a diagnostic only: raw they held 72-79%, and
   scaled by k they fall to 53-57% (fat-tailed paths make the quantiles narrower than 1.28 sigma).
-- Cash session (bars 09:00-15:00 NY): variance = 24h variance x the cash hours' share of the
+- Cash session (bars 09:00-15:00 NY): variance = horizon variance x the cash hours' share of the
   horizon's variance under the intraday profile (mean squared hourly return by NY hour over
   the trailing 60 trading days). GARCH alone would spread variance evenly (7/24).
 
@@ -60,7 +61,7 @@ import nq_calendar as cal  # noqa: E402
 log = logging.getLogger("garch_vol")
 
 WINDOW = 2000          # hourly returns in each fit
-HORIZON = 24           # bars
+HORIZON = 23           # bars: origin close (1pm London) -> next origin close (1pm London next trading day)
 SIMS = 10_000
 DAYS = 729             # history to download (Yahoo's 1h cap); covers the k and regime lookbacks
 ORIGIN_NY_HOUR = 7     # the 07:00-08:00 NY bar: the last complete bar before 08:30 NY
@@ -196,7 +197,7 @@ def step_variances(res) -> np.ndarray:
 
 
 def sigma_only(returns: np.ndarray) -> float:
-    """Raw analytic 24h sigma (%) from the last WINDOW returns; cheap (no simulation)."""
+    """Raw analytic horizon sigma (%) from the last WINDOW returns; cheap (no simulation)."""
     return float(np.sqrt(step_variances(fit(returns[-WINDOW:])).sum()))
 
 
@@ -227,9 +228,9 @@ def daily_origins(df: pd.DataFrame) -> np.ndarray:
 
 
 def prior_forecasts(bars: pd.DataFrame, n: int = 330) -> pd.DataFrame:
-    """Raw sigma and realised 24-bar move for up to `n` daily 07:00 NY origins before the last
+    """Raw sigma and realised HORIZON-bar move for up to `n` daily 07:00 NY origins before the last
     bar, each fitted only on the WINDOW returns up to its own origin. `move` is NaN until the
-    forecast's 24 bars have closed (by the last bar of `bars`). 330 leaves K_DAYS matured
+    forecast's HORIZON bars have closed (by the last bar of `bars`). 330 leaves K_DAYS matured
     forecasts after the ~18% that touch a roll window are excluded from k."""
     close = bars["close"].to_numpy()
     r = log_returns(bars["close"]).to_numpy()
@@ -257,14 +258,21 @@ def calibration_k(prior: pd.DataFrame) -> tuple[float, int]:
     return float(np.sqrt(np.mean(z ** 2))), int(len(m))
 
 
-def tail_multipliers(prior: pd.DataFrame, k: float) -> tuple[float, float, int]:
-    """Empirical 95% and 99% multipliers of the calibrated sigma: the 95th / 99th percentile of
-    |move / (k x raw sigma)| over the same trailing matured, roll-free forecasts as k. Only
-    forecasts matured before the origin are in `prior`, so there is no look-ahead. The 99th
-    percentile of ~250 rests on 2-3 observations: rough."""
+LEVELS = (99, 95, 90, 85, 80)       # published ranges, %; 80 = +-Z80, the rest measured
+HEADLINE = 90                       # the range shown big on the card and in the alert
+
+
+def tail_multipliers(prior: pd.DataFrame, k: float) -> tuple[dict[int, float], int]:
+    """Measured multipliers of the calibrated sigma for the 85/90/95/99% ranges: the 85th /
+    90th / 95th / 99th percentile of |move / (k x raw sigma)| over the same trailing matured,
+    roll-free forecasts as k. Only forecasts matured before the origin are in `prior`, so there
+    is no look-ahead. The 99th percentile of ~250 rests on 2-3 observations: rough.
+    The 80% range keeps the normal +-1.2816 (returned as 80 for convenience)."""
     m = prior[prior["move_pct"].notna() & ~prior["roll"]].tail(K_DAYS)
     z = (m["move_pct"] / m["sigma_raw_pct"]).abs().to_numpy() / k
-    return float(np.quantile(z, 0.95)), float(np.quantile(z, 0.99)), int(len(z))
+    out = {lv: float(np.quantile(z, lv / 100)) for lv in (85, 90, 95, 99)}
+    out[80] = Z80
+    return out, int(len(z))
 
 
 def regime_of(pctile: float) -> str:
@@ -291,7 +299,7 @@ def intraday_profile(bars: pd.DataFrame, days: int = PROFILE_DAYS) -> dict[int, 
 # ---- scheduled events (forecast/events_2026_2027.yaml) ----------------------------------
 
 EVENT_NOTE = "Scheduled release today: realised move often exceeds the GARCH range."
-EVENT_NOTE_HORIZON = "Scheduled release inside the 24h horizon: realised move often exceeds the GARCH range."
+EVENT_NOTE_HORIZON = "Scheduled release inside the forecast window: realised move often exceeds the GARCH range."
 
 
 @lru_cache(maxsize=1)
@@ -305,7 +313,7 @@ def load_events(path: str = str(EVENTS_FILE)) -> tuple[date, date, list[dict]]:
         for d in t["dates"]:
             day, hhmm = (str(d).split() + [t["time"]])[:2]
             ny = pd.Timestamp(f"{day} {hhmm}").tz_localize(cal.NY)
-            out.append({"kind": kind, "name": t["name"], "release": t["release"],
+            out.append({"kind": kind, "name": t["name"], "release": t["release"], "impact": int(t.get("impact", 2)),
                         "time_utc": ny.tz_convert("UTC"), "source": t["sources"][0]})
     return (pd.Timestamp(doc["covered_from"]).date(), pd.Timestamp(doc["covered_until"]).date(),
             sorted(out, key=lambda e: e["time_utc"]))
@@ -337,21 +345,21 @@ def events_between(start: pd.Timestamp, end: pd.Timestamp, today: date) -> dict:
 FAN_PATHS = 100
 
 
-def fan_paths(last: float, sigma: float, weights: np.ndarray, m95: float, seed: int,
+def fan_paths(last: float, sigma: float, weights: np.ndarray, mults: dict[int, float], seed: int,
               n: int = FAN_PATHS) -> dict:
-    """The calibrated forecast as a 24-step fan. Step variance = (k sigma)^2 x that hour's share
-    of the horizon's variance under the intraday profile, so the fan widens fast through the
-    cash open and slowly overnight. Bands are analytic (zero-mean log-normal steps), so at +24h
-    they equal the published 80% and 95% ranges exactly; the paths are normal draws with the
-    same step variances, for illustration."""
+    """The calibrated forecast as a HORIZON-step fan. Step variance = (k sigma)^2 x that hour's
+    share of the horizon's variance under the intraday profile, so the fan widens fast through
+    the cash open and slowly overnight. Bands are analytic (zero-mean log-normal steps), so at
+    the last step each band equals the published range for that level exactly; the paths are
+    normal draws with the same step variances, for illustration."""
     share = weights / weights.sum()
     s_t = sigma * np.sqrt(np.cumsum(share))                     # cumulative sd in %, per step
     lv = lambda z: np.round(last * np.exp(z * s_t / 100), 2).tolist()   # noqa: E731
     rng = np.random.default_rng(seed)
     steps = rng.standard_normal((n, len(share))) * (sigma * np.sqrt(share) / 100)
     paths = np.round(last * np.exp(np.cumsum(steps, axis=1)), 2)
-    return {"p025": lv(-m95), "p10": lv(-Z80), "p50": lv(0), "p90": lv(Z80), "p975": lv(m95),
-            "paths": paths.tolist(), "seed": seed,
+    return {"bands": {str(l): {"lo": lv(-mults[l]), "hi": lv(mults[l])} for l in LEVELS},
+            "p50": lv(0), "paths": paths.tolist(), "seed": seed,
             "method": "analytic bands from k sigma x hour-of-day profile; paths are normal draws"}
 
 
@@ -359,7 +367,7 @@ def fan_paths(last: float, sigma: float, weights: np.ndarray, m95: float, seed: 
 
 def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
                  prior: pd.DataFrame | None = None) -> dict:
-    """Pure: calibrated 24h volatility forecast as of the last bar in `bars`.
+    """Pure: calibrated 1pm -> 1pm London (HORIZON bars) volatility forecast as of the last bar in `bars`.
 
     `prior` (from prior_forecasts) may be passed in to avoid recomputing it; it must come
     from the same bars. Needs > WINDOW bars plus enough history for K_MIN matured forecasts.
@@ -375,7 +383,7 @@ def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
     prior = prior_forecasts(bars) if prior is None else prior
     k, k_n = calibration_k(prior)
     sigma = k * raw
-    m95, m99, m_n = tail_multipliers(prior, k)
+    mults, m_n = tail_multipliers(prior, k)
 
     future = cal.next_tradable_hours(origin.to_pydatetime(), HORIZON)
     hours = [t.astimezone(cal.NY).hour for t in future]
@@ -388,7 +396,7 @@ def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
     cash_sigma = sigma * np.sqrt(cash_share) if cash_share else None
 
     seed = seed_for(origin) if seed is None else seed
-    fan = fan_paths(last, sigma, w, m95, seed)
+    fan = fan_paths(last, sigma, w, mults, seed)
     end = simulate(res, last, sims, seed)[:, -1]
     sim_sigma = float(np.std(100 * np.log(end / last)))
 
@@ -409,16 +417,25 @@ def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
         "sigma_pct": round(sigma, 4),
         "sigma_pts": pts(sigma),
         "range80": [px(-Z80 * sigma), px(Z80 * sigma)],
+        "range85": [px(-mults[85] * sigma), px(mults[85] * sigma)],
+        "range90": [px(-mults[90] * sigma), px(mults[90] * sigma)],
+        "range95": [px(-mults[95] * sigma), px(mults[95] * sigma)],
+        "range99": [px(-mults[99] * sigma), px(mults[99] * sigma)],
         "range68": [px(-sigma), px(sigma)],
-        "range95": [px(-m95 * sigma), px(m95 * sigma)],
-        "multipliers": {"m80": Z80, "m95": round(m95, 4), "m99": round(m99, 4), "n": m_n,
-                        "method": f"95th / 99th percentile of |move / k sigma| over the last {m_n} matured daily forecasts"},
-        "stress99": {"pts": pts(m99 * sigma), "pct": round(m99 * sigma, 4),
-                     "range": [px(-m99 * sigma), px(m99 * sigma)], "note": "rough: few observations"},
+        "headline": HEADLINE,
+        "headline_pts": pts(mults[HEADLINE] * sigma), "headline_pct": round(mults[HEADLINE] * sigma, 4),
+        "horizon": HORIZON,
+        "multipliers": {"m80": Z80, "m85": round(mults[85], 4), "m90": round(mults[90], 4),
+                        "m95": round(mults[95], 4), "m99": round(mults[99], 4), "n": m_n,
+                        "method": f"85th / 90th / 95th / 99th percentile of |move / k sigma| over the last {m_n} matured daily forecasts"},
+        "stress99": {"pts": pts(mults[99] * sigma), "pct": round(mults[99] * sigma, 4),
+                     "range": [px(-mults[99] * sigma), px(mults[99] * sigma)], "note": "rough: few observations"},
         "calibration": {"k": round(k, 4), "n": k_n, "sigma_raw_pct": round(raw, 4),
                         "method": f"k = RMS(move / raw sigma) over the last {k_n} matured daily forecasts"},
         "cash": {"hours": len(cash_steps),
                  "start_utc": future[cash_steps[0]].isoformat() if cash_steps else None,
+                 "end_utc": (future[cash_steps[-1]] + pd.Timedelta(hours=1)).isoformat() if cash_steps else None,
+                 "steps": [cash_steps[0] + 1, cash_steps[-1] + 1] if cash_steps else None,
                  "variance_share": round(cash_share, 4) if cash_share else None,
                  "sigma_pct": round(cash_sigma, 4) if cash_sigma else None,
                  "sigma_pts": pts(cash_sigma) if cash_sigma else None},
@@ -461,26 +478,27 @@ def print_table(f: dict) -> None:
     end = pd.Timestamp(f["horizon_end_utc"])
     last = f["last_close"]
     close_t = o + pd.Timedelta(hours=1)
-    print("\nNQ 24h volatility forecast (GARCH, calibrated) — volatility only, not direction")
+    print(f"\nNQ volatility forecast, next {HORIZON} tradable hours (GARCH, calibrated) — volatility only, not direction")
     print(f"  as of bar         {o.tz_convert(cal.NY):%a %d %b %Y %H:%M}-{close_t.tz_convert(cal.NY):%H:%M} NY "
           f"({close_t.tz_convert(cal.LONDON):%H:%M} London close)   last close {last:,.2f}")
-    print(f"  horizon           next 24 tradable hours, to the bar starting {end.tz_convert(cal.NY):%a %d %b %H:%M} NY")
+    print(f"  horizon           next {HORIZON} tradable hours, to the bar starting {end.tz_convert(cal.NY):%a %d %b %H:%M} NY")
     cal_ = f["calibration"]
     rows = [
-        ("Expected 24h move (σ)", f"±{f['sigma_pts']:,.0f} pts  (±{f['sigma_pct']:.2f}%)"),
+        ("Expected move (σ)", f"±{f['sigma_pts']:,.0f} pts  (±{f['sigma_pct']:.2f}%)"),
         ("80% range (±1.28σ)", f"{f['range80'][0]:,.0f} – {f['range80'][1]:,.0f}  "
                                f"({f['range80'][0] - last:+,.0f} / {f['range80'][1] - last:+,.0f} pts)"),
         ("68% range (±1σ)", f"{f['range68'][0]:,.0f} – {f['range68'][1]:,.0f}"),
-        (f"95% range (±{f['multipliers']['m95']:.2f}σ)", f"{f['range95'][0]:,.0f} – {f['range95'][1]:,.0f}  "
-                                                       f"(empirical multiplier, last {f['multipliers']['n']} matured)"),
-        (f"99% stress (±{f['multipliers']['m99']:.2f}σ)", f"±{f['stress99']['pts']:,.0f} pts  "
-                                                         f"{f['stress99']['range'][0]:,.0f} – {f['stress99']['range'][1]:,.0f}  ({f['stress99']['note']})"),
+        (f"85% range (±{f['multipliers']['m85']:.2f}σ)", f"{f['range85'][0]:,.0f} – {f['range85'][1]:,.0f}"),
+        (f"90% range (±{f['multipliers']['m90']:.2f}σ)", f"{f['range90'][0]:,.0f} – {f['range90'][1]:,.0f}  "
+                                                       f"±{f['headline_pts']:,.0f} pts (headline; measured, last {f['multipliers']['n']} matured)"),
+        (f"95% range (±{f['multipliers']['m95']:.2f}σ)", f"{f['range95'][0]:,.0f} – {f['range95'][1]:,.0f}"),
+        (f"99% range (±{f['multipliers']['m99']:.2f}σ)", f"{f['range99'][0]:,.0f} – {f['range99'][1]:,.0f}  ({f['stress99']['note']})"),
     ]
     c = f["cash"]
     if c["sigma_pts"]:
         st = pd.Timestamp(c["start_utc"]).tz_convert(cal.NY)
         rows.append(("Cash session σ", f"±{c['sigma_pts']:,.0f} pts (±{c['sigma_pct']:.2f}%) over {c['hours']} h "
-                                       f"from {st:%H:%M} NY = {100 * c['variance_share']:.0f}% of the 24h variance"))
+                                       f"from {st:%H:%M} NY = {100 * c['variance_share']:.0f}% of the horizon variance"))
     else:
         rows.append(("Cash session σ", "n/a (no 09:00–16:00 NY hours in the horizon)"))
     if f["percentile"] is not None:
@@ -488,7 +506,7 @@ def print_table(f: dict) -> None:
                                f"{f['regime_days']} daily forecasts, raw σ)"))
     r5, r20 = f["realised_rms_5d_pct"], f["realised_rms_20d_pct"]
     if r5 and r20:
-        rows.append(("vs realised", f"forecast {f['sigma_pct']:.2f}% vs realised RMS 24h move "
+        rows.append(("vs realised", f"forecast {f['sigma_pct']:.2f}% vs realised RMS daily move "
                                     f"{r5:.2f}% (5d), {r20:.2f}% (20d) → ×{f['sigma_pct'] / r5:.2f}, ×{f['sigma_pct'] / r20:.2f}"))
     ev = f["events"]
     if ev["items"]:
@@ -496,7 +514,7 @@ def print_table(f: dict) -> None:
                                              for i in ev["items"])))
         rows.append(("", ev["note"]))
     else:
-        rows.append(("Event flag", ev["note"] or "no scheduled release in the 24h horizon"))
+        rows.append(("Event flag", ev["note"] or "no scheduled release in the forecast window"))
     rows.append(("Roll", f["roll_note"] or "no roll in the horizon"))
     rows.append(("Calibration", f"raw GARCH σ {cal_['sigma_raw_pct']:.2f}% × k {cal_['k']:.3f} "
                                 f"(RMS move/σ, last {cal_['n']} matured daily forecasts)"))

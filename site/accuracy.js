@@ -1,5 +1,6 @@
 // Accuracy page: reads data/vol_history.jsonl (one line per daily GARCH forecast) and draws
-// the 24h and cash-session hit charts, the hit-rate tables and the rolling 60-day hit rate.
+// the 1pm -> 1pm and cash-session hit charts, the hit-rate tables (80/85/90/95/99%) and the
+// rolling 60-day hit rate of the 90% range (the headline). Also the live Kronos daily check.
 "use strict";
 (() => {
   const Z80 = 1.2816, DAYS = 250, ROLL = 60;
@@ -62,47 +63,48 @@
     const rows = ROWS.filter((r) => r.move_pct != null).slice(-DAYS);
     if (rows.length < 2) { el.innerHTML = '<p class="empty">not enough matured forecasts yet</p>'; return; }
     const lim = Math.max(...rows.map((r) => Math.max(Math.abs(r.move_pct), (r.m95 || 2) * r.sigma_pct))) * 1.05;
+    const m90 = (r) => (r.m90 || 1.645) * r.sigma_pct;
     const f = frame(el, el.clientWidth < 500 ? 220 : 280, -lim, lim, rows.length);
     let b = yAxis(f, -lim, lim, niceStep(2 * lim), "%") + xMonths(f, rows);
     if (rows.some((r) => r.m95)) b += area(f, rows, (r) => (r.m95 || Z80) * r.sigma_pct, (r) => -(r.m95 || Z80) * r.sigma_pct, COL.outer);
-    b += area(f, rows, (r) => Z80 * r.sigma_pct, (r) => -Z80 * r.sigma_pct, COL.band);
+    b += area(f, rows, m90, (r) => -m90(r), COL.band);
     rows.forEach((r, i) => {
-      const out = r.inside80 === false, ev = r.events && r.events.length;
+      const out = r.inside90 === false, ev = r.events && r.events.length;
       b += `<circle cx="${f.X(i).toFixed(1)}" cy="${f.Y(r.move_pct).toFixed(1)}" r="${ev ? 2.8 : 2.2}" fill="${out ? COL.out : COL.dot}"` +
            `${ev ? ` stroke="${COL.ev}" stroke-width="1.2"` : ""}><title>${day.format(new Date(r.origin_utc))}: ` +
-           `move ${r.move_pct >= 0 ? "+" : "−"}${Math.abs(r.move_pct).toFixed(2)}%, 80% range ±${(Z80 * r.sigma_pct).toFixed(2)}%` +
+           `move ${r.move_pct >= 0 ? "+" : "−"}${Math.abs(r.move_pct).toFixed(2)}%, 90% range ±${m90(r).toFixed(2)}%` +
            `${ev ? " · " + r.events.join(", ") : ""}${r.backfill ? " · backfill" : ""}</title></circle>`;
     });
-    el.innerHTML = svg(f, b, "24h moves against the 80% and 95% forecast ranges");
+    el.innerHTML = svg(f, b, "1pm to 1pm moves against the 90% and 95% forecast ranges");
   }
 
   // ---- 2. cash chart ---------------------------------------------------------------------
   function chartCash(el) {
-    const rows = ROWS.filter((r) => r.cash_move_pct != null && r.cash_sigma_pct).slice(-DAYS);
+    const rows = ROWS.filter((r) => r.cash_move_pct != null && r.cash_sigma_pct && r.cash_m90).slice(-DAYS);
     if (rows.length < 2) { el.innerHTML = '<p class="empty">not enough finished cash sessions yet</p>'; return; }
-    const band = (r) => Z80 * r.cash_sigma_pct;
+    const band = (r) => r.cash_m90 * r.cash_sigma_pct;
     const lim = Math.max(...rows.map((r) => Math.max(Math.abs(r.cash_move_pct), band(r)))) * 1.12;
     const f = frame(el, el.clientWidth < 500 ? 220 : 280, -lim, lim, rows.length);
     let b = yAxis(f, -lim, lim, niceStep(2 * lim), "%") + xMonths(f, rows);
     b += area(f, rows, band, (r) => -band(r), COL.band);
     rows.forEach((r, i) => {
-      const x = f.X(i).toFixed(1), out = r.cash_inside80 === false, ev = r.events_today && r.events_today.length;
+      const x = f.X(i).toFixed(1), out = r.cash_inside90 === false, ev = r.events_today && r.events_today.length;
       if (r.cash_high_pct > band(r)) b += `<line x1="${x}" x2="${x}" y1="${f.Y(band(r)) - 7}" y2="${f.Y(band(r)) - 2}" stroke="${COL.ev}" stroke-width="1.2"/>`;
       if (r.cash_low_pct < -band(r)) b += `<line x1="${x}" x2="${x}" y1="${f.Y(-band(r)) + 2}" y2="${f.Y(-band(r)) + 7}" stroke="${COL.ev}" stroke-width="1.2"/>`;
       b += `<circle cx="${x}" cy="${f.Y(r.cash_move_pct).toFixed(1)}" r="${ev ? 2.8 : 2.2}" fill="${out ? COL.out : COL.dot}"` +
            `${ev ? ` stroke="${COL.ev}" stroke-width="1.2"` : ""}><title>${day.format(new Date(r.origin_utc))}: ` +
            `cash move ${r.cash_move_pct >= 0 ? "+" : "−"}${Math.abs(r.cash_move_pct).toFixed(2)}% (high ${r.cash_high_pct.toFixed(2)}%, low ${r.cash_low_pct.toFixed(2)}%), ` +
-           `80% range ±${band(r).toFixed(2)}%${ev ? " · " + r.events_today.join(", ") : ""}</title></circle>`;
+           `90% range ±${band(r).toFixed(2)}%${ev ? " · " + r.events_today.join(", ") : ""}</title></circle>`;
     });
-    el.innerHTML = svg(f, b, "Cash-session moves against the 80% cash range");
+    el.innerHTML = svg(f, b, "Cash-session moves against the 90% cash range");
   }
 
   // ---- 3. tables -------------------------------------------------------------------------
   function groups(rows, evKey) {
     const half = Math.floor(rows.length / 2);
     const g = [["all", rows], ["older half", rows.slice(0, half)], ["newer half", rows.slice(half)], ["last 60", rows.slice(-60)],
-               [evKey === "events" ? "release in the 24h" : "release that day", rows.filter((r) => r[evKey] && r[evKey].length)],
-               [evKey === "events" ? "no release in the 24h" : "no release that day", rows.filter((r) => Array.isArray(r[evKey]) && !r[evKey].length)]];
+               [evKey === "events" ? "release in the window" : "release that day", rows.filter((r) => r[evKey] && r[evKey].length)],
+               [evKey === "events" ? "no release in the window" : "no release that day", rows.filter((r) => Array.isArray(r[evKey]) && !r[evKey].length)]];
     for (const [k, name] of Object.entries(KINDS)) {
       const sel = rows.filter((r) => r[evKey] && r[evKey].includes(k));
       if (sel.length) g.push([`· ${name}`, sel]);
@@ -116,33 +118,35 @@
   };
   function tables() {
     const m24 = ROWS.filter((r) => typeof r.inside80 === "boolean");
-    $("table-24h").innerHTML = `<thead><tr><th>days</th><th>80%</th><th>95%</th><th>99%</th><th>n</th></tr></thead><tbody>` +
-      groups(m24, "events").map(([name, g]) => `<tr><td>${name}</td>${cell(rate(g, "inside80"), 80)}${cell(rate(g, "inside95"), 95)}` +
-        `${cell(rate(g, "inside99"), 99)}<td>${g.length}</td></tr>`).join("") + "</tbody>";
+    const LV = [80, 85, 90, 95, 99];
+    $("table-24h").innerHTML = `<thead><tr><th>days</th>${LV.map((l) => `<th>${l}%</th>`).join("")}<th>n</th></tr></thead><tbody>` +
+      groups(m24, "events").map(([name, g]) => `<tr><td>${name}</td>${LV.map((l) => cell(rate(g, `inside${l}`), l)).join("")}` +
+        `<td>${g.length}</td></tr>`).join("") + "</tbody>";
     const mc = ROWS.filter((r) => typeof r.cash_inside80 === "boolean");
-    $("table-cash").innerHTML = `<thead><tr><th>days</th><th>80%</th><th>touch</th><th>RMS z</th><th>n</th></tr></thead><tbody>` +
+    $("table-cash").innerHTML = `<thead><tr><th>days</th><th>90%</th><th>touch 90%</th><th>80%</th><th>RMS z</th><th>n</th></tr></thead><tbody>` +
       groups(mc, "events_today").map(([name, g]) => {
         const z = g.length ? Math.sqrt(g.reduce((s, r) => s + (r.cash_move_pct / r.cash_sigma_pct) ** 2, 0) / g.length) : null;
-        return `<tr><td>${name}</td>${cell(rate(g, "cash_inside80"), 80)}<td>${pct(rate(g, "cash_touch").v)}</td>` +
+        return `<tr><td>${name}</td>${cell(rate(g, "cash_inside90"), 90)}<td>${pct(rate(g, "cash_touch90").v)}</td>${cell(rate(g, "cash_inside80"), 80)}` +
           `<td>${z == null ? "—" : z.toFixed(2)}</td><td>${g.length}</td></tr>`;
       }).join("") + "</tbody>";
     const live = ROWS.filter((r) => !r.backfill && typeof r.inside80 === "boolean").length;
     $("table-note").textContent =
-      `Halves split each set in time order. "Touch" = the session high or low went outside the 80% cash range at some point, even if the 16:00 close came back inside. ` +
+      `Halves split each set in time order. The 90% cash range needs 60 earlier sessions for its measured multiplier, so it starts later (its n is smaller than the 80% column's). ` +
+      `"Touch" = the session high or low went outside the 90% cash range at some point, even if the 16:00 close came back inside. ` +
       `RMS z = RMS(cash move / cash σ); 1.00 means σ is right on average. Release rows use the event calendar, which starts 1 Jan 2026, so earlier days count in neither. ` +
-      `Amber = more than 5 points (3 for 95%/99%) from the target. ${live} of these forecasts were made live; the rest are the 1-year backfill.`;
+      `Amber = more than 5 points (3 for 95%/99%) from the target. ${live} of these forecasts were made live; the rest are the 1-year backfill (re-run in Nov 2026 for the 23-hour window).`;
   }
 
   // ---- 4. rolling hit rate ---------------------------------------------------------------
   function chartRoll(el) {
     const roll = (rows, key) => rows.map((r, i) => (i + 1 < ROLL ? null :
       (100 * rows.slice(i + 1 - ROLL, i + 1).filter((x) => x[key]).length) / ROLL));
-    const r24 = ROWS.filter((r) => typeof r.inside80 === "boolean");
-    const rc = ROWS.filter((r) => typeof r.cash_inside80 === "boolean");
-    const all = ROWS.filter((r) => typeof r.inside80 === "boolean" || typeof r.cash_inside80 === "boolean");
+    const r24 = ROWS.filter((r) => typeof r.inside90 === "boolean");
+    const rc = ROWS.filter((r) => typeof r.cash_inside90 === "boolean");
+    const all = ROWS.filter((r) => typeof r.inside90 === "boolean" || typeof r.cash_inside90 === "boolean");
     if (all.length < ROLL + 1) { el.innerHTML = '<p class="empty">needs more than 60 matured forecasts</p>'; return; }
     const idx = new Map(all.map((r, i) => [r.origin_utc, i]));
-    const y24 = roll(r24, "inside80"), yc = roll(rc, "cash_inside80");
+    const y24 = roll(r24, "inside90"), yc = roll(rc, "cash_inside90");
     const vals = y24.concat(yc).filter((v) => v != null);
     const lo = Math.min(60, Math.floor(Math.min(...vals) / 5) * 5), hi = Math.max(100, Math.ceil(Math.max(...vals) / 5) * 5);
     const f = frame(el, el.clientWidth < 500 ? 170 : 200, lo, hi, all.length);
@@ -151,9 +155,20 @@
       return `<polyline points="${pts.join(" ")}" fill="none" stroke="${col}" stroke-width="1.6"/>`;
     };
     let b = yAxis(f, lo, hi, 10, "%") + xMonths(f, all);
-    b += `<line x1="${f.pl}" x2="${f.W - f.pr}" y1="${f.Y(80)}" y2="${f.Y(80)}" stroke="${COL.target}" stroke-dasharray="4 3"/>`;
+    b += `<line x1="${f.pl}" x2="${f.W - f.pr}" y1="${f.Y(90)}" y2="${f.Y(90)}" stroke="${COL.target}" stroke-dasharray="4 3"/>`;
     b += line(rc, yc, COL.cash) + line(r24, y24, COL.teal);
-    el.innerHTML = svg(f, b, "Rolling 60-day hit rate of the 80% range, 24h and cash session");
+    el.innerHTML = svg(f, b, "Rolling 60-day hit rate of the 90% range, 1pm to 1pm and cash session");
+  }
+
+  // live daily Kronos runs vs their own P10-P90 (data/band_check.json)
+  async function kronosLive() {
+    try {
+      const b = await (await fetch(`data/band_check.json?t=${Date.now()}`, { cache: "no-store" })).json();
+      const d = b.daily || { n: 0 };
+      $("kronos-live").textContent = d.n
+        ? `Live daily Kronos runs so far: ${d.n} matured; its P10–P90 held ${(100 * d.hit_rate).toFixed(0)}% (target 80%).`
+        : "Live daily Kronos runs: none matured yet.";
+    } catch (e) { /* optional */ }
   }
 
   function render() {
@@ -165,12 +180,14 @@
     if (!r.ok) { $("acc-intro").textContent = "Could not load data/vol_history.jsonl."; return; }
     ROWS = (await r.text()).split("\n").filter((s) => s.trim()).map((s) => JSON.parse(s))
       .sort((a, b) => Date.parse(a.origin_utc) - Date.parse(b.origin_utc));
-    const m = ROWS.filter((x) => typeof x.inside80 === "boolean");
-    const h = rate(m, "inside80"), c = rate(ROWS, "cash_inside80");
-    $("acc-intro").innerHTML = `Daily GARCH forecasts made from the 07:00–08:00 New York bar, each using only data available then. ` +
-      `${m.length} matured 24h forecasts (${day.format(new Date(m[0].origin_utc))} to ${day.format(new Date(m[m.length - 1].origin_utc))}): ` +
-      `the actual move landed inside the 80% range <b>${pct(h.v)}</b> of the time; cash session <b>${pct(c.v)}</b> of ${c.n}.`;
+    const m = ROWS.filter((x) => typeof x.inside90 === "boolean");
+    const h = rate(m, "inside90"), c = rate(ROWS, "cash_inside90");
+    $("acc-intro").innerHTML = `Daily GARCH forecasts made from the 7:00–8:00am New York bar (1pm London), each using only data available then, ` +
+      `for the 23 trading hours to 1pm London the next trading day. ` +
+      `${m.length} matured forecasts (${day.format(new Date(m[0].origin_utc))} to ${day.format(new Date(m[m.length - 1].origin_utc))}): ` +
+      `the actual move landed inside the 90% range <b>${pct(h.v)}</b> of the time; cash session <b>${pct(c.v)}</b> of ${c.n}.`;
     tables(); render();
+    kronosLive();
   }
 
   let t = null;

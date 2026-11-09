@@ -16,6 +16,7 @@ covered_until: 2027-12-31
 
 types:
   FOMC:
+    impact: 3            # page calendar signal: 3 = high, 2 = medium
     name: FOMC decision
     release: Federal Open Market Committee policy statement (second day of the meeting)
     time: "14:00"
@@ -42,6 +43,7 @@ types:
       - 2027-12-08
 
   CPI:
+    impact: 3            # page calendar signal: 3 = high, 2 = medium
     name: CPI
     release: BLS Consumer Price Index
     time: "08:30"
@@ -76,6 +78,7 @@ types:
       - 2027-12-10   # Nov
 
   NFP:
+    impact: 3            # page calendar signal: 3 = high, 2 = medium
     name: Payrolls (NFP)
     release: BLS Employment Situation
     time: "08:30"
@@ -110,6 +113,7 @@ types:
       - 2027-12-03   # Nov
 
   PCE:
+    impact: 2            # page calendar signal: 3 = high, 2 = medium
     name: PCE inflation
     release: BEA Personal Income and Outlays
     time: "08:30"
@@ -144,6 +148,7 @@ types:
       - 2027-12-22   # Nov
 
   GDP:
+    impact: 2            # page calendar signal: 3 = high, 2 = medium
     name: GDP (advance)
     release: BEA GDP advance estimate
     time: "08:30"
@@ -161,6 +166,7 @@ types:
       - 2027-10-28   # Q3
 
   RETAIL:
+    impact: 2            # page calendar signal: 3 = high, 2 = medium
     name: Retail sales
     release: Census Advance Monthly Retail Trade (Advance Monthly Sales for Retail and Food Services)
     time: "08:30"

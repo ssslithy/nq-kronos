@@ -48,7 +48,7 @@ TOKENIZER_REPO, TOKENIZER_REV = "NeoQuasar/Kronos-Tokenizer-base", "0e0117387f39
 CONTEXT, HORIZON, SAMPLES = 512, 24, 100
 T, TOP_P = 1.0, 0.9
 CANDLES_SHOWN = 120
-HISTORY_STEPS = (1, 6, 12, 24)
+HISTORY_STEPS = (1, 6, 12, 23, 24)
 DATA_SOURCE = "Yahoo Finance (NQ=F), delayed"
 
 
