@@ -25,7 +25,9 @@ All times are London, 12-hour ("1:00pm"); New York appears only in Details.
   (2:30pm – 9:00pm London): ± points, ± %, and the price range, from the **90% prediction
   interval (PI)**, with up to 12 tech headlines under them (3 visible, the rest scroll; links
   only): published between the previous 4pm New York close and 1pm London, newest first, each
-  with 1–3 significance bars (rules in `forecast/news_rules.yaml`). In the right column: the next
+  with 1–3 significance bars (rules in `forecast/news_rules.yaml`); the latest pre-market market wrap
+  is pinned first as a BRIEF. In the right column: a "Since US close" line (oil, VIX and the dollar
+  from the previous 4pm New York close to 1pm London; falls teal, rises red; context only), the next
   3 US releases (impact bars), the 2Y / 10Y Treasury yields' change in basis points with a
   sparkline and the level, and Polymarket's odds for the next Fed decision (Hike / Hold / Cut, on
   the same hourly timestamps as the yields, from bid–ask midpoints scaled to add up to 100%,

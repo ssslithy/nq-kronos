@@ -1,0 +1,48 @@
+name: page-data-preview
+
+# Manual check only: run forecast/page_data.py on GitHub's runner for one or more past origins
+# (e.g. a Monday and a Tuesday) and upload the JSON files as an artifact. Nothing is committed and
+# site/data is never touched. Useful when Yahoo throttles a local machine.
+on:
+  workflow_dispatch:
+    inputs:
+      origins:
+        description: "Comma-separated origin bar starts (UTC ISO), e.g. 2026-11-09T12:00:00Z,2026-11-03T12:00:00Z"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: forecast/requirements-vol.txt
+
+      - name: Install dependencies
+        run: pip install -r forecast/requirements-vol.txt
+
+      - name: Page data for each origin
+        env:
+          ORIGINS: ${{ inputs.origins }}
+        run: |
+          IFS=',' read -ra OS <<< "$ORIGINS"
+          for o in "${OS[@]}"; do
+            d="preview/$(echo "$o" | cut -c1-10)"
+            python forecast/page_data.py --out "$d" --origin "$o" || true
+          done
+          ls -R preview
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: page-data-preview
+          path: preview/
+          retention-days: 3

@@ -20,6 +20,11 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   `45 13 * * 1-5` and `45 14 * * 1-5`: acts only 09:30–10:30 New York (one slot per day in EST and
   EDT). If `vol_status.json`'s origin isn't today's, it sends an ntfy "forecast late" note and
   dispatches garch-vol with `force=true` once.
+- `.github/workflows/driver_check.yml` (`lab/driver_check.py`, lab only), cron `30 21 * * 1-5` and
+  `30 22 * * 1-5` (acts once a day after 22:15 London): the drivers named in the day's closing market
+  wraps vs the 1pm snapshot (news items, brief, Since-US-close cells) → `lab/results/driver_check.jsonl`,
+  and `driver_check.md` (share caught, most common misses) once there are 10 days. Never changes a rule
+  and never touches the forecast, the alert or site/.
 - Origin = the **07:00–08:00 NY bar** (closed 08:00 NY). Jobs:
   1. `vol`: `run_vol.py`: vol forecast → `site/data/vol_latest.json`, `vol_history.jsonl`,
      `vol_status.json`; fills in earlier forecasts' accuracy; sends the ntfy alert (secret `NTFY_TOPIC`);
@@ -108,6 +113,13 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   midpoint, last trade only if the spread > $0.10) before it. Buckets summed into Hike / Hold / Cut and
   normalised to 1 at every point (they sum to ~101-102%); shown % rounded (largest remainder) to total
   exactly 100; "pts" = shown end minus shown start (sums to 0).
+- **Since US close (`since_close.json`, top of the right column):** oil (`CL=F`, %), VIX (`^VIX`, points;
+  Yahoo's hourly ^VIX has Cboe's extended hours from 3:15am New York, checked 9 Nov 2026, so no VIX future
+  is needed) and the dollar (`DX-Y.NYB`, %; `DX=F` is empty on Yahoo) from the previous 4:00pm New York
+  close (the last bar ending by then; Friday's on Mondays) to the origin bar close. Label e.g. "Since US
+  close · Thu 9pm – Fri 1pm" from the real times. A fall is teal and a rise red for all three (good / bad
+  for NQ); a missing value shows "–", and the line hides if all three are missing. Context only: the
+  overnight move had no skill for the cash session (lab/results/direction.md, M3).
 - **Treasuries (`treasuries.json`) and the shared window (`market_window` in page_data.py):** window =
   the past 24 hours (previous origin bar close → this one, label "Past 24h"), or, if the ZT=F hourly bars
   have a gap > 3 h in between (weekend, holiday), only the trading since the reopen: from the first bar's
@@ -145,8 +157,13 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   change) with a Nasdaq-100 subject or a sector term; **1** = commentary, interviews, features, board
   changes below C-level, earnings-date notices, previews, week-ahead calendars. **Market wraps**
   (`market_wrap`: pre-bell / futures / open / close summaries) and **movers roundups** (`movers_roundup`)
-  are not listed and not in the split (counted in `stats.wraps`); if fewer than 3 items remain, the
-  single most recent wrap is added at 1 bar (`"wrap"` set on it). `split` in news.json logs the
+  are not listed and not in the split (counted in `stats.wraps`). **Morning brief:** the latest
+  `market_wrap` published 6:00am–1:00pm London on the origin's day is pinned first (`brief` in news.json:
+  a raised row with a grey BRIEF tag, no bars, not in the split). **Macro shocks** (`macro_shock`: oil /
+  OPEC / Middle East / Iran, tariffs / China trade / export controls) widen relevance: 3 bars with a
+  `macro_shock_us` term (US inflation, the Fed, a market-wide shift), else 2. Macro terms about another
+  economy only (`foreign_macro`, e.g. "China wholesale inflation") don't count. Rating changes need a
+  Nasdaq-100 subject; there is no strategist / analyst-note category. `split` in news.json logs the
   3 / 2 / 1 mix of all non-wrap stories and of the listed non-wrap ones (target ~20 / 40 / 40 on a typical
   day; measured 9 Nov, a weekend window: 5 / 15 / 80 of 20 stories; over 6 days of feed items:
   7 / 19 / 74 of 70; most 1s are wraps, roundups and commentary).
@@ -168,6 +185,7 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
 | Daily run (window check, retries, outputs, alert, cash range) | `forecast/run_vol.py` |
 | Calendar / Treasuries / Fed odds / news files (fail-soft) | `forecast/page_data.py`; news filter and significance in `forecast/news_rules.yaml` |
 | Late-forecast watchdog | `forecast/vol_watchdog.py`, `.github/workflows/vol_watchdog.yml` |
+| Evening driver check (lab) | `lab/driver_check.py`, `.github/workflows/driver_check.yml` → `lab/results/driver_check.*` |
 | Accuracy log, cash-session backtest, backfill | `forecast/vol_accuracy.py` |
 | ntfy alert | `forecast/vol_alert.py` |
 | Kronos run, band check | `forecast/run_forecast.py`, `forecast/band_check.py` |
@@ -213,7 +231,7 @@ alerts; tick **test alert** to check the secret). Actions → forecast → Run w
   page and the README.
 - Don't hand-edit `site/data/*`; it's written by the scripts and the bot. Before committing, `git pull
   --rebase`; if the bot has committed data since, take its data files and regenerate rather than merge.
-- Page CSS/JS links carry a version tag (`style.css?v=20261109h`, same in index.html and accuracy.html):
+- Page CSS/JS links carry a version tag (`style.css?v=20261109i`, same in index.html and accuracy.html):
   bump it whenever site code changes, or browsers keep the old file for Pages' 10-minute cache.
 - New page code goes in its own script or a self-contained block; the page must work at 375 px
   wide with no sideways scrolling, London times only. Check with Playwright at 1280 and 375 px

@@ -42,9 +42,9 @@
   const ready = Promise.all([
     getJSON("data/vol_latest.json"), soft("data/vol_status.json"), getLines("data/vol_history.jsonl"),
     soft("data/calendar.json"), soft("data/treasuries.json"), soft("data/news.json"),
-    soft("data/latest.json"), soft("data/status.json"), soft("data/fed_odds.json"),
-  ]).then(([vol, status, hist, calendar, tsy, news, kronos, kstatus, fed]) =>
-    ({ vol, status, hist, calendar, tsy, news, kronos, kstatus, fed }));
+    soft("data/latest.json"), soft("data/status.json"), soft("data/fed_odds.json"), soft("data/since_close.json"),
+  ]).then(([vol, status, hist, calendar, tsy, news, kronos, kstatus, fed, since]) =>
+    ({ vol, status, hist, calendar, tsy, news, kronos, kstatus, fed, since }));
 
   // Kronos is usable only if it was made from the same bar as the daily forecast and isn't stale.
   // Kronos runs as its own job after the forecast (~10 min later). Until its origin matches the
@@ -127,7 +127,25 @@
   const pct = (r) => { const v = r.pct != null ? r.pct : Math.round(100 * r.p); return v === 0 && r.p > 0 ? "<1%" : `${v}%`; };
   const ptsChange = (x) => { const r = Math.round(x); return r === 0 ? "0 pts" : `${r > 0 ? "+" : "−"}${Math.abs(r)} pts`; };
 
+  // "Since US close": oil, VIX, dollar from the previous 4pm New York close to 1pm London.
+  // Falls are teal, rises red (lower oil, volatility and dollar are good for NQ); missing = "–".
+  function since(D) {
+    const s = D.since;
+    const cells = s && s.ok ? (s.cells || []) : [];
+    if (!cells.some((c) => c.value != null)) return;
+    $("since-h").textContent = s.window_label || "Since US close";
+    $("since-cells").innerHTML = cells.map((c) => {
+      if (c.value == null) return `<div class="c"><span class="k">${esc(c.label)}</span><span class="v na">–</span></div>`;
+      const r = c.unit === "pct" ? Math.round(c.value * 10) / 10 : Math.round(c.value * 10) / 10;
+      const cls = r > 0 ? "up" : r < 0 ? "down" : "flat";
+      const txt = `${r > 0 ? "+" : r < 0 ? "−" : ""}${Math.abs(r).toFixed(1)}${c.unit === "pct" ? "%" : ""}`;
+      return `<div class="c" title="${esc(c.ticker)}"><span class="k">${esc(c.label)}</span><span class="v ${cls}">${txt}</span></div>`;
+    }).join("");
+    $("since").hidden = false;
+  }
+
   function side(D) {
+    since(D);
     const c = D.calendar, t = D.tsy;
     if (c && c.ok && c.items && c.items.length) {
       $("cal-rows").innerHTML = c.items.map((e) => {
@@ -136,6 +154,7 @@
           `<span class="t">${esc(clock(tm))}</span><span class="n">${esc(e.name)}</span>${signal(e.impact)}</div>`;
       }).join("");
       $("cal").hidden = false;
+      $("cal-h").classList.toggle("nq-h2", !$("since").hidden);
     }
     // yields: change in basis points over the window; up = red (prices down), down = teal
     // older treasuries.json files (before 10 Nov 2026) hold futures price moves (move_pct) instead
@@ -178,15 +197,19 @@
       $("mkt-win").hidden = false;
       if ($("tsy").hidden) $("fed-h").classList.remove("nq-h2");
     }
-    $("side").hidden = $("cal").hidden && $("tsy").hidden && $("fed").hidden;
+    $("side").hidden = $("since").hidden && $("cal").hidden && $("tsy").hidden && $("fed").hidden;
   }
 
   function news(D) {
     const n = D.news;
-    if (!(n && n.ok && n.items && n.items.length)) return;
+    if (!(n && n.ok && ((n.items && n.items.length) || n.brief))) return;
     const when = (t) => `${day(t)} ${clock(t)}`;                                     // "Mon 11:39am"
     const box = $("news-rows");
-    box.innerHTML = n.items.map((i) =>
+    const b = n.brief;      // the pinned pre-market wrap: first, raised, grey BRIEF tag, no bars
+    const briefRow = b ? `<div class="nq-item brief"><div class="nq-item-main"><div class="meta"><span class="src">` +
+      `<span class="nq-tag">Brief</span>${esc(b.source)}</span><span class="tm">${esc(when(T(b.published_utc)))}</span></div>` +
+      `<a class="hl" href="${esc(b.link)}" target="_blank" rel="noopener noreferrer">${esc(b.title)}</a></div></div>` : "";
+    box.innerHTML = briefRow + n.items.map((i) =>
       `<div class="nq-item"><div class="nq-item-main"><div class="meta"><span class="src">${esc(i.source)}</span>` +
       `<span class="tm">${esc(when(T(i.published_utc)))}</span></div>` +
       `<a class="hl" href="${esc(i.link)}" target="_blank" rel="noopener noreferrer">${esc(i.title)}</a></div>` +
@@ -248,6 +271,10 @@
       (ks.ok ? "Today's run is from the same bar." : `Today: ${ks.why}.`)]);
     const ty = (D.tsy && D.tsy.rows) || [];
     const src = (lbl) => { const r = ty.find((x) => x.label === lbl); return r && r.source ? r.source : "n/a"; };
+    if (D.since && D.since.ok) rows.push(["Since US close", "Oil (CL=F, % change), VIX (Cboe ^VIX, which trades from 3:15am New York, " +
+      "change in points) and the dollar index (DX-Y.NYB, % change) from the previous 4:00pm New York close to 1pm London. " +
+      "Falls are teal, rises red. Context only: overnight moves are already in the 1pm price and don't predict the session " +
+      "(tested: the overnight move had no skill for the cash session)."]);
     rows.push(["Treasuries", "Yield changes in basis points (up = red). Window: the past 24 hours (1pm → 1pm London), or since the " +
       "market reopened after a weekend or holiday. Mondays cover only the new week's trading (since Sunday's reopen). " +
       "Friday-afternoon moves after 1pm aren't shown. The Fed odds use the same window and hourly timestamps. " +
@@ -255,7 +282,8 @@
       "÷ its duration (2Y: 1.9) and added to the latest official close (FRED DGS2 for the 2Y)." : "")]);
     rows.push(["Data", "Yahoo Finance NQ=F, hourly, delayed and unofficial, roll-adjusted. Calendar: BLS, BEA, Census and the Fed schedules. " +
       "Headlines: Yahoo Finance, CNBC, MarketWatch and Nasdaq.com RSS, published between the previous 4pm New York close and 1pm London; " +
-      "the bars are a rule-based significance (Fed and macro, the biggest Nasdaq names' earnings and major news = 3)."]);
+      "the bars are a rule-based significance (Fed and macro, the biggest Nasdaq names' earnings and major news = 3). " +
+      "BRIEF = the latest pre-market market wrap (6am–1pm London), pinned first; other market wraps and movers roundups are left out."]);
     if (D.fed && D.fed.ok) rows.push(["Fed odds", `Polymarket crowd betting odds for the ${D.fed.meeting_label} FOMC decision ` +
       "(Hike = all increase outcomes, Cut = all decrease outcomes), hourly over the same 1pm → 1pm window. " +
       "Each outcome's price is its bid–ask midpoint; the three are scaled to add up to 100% (Polymarket's buckets usually sum to a " +

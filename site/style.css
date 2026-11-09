@@ -183,6 +183,15 @@ body.nq { background: #0A0E11; color: #E8EEF1; font: 14px/1.4 Inter, system-ui, 
 #news-rows::-webkit-scrollbar-thumb { background: #2A353C; border-radius: 3px; }
 .nq-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 0 14px; padding: 9px 6px 9px 0; border-top: 1px solid #1E272D; }
 .nq-item:first-child { border-top: 0; }
+.nq-item.brief { background: #161E23; border: 1px solid #222C33; border-radius: 10px; padding: 10px 12px; margin: 6px 0 6px; grid-template-columns: minmax(0, 1fr); }
+.nq-item.brief + .nq-item { border-top: 0; }
+.nq-tag { display: inline-block; font: 600 10px/1 Inter, system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: #93A1A9;
+  border: 1px solid #4A5860; border-radius: 999px; padding: 3px 7px 2px; margin-right: 8px; vertical-align: 1px; }
+.nq-since { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 2px 0 2px; }
+.nq-since .c { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.nq-since .k { font-size: 11px; color: #93A1A9; }
+.nq-since .v { font: 600 14px "JetBrains Mono", monospace; }
+.nq-since .v.down { color: #5EE0C6; } .nq-since .v.up { color: #F07A84; } .nq-since .v.flat, .nq-since .v.na { color: #93A1A9; }
 .nq-item-main { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
 .nq-item > svg { margin-top: 3px; }
 .nq-item .meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }

@@ -86,7 +86,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -- site/data/vol_*                       # the vol job's files; Kronos commits its own
-          for f in calendar treasuries news fed_odds; do [ -f "site/data/$f.json" ] && git add -- "site/data/$f.json"; done
+          for f in since_close calendar treasuries news fed_odds; do [ -f "site/data/$f.json" ] && git add -- "site/data/$f.json"; done
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"; echo "no data changes"; exit 0
           fi

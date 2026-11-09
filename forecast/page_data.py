@@ -3,6 +3,8 @@
 Each block is written to its own file in site/data. If a source fails, the file is written
 with "ok": false and the page hides that block; nothing here can fail or delay the forecast.
 
+  since_close.json oil (CL=F, %), VIX (^VIX, points) and the dollar (DX-Y.NYB, %) from the previous
+                   US cash close (4pm New York) to the origin bar close (1pm London); context only
   calendar.json    next 3 scheduled US releases at or after the origin (events YAML), London times
   treasuries.json  2Y / 10Y note futures (ZT=F, ZN=F, Yahoo hourly): % move from the close of the
                    previous origin bar to the close of this one (1pm -> 1pm London) and the hourly
@@ -26,7 +28,8 @@ with "ok": false and the page hides that block; nothing here can fail or delay t
                    (find the event by title month + year; the slug has a random suffix), CLOB
                    /prices-history (hourly points).
 
-    python forecast/page_data.py --out /tmp/x          # all three, as of now (needs vol_latest.json there)
+    python forecast/page_data.py --out /tmp/x          # all blocks, as of now (needs vol_latest.json there)
+    python forecast/page_data.py --out /tmp/x --origin 2026-11-03T12:00:00Z   # a past origin (preview)
 """
 from __future__ import annotations
 
@@ -322,6 +325,44 @@ def treasuries(f: dict, prev_origin: pd.Timestamp, now) -> dict:
             "window_reference": win["reference"], "rows": rows, "errors": errors or None}
 
 
+# ---- since the US close (pre-open context) ---------------------------------------------------
+
+SINCE_CLOSE = (("Oil", "CL=F", "pct"), ("VIX", "^VIX", "pts"), ("Dollar", "DX-Y.NYB", "pct"))
+
+
+def since_close(f: dict, prev_origin, now) -> dict:
+    """Oil (CL=F, % change), VIX (^VIX, change in points; Yahoo's hourly ^VIX includes Cboe's
+    extended hours from 3:15am New York, so it has a value at the origin) and the dollar
+    (DX-Y.NYB, % change) from the previous US cash close (4:00pm New York on the previous trading
+    day; Friday's on Mondays) to the origin bar close (1pm London). Context only: overnight moves
+    are already in the 1pm price. A missing value is null (the page shows "–")."""
+    origin = pd.Timestamp(f["origin_utc"])
+    end = origin + pd.Timedelta(hours=1)
+    d = pd.Timestamp(prev_origin).tz_convert(cal.NY).date()
+    close = pd.Timestamp(datetime(d.year, d.month, d.day, 16), tz=cal.NY).tz_convert("UTC")
+    cells, errors = [], []
+    for label, tk, unit in SINCE_CLOSE:
+        cell = {"label": label, "ticker": tk, "unit": unit, "value": None}
+        try:
+            df = _hourly_ohlc(tk, close, origin)
+            a = df[(df.index < close) & (df.index >= close - pd.Timedelta(hours=4))]["Close"]   # last bar ending by 4pm
+            b = df[(df.index <= origin) & (df.index > origin - pd.Timedelta(hours=3))]["Close"]  # the origin bar
+            if a.empty or b.empty:
+                raise ValueError(f"no {tk} bar at the US close or at the origin")
+            x0, x1 = float(a.iloc[-1]), float(b.iloc[-1])
+            cell.update({"value": round(100 * (x1 / x0 - 1), 2) if unit == "pct" else round(x1 - x0, 2),
+                         "from": round(x0, 4), "to": round(x1, 4)})
+        except Exception as e:  # noqa: BLE001
+            errors.append(f"{label}: {type(e).__name__}: {e}")
+        cells.append(cell)
+    cl, el = close.tz_convert(cal.LONDON), end.tz_convert(cal.LONDON)
+    return {"ok": any(c["value"] is not None for c in cells), "generated_utc": iso(now), "origin_utc": iso(origin),
+            "window_start_utc": iso(close), "window_end_utc": iso(end),
+            "window_label": f"Since US close · {cl:%a} {_short(close)} – {el:%a} {_short(end)}",
+            "cells": cells, "errors": errors or None,
+            "note": "falls are teal and rises red for all three (lower oil, volatility and dollar are good for NQ)"}
+
+
 # ---- news ----------------------------------------------------------------------------------
 
 def _clean(s: str) -> str:
@@ -347,6 +388,8 @@ def load_news_rules(path: Path = NEWS_RULES) -> dict:
                                 ("shock", raw["market_shock"]), ("hard", raw["hard_action"]),
                                 ("listicle", raw["listicle_shape"]),
                                 ("wrap_market", raw["market_wrap"]), ("wrap_movers", raw["movers_roundup"]),
+                                ("mshock", raw["macro_shock"]), ("mshock_us", raw["macro_shock_us"]),
+                                ("foreign", raw["foreign_macro"]), ("us", raw["us_terms"]),
                                 ("ex_title", raw["exclude_title"]), ("ex_link", raw["exclude_link"]))}
     R["companies"] = ([(name, re.compile(pat(a), re.I)) for name, al in raw["top_names"].items() for a in al] +
                       [(a.lower(), re.compile(pat(a), re.I)) for a in raw["other_names"]])
@@ -407,6 +450,11 @@ def wrap_kind(title: str, R: dict) -> str | None:
     return None
 
 
+def us_macro(title: str, R: dict) -> bool:
+    """A macro term, unless the headline is about another economy and doesn't mention the US."""
+    return bool(R["macro"].search(title)) and not (R["foreign"].search(title) and not R["us"].search(title))
+
+
 def news_relevant(title: str, summary: str, link: str, R: dict) -> bool:
     """A Nasdaq-100 company, a macro term, or a sector term with a market word, all in the headline
     (a company only in the summary doesn't count); and no exclusion."""
@@ -414,7 +462,7 @@ def news_relevant(title: str, summary: str, link: str, R: dict) -> bool:
         return False
     if R["top"].search(title) or R["other"].search(title):
         return True
-    if R["macro"].search(title):
+    if us_macro(title, R) or R["mshock"].search(title):
         return True
     return bool(R["sector"].search(title) and R["market"].search(title))
 
@@ -435,12 +483,16 @@ def news_impact(title: str, R: dict) -> int:
     top_subj = _subject(R["top"], title)
     ndx_subj = top_subj or _subject(R["other"], title)
     sector_move = bool(R["sector"].search(title) and R["market"].search(title))
-    if (R["macro"].search(title) or (ndx_subj and R["earnings"].search(title))
-            or (top_subj and R["major"].search(title))
+    mshock = bool(R["mshock"].search(title))
+    if (us_macro(title, R) or (mshock and R["mshock_us"].search(title))
+            or (ndx_subj and R["earnings"].search(title)) or (top_subj and R["major"].search(title))
             or (R["shock"].search(title) and (top or re.search(r"\bnasdaq\b", title, re.I)))):
         return 3
+    if mshock:                     # oil / OPEC / Middle East / Iran, tariffs / China / export controls
+        return 2
     sector = bool(R["sector"].search(title))
-    if (ndx_subj or sector) and (R["hard"].search(title) or R["rating"].search(title) or R["earnings"].search(title)):
+    if ((ndx_subj or sector) and (R["hard"].search(title) or R["earnings"].search(title))) or \
+            (ndx_subj and R["rating"].search(title)):          # rating changes: company subjects only
         return 2
     return 1
 
@@ -540,7 +592,24 @@ def _fetch_feed(outlet_url):
 
 
 CLUSTER_HOURS = 24
-WRAP_FALLBACK_BELOW = 3            # fewer listed items than this: add the most recent market wrap
+BRIEF_FROM, BRIEF_TO = 6, 13       # morning brief: a pre-market wrap published 6:00am-1:00pm London
+
+
+def morning_brief(wraps: list[dict], end: pd.Timestamp, R: dict) -> dict | None:
+    """The one pre-market wrap pinned at the top of the news list: the latest market_wrap (not a
+    movers roundup) published between 6:00am and 1:00pm London on the origin's day, from a
+    publisher that isn't blocked. Not counted in the significance split."""
+    day = end.tz_convert(cal.LONDON).date()
+    lo = pd.Timestamp(datetime(day.year, day.month, day.day, BRIEF_FROM), tz=cal.LONDON)
+    hi = min(pd.Timestamp(datetime(day.year, day.month, day.day, BRIEF_TO), tz=cal.LONDON), end)
+    pool = [w for w in wraps if w["wrap"] == "market_wrap" and lo <= pd.Timestamp(w["_t"]) <= hi]
+    for w in sorted(pool, key=lambda x: x["_t"], reverse=True):
+        pub = yahoo_publisher(w["link"]) if YAHOO_PAGE.match(w["link"]) else None
+        if blocked_publisher(pub, w["link"], w["title"], R):
+            continue
+        return {"source": publisher_label(pub) or w["source"], "title": w["title"], "link": w["link"],
+                "published_utc": iso(w["_t"]), "time_london": london_time(w["_t"]), "kind": "market_wrap"}
+    return None
 
 
 def _split(impacts: list[int]) -> dict:
@@ -557,9 +626,9 @@ def news(f: dict, prev_origin, now, n: int = NEWS_MAX) -> dict:
     and a shared event group or proper name, or near-identical titles) are one story: the
     highest-ranked source's headline at the earliest time. Syndicated low-quality publishers are
     dropped (Yahoo-hosted items: the publisher read from the article page). Market wraps and movers
-    roundups are not listed; if fewer than WRAP_FALLBACK_BELOW items remain, the most recent wrap is
-    added at 1 bar ("wrap" set). "split" logs the 3 / 2 / 1-bar mix of all non-wrap stories and of
-    the listed non-wrap ones."""
+    roundups are not listed; one pre-market wrap (6am-1pm London) is pinned as the morning "brief"
+    (morning_brief; not in the split). "split" logs the 3 / 2 / 1-bar mix of all non-wrap stories
+    and of the listed ones."""
     from concurrent.futures import ThreadPoolExecutor
     start, end = news_window(f, prev_origin)
     R = load_news_rules()
@@ -649,16 +718,9 @@ def news(f: dict, prev_origin, now, n: int = NEWS_MAX) -> dict:
                     "impact": it["impact"], "cluster": it["cluster"]})
     split["listed"] = _split([it["impact"] for it in out])
     split["note"] = "non-wrap items only: market wraps and movers roundups are excluded"
-    if len(out) < WRAP_FALLBACK_BELOW and wraps:       # too little news: the single most recent wrap, at 1 bar
-        w = max(wraps, key=lambda x: x["_t"])
-        pub = yahoo_publisher(w["link"]) if YAHOO_PAGE.match(w["link"]) else None
-        if not blocked_publisher(pub, w["link"], w["title"], R):
-            out.append({"source": publisher_label(pub) or w["source"], "title": w["title"], "link": w["link"],
-                        "published_utc": iso(w["_t"]), "time_london": london_time(w["_t"]), "impact": 1,
-                        "cluster": 1, "wrap": w["wrap"]})
-            out.sort(key=lambda x: x["published_utc"], reverse=True)
+    brief = morning_brief(wraps, end, R)
     return {"ok": True, "generated_utc": iso(now), "window_start_utc": iso(start), "window_end_utc": iso(end),
-            "items": out, "split": split, "stats": stats, "feeds_ok": ok_feeds, "feeds_total": len(FEEDS),
+            "brief": brief, "items": out, "split": split, "stats": stats, "feeds_ok": ok_feeds, "feeds_total": len(FEEDS),
             "errors": errors or None, "rules": NEWS_RULES.name}
 
 
@@ -818,7 +880,8 @@ def collect(f: dict, out: Path, now, prev_origin=None, skip: set[str] | None = N
     """Write calendar.json, treasuries.json, news.json and fed_odds.json; never raises. Returns {name: ok}."""
     skip = skip or set()
     res = {}
-    jobs = {"calendar": lambda: calendar(f, now),
+    jobs = {"since_close": lambda: since_close(f, prev_origin, now),
+            "calendar": lambda: calendar(f, now),
             "treasuries": lambda: treasuries(f, pd.Timestamp(prev_origin), now),
             "news": lambda: news(f, prev_origin, now),
             "fed_odds": lambda: fed_odds(f, pd.Timestamp(prev_origin), now)}
@@ -826,7 +889,7 @@ def collect(f: dict, out: Path, now, prev_origin=None, skip: set[str] | None = N
         try:
             if name in skip:
                 raise RuntimeError("simulated failure (--fail)")
-            if name in ("treasuries", "fed_odds") and prev_origin is None:
+            if name in ("treasuries", "fed_odds", "since_close") and prev_origin is None:
                 raise ValueError("no previous origin in the bars")
             obj = job()
         except Exception as e:  # noqa: BLE001
@@ -839,20 +902,26 @@ def collect(f: dict, out: Path, now, prev_origin=None, skip: set[str] | None = N
     return res
 
 
+def previous_origin_for(o: pd.Timestamp) -> pd.Timestamp:
+    """The previous trading day's 07:00 NY origin bar (weekends and NQ holidays skipped)."""
+    d = o.tz_convert(cal.NY).date() - timedelta(days=1)
+    while d.weekday() >= 5 or cal.is_holiday(d):
+        d -= timedelta(days=1)
+    return pd.Timestamp(datetime(d.year, d.month, d.day, gv.ORIGIN_NY_HOUR), tz=cal.NY).tz_convert("UTC")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--out", default=str(ROOT / "site" / "data"))
+    ap.add_argument("--origin", help="origin bar start (UTC ISO) instead of vol_latest.json's, e.g. a past day for a preview")
     args = ap.parse_args()
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
     logging.getLogger("yfinance").setLevel(logging.CRITICAL)
     out = Path(args.out)
-    f = json.loads((out / "vol_latest.json").read_text())
+    out.mkdir(parents=True, exist_ok=True)
+    f = {"origin_utc": args.origin} if args.origin else json.loads((out / "vol_latest.json").read_text())
     o = pd.Timestamp(f["origin_utc"])
-    d = o.tz_convert(cal.NY).date() - timedelta(days=1)
-    while d.weekday() >= 5 or cal.is_holiday(d):
-        d -= timedelta(days=1)
-    prev = pd.Timestamp(datetime(d.year, d.month, d.day, gv.ORIGIN_NY_HOUR), tz=cal.NY).tz_convert("UTC")
-    print(collect(f, out, datetime.now(timezone.utc), prev))
+    print(collect(f, out, datetime.now(timezone.utc), previous_origin_for(o)))
     return 0
 
 

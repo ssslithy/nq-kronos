@@ -4,21 +4,23 @@
 #
 # Relevance (kept) - none of the exclude patterns, and one of:
 #   a Nasdaq-100 company (top_names / other_names) in the headline;
-#   a macro term in the headline;
+#   a macro or macro_shock term in the headline;
 #   a sector term AND a market word in the headline (the piece moves a sector), so generic
 #   AI / workplace pieces without a company are dropped.
 # Market wraps (market_wrap) and movers roundups (movers_roundup) are not listed and not in the
-# split; only if fewer than 3 other items remain is the single most recent wrap shown, at 1 bar.
+# split. One pre-market wrap (the latest market_wrap published 6am-1pm London) is pinned at the top
+# as the morning BRIEF (not in the split).
 # Significance (bars), from the headline:
 #   1  anything matching always_1 (earnings-date notices, previews, "stocks to watch", week-ahead
 #      calendars), whatever else it mentions
-#   3  a macro term; or a Nasdaq-100 company as the subject (named in the first 25 characters) with
+#   3  a macro term; or a macro_shock with a macro_shock_us term (US inflation / Fed / market-wide); or a Nasdaq-100 company as the subject (named in the first 25 characters) with
 #      an earnings_result term; or a top-8 company as the subject with a major_event term; or a
 #      market_shock term about a top-8 company, the Nasdaq or chips / AI / tech stocks
 #   2  hard news with the company as the subject (named in the first 25 characters) or a sector
 #      term, and a hard_action ( results / guidance, probe, lawsuit or ruling, deal, launch, outage,
 #      upgrade / downgrade, layoffs, CEO / CFO exit, buyback, production halt, export curbs) about a
 #      Nasdaq-100 company or the sector
+#   2  also: a macro_shock on its own (oil, Middle East, tariffs, China trade, export controls)
 #   1  everything else that passed the filter: commentary, interviews, features, lower-level moves
 # Target over a typical day: about 20% 3 bars, 40% 2 bars, 40% 1 bar (news.json logs the split).
 # Target: about 20% of the listed items at 3 bars.
@@ -244,7 +246,7 @@ market_words:
   - 'selloff'
   - 'rout'
 
-# Fed and macro data, tariffs, export controls: 3 bars.
+# Fed and US macro data: 3 bars.
 macro:
   - 'fed'
   - 'federal reserve'
@@ -267,13 +269,82 @@ macro:
   - 'gdp'
   - 'retail sales'
   - 'recession'
+  - 'government shutdown'
+  - 'debt ceiling'
+
+# Macro terms about another economy only (e.g. China inflation) don't count as macro unless the
+# headline also names the US / the Fed (us_terms).
+foreign_macro:
+  - 'chin(?:a|ese)'
+  - 'europe(?:an)?'
+  - 'euro ?zone'
+  - 'eu'
+  - 'uk'
+  - 'britain|british'
+  - 'japan(?:ese)?'
+  - 'german(?:y)?'
+  - 'india(?:n)?'
+  - 'canad(?:a|ian)'
+  - 'australia(?:n)?'
+  - 'korea(?:n)?'
+  - 'brazil(?:ian)?'
+  - 'france|french'
+
+us_terms:
+  - 'u\.?s\.?'
+  - 'us'
+  - 'american'
+  - 'fed'
+  - 'federal reserve'
+  - 'powell'
+  - 'wall street'
+  - 'treasur(?:y|ies)'
+
+# Macro shocks that hit NQ directly (widen relevance): oil / OPEC / Middle East / Iran, tariffs / China
+# trade / export controls. 3 bars with a macro_shock_us term (US inflation, the Fed, a market-wide shift),
+# otherwise 2. There is deliberately no strategist / analyst-note category.
+macro_shock:
+  - 'oil prices?'
+  - 'crude'
+  - 'opec\+?'
+  - 'brent'
+  - 'wti'
+  - 'middle east'
+  - 'iran(?:ian)?'
+  - 'strait of hormuz'
+  - 'oil supply'
   - 'tariffs?'
   - 'export controls?'
   - 'trade war'
   - 'chip ban'
   - 'sanctions'
-  - 'government shutdown'
-  - 'debt ceiling'
+  - 'rare earths?'
+  - '(?:u\.?s\.?|us)-china'
+  - 'china(?:''s)? (?:trade|tariffs?|exports?|imports?|retaliat\w*|ban\w*|curbs?|chips?|stimulus)'
+  - 'beijing (?:retaliat\w*|ban\w*|curbs?|tariffs?)'
+
+# With a macro_shock term: 3 bars.
+macro_shock_us:
+  - 'inflation'
+  - 'cpi'
+  - 'pce'
+  - 'fed'
+  - 'federal reserve'
+  - 'powell'
+  - 'rate cuts?'
+  - 'rate hikes?'
+  - 'interest rates?'
+  - 'yields?'
+  - 'stocks'
+  - 'wall street'
+  - 'markets?'
+  - 's&p'
+  - 'nasdaq'
+  - 'dow'
+  - 'sell-?off'
+  - 'rout'
+  - 'global'
+  - 'recession'
 
 # Earnings results or guidance (not dates or previews): 3 bars with a Nasdaq-100 company.
 earnings_result:
@@ -364,8 +435,6 @@ hard_action:
   - 'rolls? out'
   - 'outage'
   - 'disruption'
-  - 'upgrades?|upgraded'
-  - 'downgrades?|downgraded'
   - 'layoffs'
   - 'job cuts'
   - 'cuts? (?:\d[\d,]* )?jobs'

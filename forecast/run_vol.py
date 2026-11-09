@@ -17,8 +17,8 @@ Then it loads bars closed by 08:00 NY and needs the 07:00-08:00 NY bar to be the
            site/data/vol_history.jsonl (one per origin) and the accuracy of earlier lines
            filled in (vol_accuracy.py), site/data/vol_status.json ok.
   alert:   if NTFY_TOPIC is set, one line to ntfy.sh (vol_alert.py); not for --now runs or --no-alert.
-  extras:  after the alert, page_data.py writes calendar.json, treasuries.json, news.json and
-           fed_odds.json;
+  extras:  after the alert, page_data.py writes since_close.json, calendar.json, treasuries.json,
+           news.json and fed_odds.json;
            each is fail-soft ("ok": false, the page hides the block) and never fails the run.
   failure: vol_status.json records the error and stale=true; vol_latest.json keeps the
            previous forecast, flagged "stale": true; exit 1 so the run fails.
@@ -142,7 +142,7 @@ def main() -> int:
     ap.add_argument("--no-alert", action="store_true", help="don't send the ntfy phone alert")
     ap.add_argument("--retries", type=int, default=RETRIES)
     ap.add_argument("--retry-wait", type=float, default=RETRY_WAIT)
-    ap.add_argument("--fail", default="", help="test: simulate failed extras, e.g. news,treasuries,calendar,fed_odds")
+    ap.add_argument("--fail", default="", help="test: simulate failed extras, e.g. news,treasuries,calendar,fed_odds,since_close")
     args = ap.parse_args()
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
     logging.getLogger("yfinance").setLevel(logging.CRITICAL)   # 404s for expired contracts are expected

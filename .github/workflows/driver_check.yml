@@ -1,0 +1,51 @@
+name: driver-check
+
+# Lab only (NQ_PREOPEN.md part 4): every trading-day evening at ~22:30 London, compare the
+# drivers named in the day's closing market wraps with what the 1pm snapshot showed, and append
+# a line to lab/results/driver_check.jsonl (+ driver_check.md after 10 days). It never touches
+# the forecast, the alert or site/. 21:30 and 22:30 UTC cover 22:30 London in BST and GMT;
+# lab/driver_check.py acts once per date, after 22:15 London.
+on:
+  schedule:
+    - cron: "30 21 * * 1-5"
+    - cron: "30 22 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write                 # commit lab/results only
+
+concurrency:
+  group: driver-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: forecast/requirements-vol.txt
+
+      - name: Install dependencies
+        run: pip install -r forecast/requirements-vol.txt
+
+      - name: Driver check
+        run: python lab/driver_check.py
+
+      - name: Commit lab/results if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for f in lab/results/driver_check.jsonl lab/results/driver_check.md; do [ -f "$f" ] && git add -- "$f"; done
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git commit -q -m "lab: driver check $(date -u +%Y-%m-%d)"
+          for i in 1 2 3; do
+            if git pull --rebase -q origin "${GITHUB_REF_NAME}" && git push -q origin "HEAD:${GITHUB_REF_NAME}"; then exit 0; fi
+            sleep $((i * 5))
+          done
+          echo "::warning::could not push the driver check (lab only; nothing else affected)"
