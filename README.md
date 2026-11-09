@@ -94,7 +94,8 @@ from the CPU run).
 
 ## Daily volatility forecast (HAR-RV), 1pm → 1pm London
 
-Every US trading day `.github/workflows/garch_vol.yml` (12:05 and 13:05 UTC) runs
+Every US trading day `.github/workflows/garch_vol.yml` (seven slots between 12:07 and 14:07 UTC,
+in case GitHub drops a scheduled run) runs
 `forecast/run_vol.py`. As of the 07:00–08:00 New York bar close (1pm London; 12pm in the few
 weeks when US and UK clocks change on different dates) it forecasts the volatility of the next
 **23 trading hours**, to the same bar's close the next trading day, with a calibrated

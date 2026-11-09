@@ -1,8 +1,9 @@
 """Daily 08:00 NY (1pm London) vol forecast (HAR-RV): decide whether to run, forecast, write site/data.
 
-Run by .github/workflows/garch_vol.yml at 12:05 and 13:05 UTC on weekdays. One of the two
-lands between 08:00 and 09:25 New York whatever the US/UK daylight-saving state; the other
-exits quietly. The script runs only when all of these hold, otherwise it exits 0 untouched:
+Run by .github/workflows/garch_vol.yml on weekdays at :07 / :27 / :47 past 12 and 13 UTC and
+at 14:07 UTC (GitHub sometimes drops a scheduled run). Four of the slots land between 08:00 and
+09:25 New York whatever the US/UK daylight-saving state; the first one forecasts, the rest exit
+quietly. The script runs only when all of these hold, otherwise it exits 0 untouched:
 
   - today (New York) is an NQ trading day: weekday, not an nq_calendar holiday, and the
     07:00-08:00 NY bar is a tradable hour;

@@ -1,8 +1,12 @@
 name: garch-vol
 
-# The site's daily run, as of the 08:00 New York bar close. GitHub cron is UTC-only and can
-# start late, so it fires at 12:05 and 13:05 UTC: one lands in 08:00-09:25 NY in both EDT and
-# EST; forecast/run_vol.py decides and the other run exits quietly. When it makes a forecast:
+# The site's daily run, as of the 08:00 New York bar close. GitHub cron is UTC-only, best
+# effort, and can start late or not at all (on 9 Nov 2026 the only in-window slot, 13:05 UTC,
+# never fired). So it fires 7 times, at :07 / :27 / :47 past 12 and 13 UTC and at 14:07 UTC:
+# 4 slots land in 08:00-09:25 NY in both EDT (12:00-13:25 UTC) and EST (13:00-14:25 UTC).
+# forecast/run_vol.py decides: the first in-window run forecasts, every other run exits quietly
+# ("outside 08:00-09:25" or "already made"). Off the top of the hour, where GitHub drops most
+# scheduled runs. When it makes a forecast:
 #   vol     1pm->1pm London volatility (run_vol.py; HAR-RV since Nov 2026, the job keeps its
 #           old name) + phone alert, then calendar / Treasuries / Fed odds / news (fail-soft),
 #           commit, push   (~2-6 min)
@@ -13,8 +17,9 @@ name: garch-vol
 # Kronos can't delay or block the vol commit, alert or deploy.
 on:
   schedule:
-    - cron: "5 12 * * 1-5"
-    - cron: "5 13 * * 1-5"
+    - cron: "7,27,47 12 * * 1-5"
+    - cron: "7,27,47 13 * * 1-5"
+    - cron: "7 14 * * 1-5"
   workflow_dispatch:
     inputs:
       force:

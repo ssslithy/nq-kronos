@@ -11,9 +11,11 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
 
 ## Daily schedule (everything runs once per trading day)
 
-- `.github/workflows/garch_vol.yml`, cron `5 12 * * 1-5` and `5 13 * * 1-5` (UTC). One of the two
-  lands in 08:00–09:25 New York in both EST and EDT; `forecast/run_vol.py` decides, the other exits
-  "not a forecast window".
+- `.github/workflows/garch_vol.yml`, cron `7,27,47 12 * * 1-5`, `7,27,47 13 * * 1-5`, `7 14 * * 1-5`
+  (UTC). Four slots land in 08:00–09:25 New York in both EST and EDT; `forecast/run_vol.py` decides:
+  the first in-window run forecasts, the others exit "not a forecast window" / "already made". Why
+  seven: GitHub's scheduler is best effort. On 9 Nov 2026 (EST) the old schedule had one in-window
+  slot (13:05 UTC), it never fired, and nothing was published.
 - Origin = the **07:00–08:00 NY bar** (closed 08:00 NY). Jobs:
   1. `vol`: `run_vol.py`: vol forecast → `site/data/vol_latest.json`, `vol_history.jsonl`,
      `vol_status.json`; fills in earlier forecasts' accuracy; sends the ntfy alert (secret `NTFY_TOPIC`);
