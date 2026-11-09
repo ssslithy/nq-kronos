@@ -135,13 +135,18 @@ body.nq { background: #0A0E11; color: #E8EEF1; font: 14px/1.4 Inter, system-ui, 
 
 .nq-card { background: #11171B; border: 1px solid #1E272D; border-radius: 16px; }
 .nq-top { padding: clamp(20px, 3vw, 32px); display: flex; flex-wrap: wrap; gap: 28px 36px; align-items: flex-start; }
-.nq-fc { flex: 1 1 480px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.nq-blocks { display: flex; flex-wrap: wrap; gap: 20px 32px; }
-.nq-block { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.nq-fc { flex: 1 1 480px; display: flex; flex-direction: column; gap: 14px; min-width: 0; container-type: inline-size; }
+/* the two forecast blocks share one row above the phone layout: they shrink, their date lines wrap */
+.nq-blocks { display: flex; flex-wrap: nowrap; gap: 20px 32px; }
+.nq-block { flex: 0 1 auto; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .nq-bl { font-size: 15px; color: #93A1A9; }
 .nq-bl b { font-weight: 600; color: #E8EEF1; }
 .nq-bigrow { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.nq-big { font-size: clamp(36px, 5vw, 48px); font-weight: 600; letter-spacing: -0.02em; line-height: 1; }
+.nq-big { font-size: clamp(36px, 5vw, 48px); font-weight: 600; letter-spacing: -0.02em; line-height: 1; white-space: nowrap; }
+/* scale the big numbers with the left column so both blocks fit ("±1,093 pts ±4.03%" + "±811 pts ±2.99%" ≈ 10.8 em + 214px) */
+.nq-fc .nq-big { font-size: clamp(26px, calc((100cqi - 214px) / 10.8), 48px); }
+/* when the column is too narrow for both blocks at full size, the date lines wrap to the numbers' width */
+@container (max-width: 715px) { .nq-bl { contain: inline-size; } }
 .nq-pct { font-size: 22px; font-weight: 500; color: #93A1A9; }
 .nq-range { font-size: clamp(18px, 2.4vw, 22px); font-weight: 600; color: #C9D4D9; }
 .nq-note { font-size: 13px; color: #93A1A9; }
@@ -211,6 +216,7 @@ body.nq { background: #0A0E11; color: #E8EEF1; font: 14px/1.4 Inter, system-ui, 
   body.nq { padding: 20px 16px 32px; }
   .nq-wrap { gap: 16px; }
   .nq-blocks { flex-direction: column; gap: 20px; }
+  .nq-fc .nq-big { font-size: 36px; }
   .nq-fc { flex: 1 1 100%; }
   .nq-side { flex: 1 1 100%; max-width: none; border-left: 0; padding-left: 0; border-top: 1px solid #1E272D; padding-top: 16px; }
   .nq-pis, .nq-pi-btns { gap: 5px; flex-wrap: nowrap; }
