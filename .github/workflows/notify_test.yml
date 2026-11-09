@@ -1,0 +1,25 @@
+name: notify-test
+
+# Manual only: send one test notification to the phone-alert topic (secret NTFY_TOPIC) to check
+# that alerts arrive. No schedule; touches nothing else. The topic is never printed (curl runs
+# silently and GitHub masks the secret anyway).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Send the test message
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          if [ -z "$NTFY_TOPIC" ]; then echo "::error::the NTFY_TOPIC secret is not set"; exit 1; fi
+          code=$(curl -s -o /dev/null -w "%{http_code}" -H "Title: NQ forecasts" \
+            -d "NQ test – alerts working" "https://ntfy.sh/${NTFY_TOPIC}")
+          echo "ntfy answered HTTP $code"
+          [ "$code" = "200" ]
