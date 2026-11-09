@@ -141,6 +141,7 @@ body.nq { background: #0A0E11; color: #E8EEF1; font: 14px/1.4 Inter, system-ui, 
 .nq-block { flex: 0 1 auto; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .nq-bl { font-size: 15px; color: #93A1A9; }
 .nq-bl b { font-weight: 600; color: #E8EEF1; }
+.nq-bl .nq-span { white-space: nowrap; }        /* a time range never breaks in the middle */
 .nq-bigrow { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .nq-big { font-size: clamp(36px, 5vw, 48px); font-weight: 600; letter-spacing: -0.02em; line-height: 1; white-space: nowrap; }
 /* scale the big numbers with the left column so both blocks fit ("±1,093 pts ±4.03%" + "±811 pts ±2.99%" ≈ 10.8 em + 214px) */
@@ -224,6 +225,8 @@ body.nq { background: #0A0E11; color: #E8EEF1; font: 14px/1.4 Inter, system-ui, 
   body.nq { padding: 20px 16px 32px; }
   .nq-wrap { gap: 16px; }
   .nq-blocks { flex-direction: column; gap: 20px; }
+  #b-cash-when { display: block; }               /* phones: the cash times get their own line */
+  #b-cash .nq-comma { display: none; }
   .nq-fc .nq-big { font-size: 36px; }
   .nq-fc { flex: 1 1 100%; }
   .nq-side { flex: 1 1 100%; max-width: none; border-left: 0; padding-left: 0; border-top: 1px solid #1E272D; padding-top: 16px; }

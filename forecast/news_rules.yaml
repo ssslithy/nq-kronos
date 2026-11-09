@@ -1,15 +1,24 @@
-# Tech news filter and significance for the page's news list (forecast/page_data.py: news()).
-# Tune here; no code change needed. Every entry is a case-insensitive regular expression,
-# matched on word boundaries (\b...\b) unless it starts with 're:' (then used as written).
+# Tech news filter, significance and story clustering for the page's news list
+# (forecast/page_data.py: news()). Tune here; no code change needed. Entries are case-insensitive
+# regular expressions, matched on word boundaries unless they start with 're:' (used as written).
 #
-# Relevance (the item is kept): the headline OR the start of the RSS summary mentions a
-#   Nasdaq-100 company (top_names, other_names), a sector term, or a macro term,
-#   and the headline / link match none of the exclude patterns.
-# Significance, from the HEADLINE only (so an item kept only because of its summary is 1):
-#   3  macro term, or a policy_3 term, or a top name together with a major_event term
-#   2  any Nasdaq-100 name (top or other), a sector term, or a top name with a rating term
-#   1  everything else that passed the relevance filter
-
+# Relevance (kept) - none of the exclude patterns, and one of:
+#   a Nasdaq-100 company (top_names / other_names) in the headline or the start of the summary;
+#   a macro term in the headline;
+#   a sector term AND a market word in the headline (the piece moves a sector), so generic
+#   AI / workplace pieces without a company are dropped.
+# Significance (bars), from the headline:
+#   1  anything matching always_1 (earnings-date notices, previews, "stocks to watch" and movers
+#      roundups, index wraps), whatever else it mentions
+#   3  a macro term; or a Nasdaq-100 company as the subject (named in the first 25 characters) with
+#      an earnings_result term; or a top-8 company as the subject with a major_event term; or a
+#      market_shock term about a top-8 company, the Nasdaq or chips / AI / tech stocks
+#   2  any other Nasdaq-100 company news (incl. rating changes); a sector term with a market word
+#   1  everything else that passed the filter (e.g. relevant only through its summary)
+# Target: about 20% of the listed items at 3 bars.
+# Clustering: two headlines within 12 hours with the same main company (the first company named)
+# and a shared event_words group are one story (also near-identical titles). The story keeps the
+# highest-ranked source (source_rank) and the earliest time.
 
 # The ~8 largest Nasdaq-100 names by index weight (review each quarter).
 top_names:
@@ -162,7 +171,7 @@ other_names:
   - 'csco'
   - 'tmus'
 
-# Sector-wide tech terms.
+# Sector terms (semis, AI, cloud, big tech). Count only with a market word.
 sector:
   - 'semiconductors?'
   - 'semis'
@@ -191,7 +200,43 @@ sector:
   - 'smartphones?'
   - 'quantum computing'
 
-# Macro drivers: significance 3.
+# Market words: with a sector term the piece moves a sector.
+market_words:
+  - 'stocks?'
+  - 'shares'
+  - 'rall(?:y|ies)'
+  - 'sell-?off'
+  - 'slumps?'
+  - 'slides?'
+  - 'tumbles?'
+  - 'surges?'
+  - 'soars?'
+  - 'jumps?'
+  - 'plunges?'
+  - 'sinks?'
+  - 'drops?'
+  - 'falls?'
+  - 'rises?'
+  - 'gains?'
+  - 'losses'
+  - 'index'
+  - 'nasdaq'
+  - 's&p'
+  - 'markets?'
+  - 'trade'
+  - 'valuations?'
+  - 'bubble'
+  - 'etfs?'
+  - 'investors'
+  - 'spending'
+  - 'capex'
+  - 'demand'
+  - 'supply'
+  - 'prices?'
+  - 'selloff'
+  - 'rout'
+
+# Fed and macro data, tariffs, export controls: 3 bars.
 macro:
   - 'fed'
   - 'federal reserve'
@@ -202,72 +247,84 @@ macro:
   - 'interest rates?'
   - 'treasury yields?'
   - 'bond yields?'
-  - '10-year'
   - 'inflation'
   - 'cpi'
+  - 'ppi'
   - 'pce'
   - 'jobs report'
   - 'payrolls'
   - 'nonfarm'
   - 'jobless claims'
-  - 'unemployment'
+  - 'unemployment rate'
   - 'gdp'
+  - 'retail sales'
   - 'recession'
   - 'tariffs?'
   - 'export controls?'
   - 'trade war'
+  - 'chip ban'
   - 'sanctions'
-  - 'stimulus'
   - 'government shutdown'
   - 'debt ceiling'
 
-# Policy news that is significance 3 on its own (any company).
-policy_3:
-  - 'tariffs?'
-  - 'export controls?'
-  - 'antitrust'
-  - 'doj'
-  - 'ftc'
-  - 'ruling'
-  - 'rules against'
-  - 'chip ban'
-
-# With a top name in the headline: significance 3.
-major_event:
-  - 'earnings'
-  - 'results'
+# Earnings results or guidance (not dates or previews): 3 bars with a Nasdaq-100 company.
+earnings_result:
+  - 'reports? (?:q[1-4]|first|second|third|fourth|quarterly|record)'
+  - '(?:q[1-4]|first-quarter|second-quarter|third-quarter|fourth-quarter|full-year) (?:results|earnings)'
+  - 'earnings (?:beat|beats|miss|misses|top|tops|topped|surge|surges|jump|jumps|fall|falls|slump|slumps|disappoint\w*)'
+  - '(?:beats?|tops?|topped|miss(?:es|ed)?) (?:estimates|expectations|forecasts|views)'
   - 'guidance'
-  - 'outlook'
-  - 'forecasts?'
-  - 'revenue'
-  - 'profit'
-  - 'sales'
-  - 'beats?'
-  - 'misses'
-  - 'ceo'
-  - 'chief executive'
-  - 'resigns?'
-  - 'steps down'
-  - 'investigation'
+  - '(?:raises?|lifts?|cuts?|lowers?|boosts?|trims?|slashes?|hikes?) (?:its |annual |full-year |\d{4} )?(?:forecast|outlook|guidance)'
+  - '(?:weak|weaker|strong|stronger|soft|upbeat|downbeat|disappointing|bleak|rosy|dismal|solid|lower|higher|cautious)(?: \w+)? (?:forecast|guidance|outlook)'
+  - '(?:revenue|profit|sales|earnings|net income) (?:nearly |more than )?(?:doubles?|triples?|rises?|falls?|jumps?|grows?|beats?|misses?|surges?|slumps?|soars?|drops?|declines?|tops?)'
+  - 'in q[1-4]'
+  - 'results'
+
+# Major events (probe, lawsuit ruling, M&A, outage, CEO exit): 3 bars with a top-8 company.
+major_event:
   - 'probe'
+  - 'investigation'
+  - 'investigat(?:es|ing|ed)'
+  - 'espionage'
+  - 'spy'
   - 'lawsuit'
   - 'sued'
+  - 'ruling'
+  - 'rules? (?:against|in favor)'
+  - 'verdict'
+  - 'antitrust'
+  - 'fined?'
+  - 'settlement'
+  - 'merger'
   - 'acquisitions?'
   - 'acquires?'
-  - 'merger'
-  - 'deal'
-  - 'buybacks?'
+  - 'to acquire'
+  - 'takeover'
+  - 'buyout'
+  - 'outage'
   - 'recall'
-  - 'layoffs'
-  - 'job cuts'
-  - 'ban'
+  - 'bans?|banned'
+  - 'ceo (?:steps down|resigns|ousted|fired|exits|to step down)'
+  - 'resigns'
+  - 'steps down'
   - 'scandal'
-  - 'shares (?:fall|drop|tumble|plunge|sink|jump|surge|soar)s?'
+  - '(?:agrees?|deal|offer|bid|plans?|moves?) to (?:buy|acquire)'
 
-# With a top name in the headline: significance 2 (rating changes).
+# Market shocks: 3 bars when the headline is about a top-8 company, the Nasdaq or chips / AI / tech stocks.
+market_shock:
+  - 'worst day'
+  - 'best day'
+  - 'biggest (?:one-day |daily |single-day )?(?:drop|decline|fall|gain|rally|loss)'
+  - 'meltdown'
+  - 'crash(?:es)?'
+  - 'rout'
+
+# Rating changes: 2 bars (also with a top-8 company).
 rating:
   - 'upgrades?'
+  - 'upgraded'
   - 'downgrades?'
+  - 'downgraded'
   - 'price target'
   - 'initiates?'
   - 'overweight'
@@ -275,9 +332,150 @@ rating:
   - 'outperform'
   - 'underperform'
 
+# Always 1 bar: earnings-date notices, previews, 'stocks to watch' and movers roundups, index wraps.
+always_1:
+  - 'benchmarks?'
+  - 'start the (?:week|day)'
+  - '(?:stocks|indexes|indices|indices) (?:open|close|end)\w*'
+  - 'earnings test'
+  - 'options traders'
+  - 're:\bexpects? (?:a )?\d+% (?:swing|move)'
+  - 'to announce'
+  - 'will (?:report|announce)'
+  - 'earnings (?:date|call|preview|this week|ahead|season)'
+  - 'ahead of (?:its |their )?(?:earnings|results|report)'
+  - 'previews?'
+  - 'what to (?:expect|watch)'
+  - 'stocks? to watch'
+  - 'to watch'
+  - 'movers'
+  - 'making the biggest moves'
+  - 'week ahead'
+  - 'weekly agenda'
+  - 'economic calendar'
+  - 'this week'
+  - 'morning (?:brief|report|bid|briefing)'
+  - 'things to know'
+  - 'recap'
+  - 'roundup'
+  - 'wrap'
+  - 'premarket'
+  - 'pre-bell'
+  - 'stock market today'
+  - 'markets? today'
+  - 'futures (?:rise|fall|rally|slip|edge|climb|drop|mixed|higher|lower|flat|point|gain|dip)\w*'
+  - 're:\b(?:dow|s&p(?: 500)?|nasdaq(?: composite)?|wall street|stock market|u\.?s\.? stocks)\b[^.]{0,40}\b(?:open|close|end|finish|rall(?:y|ies)|slide|slip|rise|fall|gain|drop)s?\b'
+  - 'markets? (?:rally|rallies|slide|slips?|rise|falls?|opens?|closes?|ends?|mixed)'
+
+# Story clustering: event groups. Same main company + a shared group within 12h = one story.
+event_words:
+  probe:
+    - 'probe'
+    - 'investigat\w*'
+    - 'espionage'
+    - 'spy'
+    - 'scrutiny'
+    - 'congress\w*'
+    - 'affair'
+    - 'scandal'
+  earnings:
+    - 'earnings'
+    - 'results'
+    - 'quarter\w*'
+    - 'q[1-4]'
+    - 'guidance'
+    - 'outlook'
+    - 'forecast'
+    - 'revenue'
+    - 'profit'
+  deal:
+    - 'merger'
+    - 'acquisitions?'
+    - 'acquires?'
+    - 'takeover'
+    - 'buyout'
+    - 'deal'
+    - 'stake'
+  legal:
+    - 'lawsuit'
+    - 'sued'
+    - 'ruling'
+    - 'verdict'
+    - 'antitrust'
+    - 'settlement'
+    - 'fined?'
+    - 'court'
+  outage:
+    - 'outage'
+    - 'disruption'
+  leadership:
+    - 'ceo'
+    - 'chief executive'
+    - 'resigns?'
+    - 'steps down'
+    - 'ousted'
+  rating:
+    - 'upgrad\w*'
+    - 'downgrad\w*'
+    - 'price target'
+  policy:
+    - 'tariffs?'
+    - 'export controls?'
+    - 'bans?|banned'
+    - 'sanctions'
+  buyback:
+    - 'buybacks?'
+    - 'repurchase'
+  jobs:
+    - 'layoffs'
+    - 'job cuts'
+  product:
+    - 'launch\w*'
+    - 'unveil\w*'
+    - 'releas\w*'
+    - 'debut'
+  stock_move:
+    - 'shares'
+    - 'stocks?'
+    - 'slid\w*|slides?'
+    - 'fall\w*|fell'
+    - 'drop\w*'
+    - 'jump\w*'
+    - 'surg\w*'
+    - 'tumbl\w*'
+    - 'plung\w*'
+    - 'rall\w*'
+    - 'sink\w*|sank'
+
+# Clustering keeps the highest-ranked source (first = best).
+source_rank:
+  - 'CNBC'
+  - 'MarketWatch'
+  - 'Nasdaq'
+  - 'Yahoo Finance'
+
 # Dropped: live blogs, video, opinion, quizzes, lifestyle and product reviews. Any headline with a
 # question mark counts as analysis or opinion and is dropped.
 exclude_title:
+  - 're:\band your (?:money|portfolio|401\(k\)|retirement)\b'
+  - 're:^prediction:'
+  - 're:\bi''?m (?:betting|buying|selling)\b'
+  - 'trending stock'
+  - 'heavily search'
+  - 'stocks? to own'
+  - 'looks cheap'
+  - 'fair value'
+  - 'fantastic news'
+  - 'market report'
+  - 'cagr'
+  - 're:\bthese \d+\b'
+  - 're:\b\d+ (?:ai |tech |chip |growth )?stocks\b'
+  - '(?:his|her|their) (?:\w+ )?picks'
+  - 'here is what to know'
+  - 'what you need to know'
+  - 'week in review'
+  - 're:\betfs? (?:are net (?:buyers|sellers)|add to|cut|holdings)\b'
+  - 're:\bnet (?:buyers|sellers) of\b'
   - 'live updates'
   - 're:\blive:'
   - 'live blog'

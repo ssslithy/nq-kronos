@@ -110,11 +110,24 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   runs (on 9 Nov the forced 4pm run showed 3:59pm headlines; fixed). 23 free RSS feeds: Yahoo per-ticker
   (^NDX + 15 largest names), CNBC Technology / Markets (Market Insider, id 20409666) / Earnings,
   MarketWatch Top Stories / Breaking, Nasdaq.com Markets / Technology. Not used: Yahoo `NQ=F` (stale
-  since Oct 2026), MarketWatch MarketPulse (stopped 2025). Filter, significance (1–3 bars, as the
-  calendar) and exclusions live in `forecast/news_rules.yaml` (tune there). Near-duplicates across
-  feeds (word overlap ≥ 0.6 or character ratio ≥ 0.85) keep the earliest. Up to 12, newest first, in a
-  list showing 3 rows that scrolls. Yahoo per-ticker feeds hold only ~20 items, so a re-run for a past
-  time finds mostly CNBC (as on 6 Nov).
+  since Oct 2026), MarketWatch MarketPulse (stopped 2025). Nasdaq.com's firewall drops requests whose
+  User-Agent contains a URL, so it gets its own UA (`SLOW_FEEDS`: 30 s timeout, one retry).
+  Everything else lives in `forecast/news_rules.yaml` (tune there, no code change):
+  relevance = a Nasdaq-100 company (headline or summary), a macro term in the headline, or a sector
+  term with a market word (generic AI / workplace pieces are dropped); exclusions (live blogs, video,
+  opinion, any "?" headline, listicles, promo pieces, ETF-flow notices). Bars: **3** = Fed / macro data /
+  tariffs / export controls, or earnings results or guidance with a Nasdaq-100 company as the subject
+  (named in the first 25 characters), or a major event (probe, ruling, M&A, outage, CEO exit) with a
+  top-8 company as the subject, or a market shock (worst day, meltdown, rout) about a top-8 name, the
+  Nasdaq or chips; **1** = earnings-date notices, previews, "stocks to watch" / movers roundups and index
+  wraps (`always_1`), whatever else they mention; **2** = other Nasdaq-100 or sector news. Measured on
+  9 Nov: 2 of the 12 listed at 3 bars (17%); over 6 days of feed items, 10 of 135 stories.
+  Clustering: headlines within 12 h with the same main company (first named) and a shared
+  `event_words` group, or near-identical titles, are one story, shown with the highest-ranked source
+  (`source_rank`: CNBC, MarketWatch, Nasdaq, Yahoo) at the earliest time (`cluster` = how many).
+  Up to 12 stories: most significant first, then newest, at most 6 per outlet; listed newest first,
+  3 visible, the rest scroll. Yahoo per-ticker feeds hold only ~20 items, so a re-run for a past time
+  finds mostly CNBC.
 - **Times are London only, 12-hour ("1:00pm")**, on the page and in the alert; New York appears only
   in Details. The disclaimer "Volatility only, not direction. Not investment advice." lives in Details.
 
@@ -171,7 +184,7 @@ alerts; tick **test alert** to check the secret). Actions → forecast → Run w
   page and the README.
 - Don't hand-edit `site/data/*`; it's written by the scripts and the bot. Before committing, `git pull
   --rebase`; if the bot has committed data since, take its data files and regenerate rather than merge.
-- Page CSS/JS links carry a version tag (`style.css?v=20261109d`, same in index.html and accuracy.html):
+- Page CSS/JS links carry a version tag (`style.css?v=20261109e`, same in index.html and accuracy.html):
   bump it whenever site code changes, or browsers keep the old file for Pages' 10-minute cache.
 - New page code goes in its own script or a self-contained block; the page must work at 375 px
   wide with no sideways scrolling, London times only. Check with Playwright at 1280 and 375 px

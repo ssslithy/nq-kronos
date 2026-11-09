@@ -63,6 +63,9 @@ FEEDS = ([("Yahoo Finance", f"https://feeds.finance.yahoo.com/rss/2.0/headline?s
     ("Nasdaq", "https://www.nasdaq.com/feed/rssoutbound?category=Markets"),
     ("Nasdaq", "https://www.nasdaq.com/feed/rssoutbound?category=Technology"),
 ])
+# outlet: (timeout s, retries, User-Agent). Nasdaq.com's firewall drops the connection when the
+# User-Agent contains a URL (as UA does); the same name without it answers in 2-3 s.
+SLOW_FEEDS = {"Nasdaq": (30, 1, {"User-Agent": "Mozilla/5.0 (compatible; nq-forecasts)"})}
 NEWS_RULES = Path(__file__).resolve().parent / "news_rules.yaml"
 NEWS_MAX = 12
 NEWS_PER_OUTLET = 6
@@ -199,34 +202,81 @@ def _clean(s: str) -> str:
 
 
 def load_news_rules(path: Path = NEWS_RULES) -> dict:
-    """news_rules.yaml compiled: each list becomes one case-insensitive regex."""
+    """news_rules.yaml compiled: each list becomes one case-insensitive regex; company aliases and
+    event groups are also kept separately for story clustering."""
     import yaml
     raw = yaml.safe_load(path.read_text())
 
+    def pat(x):
+        return x[3:] if x.startswith("re:") else rf"\b(?:{x})\b"
+
     def rx(items):
-        parts = [x[3:] if x.startswith("re:") else rf"\b(?:{x})\b" for x in items]
-        return re.compile("|".join(f"(?:{p})" for p in parts), re.I) if parts else re.compile(r"(?!x)x")
+        return re.compile("|".join(f"(?:{pat(x)})" for x in items), re.I) if items else re.compile(r"(?!x)x")
     top = [a for v in raw["top_names"].values() for a in v]
-    return {k: rx(v) for k, v in (("top", top), ("other", raw["other_names"]), ("sector", raw["sector"]),
-                                   ("macro", raw["macro"]), ("policy", raw["policy_3"]), ("major", raw["major_event"]),
-                                   ("rating", raw["rating"]), ("ex_title", raw["exclude_title"]),
-                                   ("ex_link", raw["exclude_link"]))}
+    R = {k: rx(v) for k, v in (("top", top), ("other", raw["other_names"]), ("sector", raw["sector"]),
+                                ("market", raw["market_words"]), ("macro", raw["macro"]),
+                                ("earnings", raw["earnings_result"]), ("major", raw["major_event"]),
+                                ("rating", raw["rating"]), ("always_1", raw["always_1"]),
+                                ("shock", raw["market_shock"]),
+                                ("ex_title", raw["exclude_title"]), ("ex_link", raw["exclude_link"]))}
+    R["companies"] = ([(name, re.compile(pat(a), re.I)) for name, al in raw["top_names"].items() for a in al] +
+                      [(a.lower(), re.compile(pat(a), re.I)) for a in raw["other_names"]])
+    R["events"] = {k: rx(v) for k, v in raw["event_words"].items()}
+    R["source_rank"] = {s_: i for i, s_ in enumerate(raw["source_rank"])}
+    return R
 
 
 def news_relevant(title: str, summary: str, link: str, R: dict) -> bool:
+    """A Nasdaq-100 company (headline or summary), a macro term in the headline, or a sector term
+    with a market word in the headline; and no exclusion."""
     if R["ex_title"].search(title) or R["ex_link"].search(link or ""):
         return False
-    text = f"{title} {summary[:300]}"
-    return any(R[k].search(text) for k in ("top", "other", "sector", "macro"))
+    if R["top"].search(title) or R["other"].search(title):
+        return True
+    if R["top"].search(summary[:300]) or R["other"].search(summary[:300]):
+        return True
+    if R["macro"].search(title):
+        return True
+    return bool(R["sector"].search(title) and R["market"].search(title))
+
+
+SUBJECT_CHARS = 25                 # "the company is the subject": named within the headline's first 25 characters
+
+
+def _subject(rx, title: str) -> bool:
+    m = rx.search(title)
+    return bool(m) and m.start() <= SUBJECT_CHARS
 
 
 def news_impact(title: str, R: dict) -> int:
-    top = bool(R["top"].search(title))
-    if R["macro"].search(title) or R["policy"].search(title) or (top and R["major"].search(title)):
+    """Significance 1-3 from the headline (see news_rules.yaml)."""
+    if R["always_1"].search(title):
+        return 1
+    top, other = bool(R["top"].search(title)), bool(R["other"].search(title))
+    top_subj = _subject(R["top"], title)
+    ndx_subj = top_subj or _subject(R["other"], title)
+    sector_move = bool(R["sector"].search(title) and R["market"].search(title))
+    if (R["macro"].search(title) or (ndx_subj and R["earnings"].search(title))
+            or (top_subj and R["major"].search(title))
+            or (R["shock"].search(title) and (top or sector_move or re.search(r"\bnasdaq\b", title, re.I)))):
         return 3
-    if top or R["other"].search(title) or R["sector"].search(title):
+    if top or other or sector_move:
         return 2
     return 1
+
+
+def main_company(title: str, R: dict) -> str | None:
+    """The first Nasdaq-100 company named in the headline (canonical name for the top 8)."""
+    best = None
+    for name, rx in R["companies"]:
+        m = rx.search(title)
+        if m and (best is None or m.start() < best[0]):
+            best = (m.start(), name)
+    return best[1] if best else None
+
+
+def event_groups(title: str, R: dict) -> set[str]:
+    return {k for k, rx in R["events"].items() if rx.search(title)}
 
 
 def _title_key(t: str) -> list[str]:
@@ -259,8 +309,15 @@ def _fetch_feed(outlet_url):
     import feedparser
     import requests
     outlet, url = outlet_url
-    r = requests.get(url, headers=UA, timeout=TIMEOUT)
-    r.raise_for_status()
+    timeout, retries, headers = SLOW_FEEDS.get(outlet, (TIMEOUT, 0, UA))
+    for attempt in range(retries + 1):
+        try:
+            r = requests.get(url, headers=headers, timeout=timeout)
+            r.raise_for_status()
+            break
+        except Exception:  # noqa: BLE001
+            if attempt == retries:
+                raise
     out = []
     for e in feedparser.parse(r.content).entries:
         t = e.get("published_parsed") or e.get("updated_parsed")
@@ -276,9 +333,11 @@ def _fetch_feed(outlet_url):
 
 
 def news(f: dict, prev_origin, now, n: int = NEWS_MAX) -> dict:
-    """Up to n relevant headlines in the news window (news_window), each with a significance 1-3
+    """Up to n relevant stories in the news window (news_window), each with a significance 1-3
     (news_rules.yaml): the most significant first, then the newest, at most NEWS_PER_OUTLET per
-    outlet; listed newest first. Near-duplicates across feeds keep the earliest."""
+    outlet; listed newest first. Headlines about the same story within 12 hours (same main company
+    and a shared event group, or near-identical titles) are one story: the highest-ranked source's
+    headline at the earliest time."""
     from concurrent.futures import ThreadPoolExecutor
     start, end = news_window(f, prev_origin)
     R = load_news_rules()
@@ -294,9 +353,10 @@ def news(f: dict, prev_origin, now, n: int = NEWS_MAX) -> dict:
     if not ok_feeds:
         raise RuntimeError("; ".join(errors) or "no feeds")
     lo, hi = start.to_pydatetime(), end.to_pydatetime()
-    seen_links, kept = set(), []
-    stats = {"fetched": len(items), "in_window": 0, "relevant": 0, "duplicates": 0}
-    for it in sorted(items, key=lambda x: x["_t"]):                 # oldest first: duplicates keep the earliest
+    seen_links, stories = set(), []
+    stats = {"fetched": len(items), "in_window": 0, "relevant": 0, "clustered": 0}
+    rank = lambda it: R["source_rank"].get(it["_feed"], len(R["source_rank"]))  # noqa: E731
+    for it in sorted(items, key=lambda x: x["_t"]):                 # oldest first
         if not (lo <= it["_t"] <= hi) or it["link"] in seen_links:
             continue
         stats["in_window"] += 1
@@ -304,10 +364,25 @@ def news(f: dict, prev_origin, now, n: int = NEWS_MAX) -> dict:
         if not news_relevant(it["title"], it["summary"], it["link"], R):
             continue
         stats["relevant"] += 1
-        if any(_near_duplicate(it["title"], k["title"]) for k in kept):
-            stats["duplicates"] += 1
-            continue
-        kept.append(it)
+        comp, ev = main_company(it["title"], R), event_groups(it["title"], R)
+        home = None
+        for st in stories:                                          # same story within 12 hours?
+            if (it["_t"] - st["first"]).total_seconds() > 12 * 3600:
+                continue
+            if (comp and comp == st["company"] and ev & st["events"]) or \
+                    any(_near_duplicate(it["title"], m["title"]) for m in st["members"]):
+                home = st
+                break
+        if home is None:
+            stories.append({"company": comp, "events": set(ev), "first": it["_t"], "members": [it]})
+        else:
+            home["members"].append(it)
+            home["events"] |= ev
+            stats["clustered"] += 1
+    kept = []
+    for st in stories:                     # the highest-ranked source's headline, the earliest time
+        best = min(st["members"], key=lambda m: (rank(m), m["_t"]))
+        kept.append(dict(best, _t=st["first"], cluster=len(st["members"])))
     for it in kept:
         it["impact"] = news_impact(it["title"], R)
     # pick the n most significant (then newest), at most NEWS_PER_OUTLET from one outlet so the
@@ -324,7 +399,7 @@ def news(f: dict, prev_origin, now, n: int = NEWS_MAX) -> dict:
     for it in sorted(picked, key=lambda x: x["_t"], reverse=True):
         out.append({"source": it["source"], "title": it["title"], "link": it["link"],
                     "published_utc": iso(it["_t"]), "time_london": london_time(it["_t"]),
-                    "impact": it["impact"]})
+                    "impact": it["impact"], "cluster": it["cluster"]})
     return {"ok": True, "generated_utc": iso(now), "window_start_utc": iso(start), "window_end_utc": iso(end),
             "items": out, "stats": stats, "feeds_ok": ok_feeds, "feeds_total": len(FEEDS),
             "errors": errors or None, "rules": NEWS_RULES.name}
