@@ -30,10 +30,9 @@ All times are London, 12-hour ("1:00pm"); New York appears only in Details.
   any not from the forecast's day).
 - **Chart:** 48 hourly candles, then the forecast fan to the end of the window. Buttons 99 / 95 /
   90 / 85 / 80% (multi-select, 90% on by default) draw stacked bands; at the last step each band
-  equals that range exactly. "Cash" draws the cash-session box and cuts the chart at the cash close
-  (9:00pm London), so the session fills the forecast area; the box's left edge pairs the cash levels
-  with the bands' values at 9:00pm (on phones, one line under the chart). "Levels" (24h, Cash)
-  shows or hides the band and cash numbers. "Kronos (experimental)" overlays Kronos-small's P10 / P90 paths when it ran from the
+  equals that range exactly, and every selected band's upper and lower price is labelled at the
+  right edge. The chart always shows the full 1pm → 1pm window (the cash session is in the top
+  card only). "Kronos (experimental)" overlays Kronos-small's P10 / P90 paths when it ran from the
   same bar (its 80% band held only ~46% in the lab); otherwise it is disabled ("not run today").
 - **Footer:** the 90% PI's hit rate over the last 250 days, and a Details section (window, model and
   multipliers, recent moves, cash-session notes, Friday weekend-gap note, data sources, and

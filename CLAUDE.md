@@ -81,10 +81,11 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   "not loaded". **Update every January** from the official calendars cited in the file.
 - **Backfill results, HAR-RV (3 Nov 2025 – 5 Nov 2026, 250 forecasts, 23h window, older / newer half):**
   80% 80.0 / 79.2, 85% 83.2 / 83.2, 90% 90.4 / 88.0, 95% 93.6 / 96.0, 99% 98.4 / 99.2.
-- **Chart Cash toggle:** with Cash on, the forecast part ends at the last cash bar (4pm NY = 9pm London)
-  and is re-spaced to fill the forecast area; right-edge labels show the bands at that bar; the cash box's
-  left edge pairs the cash levels with the 24h bands' values there ("Cash 27,922 · 90% 27,959"). On
-  phones those go in one line under the chart. Levels checkboxes: "24h" (band numbers), "Cash".
+- **Chart controls:** Last Price · Kronos (experimental) · 99 / 95 / 90 / 85 / 80% band buttons.
+  Selected bands' upper and lower prices are always labelled at the right edge (de-overlapped).
+  The chart always shows the full 1pm → 1pm window; the cash-session box, the "Cash" view and the
+  "Levels" checkboxes were removed (NQ_CHART_CASH_REMOVAL.md). The cash session stays in the top
+  card and in vol_latest.json.
 - **Fed odds (`fed_odds.json`):** Polymarket crowd betting odds for the next FOMC decision after the
   origin (date from the events YAML). Gamma `/public-search` finds "Fed decision in <Month>?" (checked
   against the market questions' "<Month> <year>" or the end date, never a hard-coded slug), Gamma

@@ -1,7 +1,6 @@
 // NQ forecasts chart: 48 hourly candles, then the forecast fan to the end of the window
 // (1pm -> 1pm London), as stacked translucent bands for the selected prediction intervals.
-// With "Cash" on, the forecast part ends at the last cash bar (4pm New York) and is re-spaced
-// to fill the same width; the right-edge labels then show the bands' values there.
+// Every selected band's upper and lower price is labelled at the right edge.
 // Geometry follows design/Main.dc.html: an SVG on a 1000 x 408 grid, plot x 56..872.
 (() => {
   "use strict";
@@ -9,9 +8,8 @@
   const ORDER = [99, 95, 90, 85, 80];
   const X0 = 56, X1 = 872, YT = 40, YB = 360;
   const C = { grid: "#1E272D", axis: "#93A1A9", up: "#6FD3B8", down: "#D9545F", last: "#F2B84B", band: "rgba(52,211,182,0.13)",
-    bandEdge: "#34D3B6", pi: "#5EE0C6", now: "#5B6A72", nowText: "#C9D4D9", cash: "#7FB3FF", cashFill: "rgba(127,179,255,0.16)",
-    cashText: "#A9CBFF", kronos: "#B79CFF" };
-  const S = { shown: new Set(), cash: false, piLevels: true, cashLevels: true, kronos: false, D: null, kOk: false };
+    bandEdge: "#34D3B6", pi: "#5EE0C6", now: "#5B6A72", nowText: "#C9D4D9", kronos: "#B79CFF" };
+  const S = { shown: new Set(), kronos: false, D: null, kOk: false };
 
   const pressed = (b, on) => b.setAttribute("aria-pressed", on ? "true" : "false");
 
@@ -26,11 +24,6 @@
       S.shown.has(l) ? S.shown.delete(l) : S.shown.add(l);
       pressed(b, S.shown.has(l)); draw();
     });
-    const cashOk = D.vol.cash && D.vol.cash.range && D.vol.cash.steps;
-    $("cash-btn").hidden = !cashOk;
-    $("cash-btn").addEventListener("click", () => { S.cash = !S.cash; pressed($("cash-btn"), S.cash); draw(); });
-    $("lv-pi").addEventListener("change", (e) => { S.piLevels = e.target.checked; draw(); });
-    $("lv-cash").addEventListener("change", (e) => { S.cashLevels = e.target.checked; draw(); });
     const ks = NQ.kronosState(D);
     S.kOk = ks.ok;
     const k = $("show-kronos"), kl = $("kronos-label");
@@ -38,6 +31,8 @@
       k.disabled = true; kl.classList.add("off"); kl.title = `Kronos (experimental): ${ks.why}`;
     }
     k.addEventListener("change", (e) => { S.kronos = e.target.checked; draw(); });
+    const { at, plusH } = NQ.fmt;
+    $("chart-title").textContent = `Hourly price · forecast to ${at(plusH(D.vol.horizon_end_utc, 1))} London`;
   }
 
   // nice tick step for the price axis
@@ -53,30 +48,22 @@
   function draw() {
     const D = S.D; if (!D) return;
     const v = D.vol, f = v.fan, { num, T } = NQ.fmt;
-    const { at, plusH } = NQ.fmt;
-    $("chart-title").textContent = `Hourly price · forecast to ${S.cash && v.cash && v.cash.end_utc
-      ? `${at(T(v.cash.end_utc))} London (cash close)` : `${at(plusH(v.horizon_end_utc, 1))} London`}`;
     const el = $("chart");
     const compact = el.clientWidth < 700;
     const font = compact ? 20 : 13, gap = compact ? 22 : 15;
     const cd = v.candles, n = cd.length, H = f.p50.length;
-    const c = v.cash;
-    const cashMode = !!(S.cash && c && c.range && c.steps);
-    const Hv = cashMode ? c.steps[1] : H;                     // forecast steps shown
-    const step = (X1 - X0) / (n + H);                         // candle spacing: the same in both views
+    const step = (X1 - X0) / (n + H);
     const xc = (i) => X0 + (i + 0.5) * step;                 // candle i centre
     const xO = xc(n - 1);
-    const fstep = (X1 - step / 2 - xO) / Hv;                  // forecast spacing (= step in the full view)
-    const xs = (j) => xO + j * fstep;                         // forecast step j (0 = origin)
+    const xs = (j) => xO + j * step;                          // forecast step j (0 = origin)
     // visible area: the whole grid, or on phones the last ~13 candles plus the forecast
     const vb = compact ? [xO - 150, 16, 1012 - (xO - 150), 392] : [0, 0, 1000, 408];
-    const vis = cd.filter((c, i) => xc(i) >= vb[0] + 4);
-    // y range: visible candles, every band over the shown steps (so toggling a band never rescales), Kronos
+    const vis = cd.filter((k, i) => xc(i) >= vb[0] + 4);
+    // y range: visible candles, every band (so toggling a band never rescales), Kronos
     let lo = Math.min(...vis.map((k) => k.l)), hi = Math.max(...vis.map((k) => k.h));
-    for (const l of ORDER) { lo = Math.min(lo, ...f.bands[l].lo.slice(0, Hv)); hi = Math.max(hi, ...f.bands[l].hi.slice(0, Hv)); }
-    if (cashMode) { lo = Math.min(lo, c.range[0]); hi = Math.max(hi, c.range[1]); }
+    for (const l of ORDER) { lo = Math.min(lo, ...f.bands[l].lo); hi = Math.max(hi, ...f.bands[l].hi); }
     const kq = S.kOk && D.kronos ? D.kronos.quantiles : null;
-    if (kq) { lo = Math.min(lo, ...kq.p10.slice(0, Hv)); hi = Math.max(hi, ...kq.p90.slice(0, Hv)); }
+    if (kq) { lo = Math.min(lo, ...kq.p10.slice(0, H)); hi = Math.max(hi, ...kq.p90.slice(0, H)); }
     const pad = (hi - lo) * 0.02; lo -= pad; hi += pad;
     const y = (p) => YB - (YB - YT) * (p - lo) / (hi - lo);
     const last = v.last_close, yL = y(last);
@@ -91,53 +78,16 @@
     for (const l of ORDER) {
       if (!S.shown.has(l)) continue;
       const b = f.bands[l];
-      const up = b.hi.slice(0, Hv).map((p, j) => `L${xs(j + 1).toFixed(1)},${y(p).toFixed(1)}`).join(" ");
-      const dn = b.lo.slice(0, Hv).map((p, j) => `L${xs(j + 1).toFixed(1)},${y(p).toFixed(1)}`).reverse().join(" ");
+      const up = b.hi.map((p, j) => `L${xs(j + 1).toFixed(1)},${y(p).toFixed(1)}`).join(" ");
+      const dn = b.lo.map((p, j) => `L${xs(j + 1).toFixed(1)},${y(p).toFixed(1)}`).reverse().join(" ");
       out.push(`<path d="M${xO.toFixed(1)},${yL.toFixed(1)} ${up} ${dn} Z" fill="${C.band}" stroke="${C.bandEdge}" stroke-opacity="0.45" stroke-width="1"/>`);
     }
     // last price
-    out.push(`<line x1="${xO.toFixed(1)}" y1="${yL.toFixed(1)}" x2="${xs(Hv).toFixed(1)}" y2="${yL.toFixed(1)}" stroke="${C.last}" stroke-width="2" stroke-dasharray="6 5"/>`);
-    // cash box: from the 9:30am NY open (half-way into the first cash bar) to the 4:00pm close.
-    // Its left edge carries the cash levels paired with the 24h bands' values at the cash close
-    // ("Cash 27,447 · 90% 27,350"); on phones they go in one line under the chart instead.
-    const below = $("cash-levels");
-    below.hidden = true;
-    if (cashMode) {
-      const xa = xs(c.steps[0] - 0.5), xb = xs(c.steps[1]);
-      const ya = y(c.range[1]), yb = y(c.range[0]);
-      out.push(`<rect x="${xa.toFixed(1)}" y="${ya.toFixed(1)}" width="${(xb - xa).toFixed(1)}" height="${(yb - ya).toFixed(1)}" fill="${C.cashFill}" stroke="${C.cash}" stroke-width="1.5" stroke-dasharray="4 3"/>`);
-      const sel = ORDER.filter((l) => S.shown.has(l)).reverse();           // narrowest first: nearest the box
-      const bandsAt = S.piLevels ? sel.map((l) => ({ l, hi: f.bands[l].hi[Hv - 1], lo: f.bands[l].lo[Hv - 1] })) : [];
-      if (compact) {
-        const parts = [];
-        if (S.cashLevels) parts.push(`Cash ${num(c.range[0])} – ${num(c.range[1])}`);
-        for (const b of bandsAt.slice().reverse()) parts.push(`${b.l}% ${num(b.lo)} – ${num(b.hi)}`);
-        if (parts.length) {
-          below.textContent = `At ${NQ.fmt.clock(T(c.end_utc))} · ${parts.join(" · ")}`;
-          below.hidden = false;
-        }
-      } else if (S.cashLevels || bandsAt.length) {
-        // one line per selected band (cash value on the first); continuation lines are padded so
-        // the band values line up in the monospace font
-        const lines = (side) => {
-          const cashT = S.cashLevels ? `Cash ${num(side === "hi" ? c.range[1] : c.range[0])}` : "";
-          if (!bandsAt.length) return [{ cash: cashT, band: "" }];
-          return bandsAt.map((b, k) => ({
-            cash: k === 0 ? cashT : " ".repeat(cashT.length),
-            band: `${cashT ? (k === 0 ? " · " : "   ") : ""}${b.l}% ${num(b[side])}` }));
-        };
-        const tx = (xa + 3).toFixed(1);
-        const row = (ln, yy) => `<text x="${tx}" y="${yy.toFixed(1)}" xml:space="preserve">` +
-          `<tspan fill="${C.cashText}">${ln.cash}</tspan><tspan fill="${C.pi}">${ln.band}</tspan></text>`;
-        out.push(`<g font-family="JetBrains Mono, monospace" font-size="${font}">` +
-          lines("hi").map((ln, k) => row(ln, ya - 6 - k * gap)).join("") +
-          lines("lo").map((ln, k) => row(ln, yb + font + 3 + k * gap)).join("") + "</g>");
-      }
-    }
+    out.push(`<line x1="${xO.toFixed(1)}" y1="${yL.toFixed(1)}" x2="${xs(H).toFixed(1)}" y2="${yL.toFixed(1)}" stroke="${C.last}" stroke-width="2" stroke-dasharray="6 5"/>`);
     // Kronos P10 / P90 paths (experimental)
     if (S.kronos && kq) {
       const kl = D.kronos.last_close;
-      const path = (arr) => `M${xO.toFixed(1)},${y(kl).toFixed(1)} ` + arr.slice(0, Hv).map((p, j) => `L${xs(j + 1).toFixed(1)},${y(p).toFixed(1)}`).join(" ");
+      const path = (arr) => `M${xO.toFixed(1)},${y(kl).toFixed(1)} ` + arr.slice(0, H).map((p, j) => `L${xs(j + 1).toFixed(1)},${y(p).toFixed(1)}`).join(" ");
       out.push(`<g fill="none" stroke="${C.kronos}" stroke-width="2" opacity="0.9"><path d="${path(kq.p90)}"/><path d="${path(kq.p10)}"/></g>`);
     }
     // candles
@@ -159,34 +109,30 @@
     // right-hand labels: last price, then every selected band's edges, nudged apart
     out.push(`<g font-family="JetBrains Mono, monospace" font-size="${font}">`);
     out.push(`<text x="878" y="${(yL + 4).toFixed(1)}" fill="${C.last}">${num(last)}</text>`);
-    if (S.piLevels) {
-      const tops = [], bots = [];
-      for (const l of ORDER) {
-        if (!S.shown.has(l)) continue;
-        const b = f.bands[l];
-        tops.push({ y: y(b.hi[Hv - 1]) + 4, t: `${l}%  ${num(b.hi[Hv - 1])}` });
-        bots.push({ y: y(b.lo[Hv - 1]) + 4, t: `${l}%  ${num(b.lo[Hv - 1])}` });
-      }
-      // nudge outwards, away from the last-price label: tops upwards, bottoms downwards
-      let lim = yL + 4 - gap;
-      for (const t of tops.sort((a, b) => b.y - a.y)) { t.y = Math.min(t.y, lim); lim = t.y - gap; }
-      lim = yL + 4 + gap;
-      for (const t of bots.sort((a, b) => a.y - b.y)) { t.y = Math.max(t.y, lim); lim = t.y + gap; }
-      for (const t of tops.concat(bots)) out.push(`<text x="878" y="${t.y.toFixed(1)}" fill="${C.pi}" xml:space="preserve">${t.t}</text>`);
+    const tops = [], bots = [];
+    for (const l of ORDER) {
+      if (!S.shown.has(l)) continue;
+      const b = f.bands[l];
+      tops.push({ y: y(b.hi[H - 1]) + 4, t: `${l}%  ${num(b.hi[H - 1])}` });
+      bots.push({ y: y(b.lo[H - 1]) + 4, t: `${l}%  ${num(b.lo[H - 1])}` });
     }
+    // nudge outwards, away from the last-price label: tops upwards, bottoms downwards
+    let lim = yL + 4 - gap;
+    for (const t of tops.sort((a, b) => b.y - a.y)) { t.y = Math.min(t.y, lim); lim = t.y - gap; }
+    lim = yL + 4 + gap;
+    for (const t of bots.sort((a, b) => a.y - b.y)) { t.y = Math.max(t.y, lim); lim = t.y + gap; }
+    for (const t of tops.concat(bots)) out.push(`<text x="878" y="${t.y.toFixed(1)}" fill="${C.pi}" xml:space="preserve">${t.t}</text>`);
     out.push("</g>");
     // time axis (London): bar closes; always the origin close and the window end
     const times = cd.map((k) => T(k.t)).concat(v.future_utc.map((t) => T(t)));
     const closeAt = (i) => new Date(times[i].getTime() + 3600e3);
     const xb = (i) => (i < n ? xc(i) : xs(i - n + 1)) + step / 2;   // boundary after slot i
-    const end = n + Hv - 1;
+    const end = n + H - 1;
     const lab = [{ i: n - 1, req: true }, { i: end, req: true }];
     const minGap = compact ? 170 : 110;
     const lonHour = (d) => +new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", hour: "numeric", hourCycle: "h23" }).format(d);
-    // candle labels as in the full view; with Cash on, the stretched forecast part gets 5pm first
-    const prefs = (cashMode ? [[17, n - 1]] : []).concat([0, 8, 16, 4, 12, 20].map((h) => [h, 0]));
-    for (const [pref, from] of prefs) {
-      for (let i = from; i < end; i++) {
+    for (const pref of [0, 8, 16, 4, 12, 20]) {
+      for (let i = 0; i < end; i++) {
         if (lonHour(closeAt(i)) !== pref) continue;
         if (lab.every((q) => Math.abs(xb(q.i) - xb(i)) >= minGap)) lab.push({ i });
       }
