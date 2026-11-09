@@ -119,16 +119,24 @@ def calendar(f: dict, now) -> dict:
 
 # ---- Treasuries ------------------------------------------------------------------------------
 
-def _hourly(ticker: str, start, end) -> pd.Series:
+_HOURLY: dict = {}
+
+
+def _hourly_ohlc(ticker: str, start, end) -> pd.DataFrame:
+    """Yahoo hourly bars (Open, Close) indexed by bar start in UTC, from a day before `start` to
+    two days after `end`; cached for the run (the Treasuries and the Fed odds share them)."""
     import yfinance as yf
-    d = yf.Ticker(ticker).history(start=(start - pd.Timedelta(days=1)).strftime("%Y-%m-%d"),
-                                  end=(end + pd.Timedelta(days=2)).strftime("%Y-%m-%d"),
-                                  interval="1h", auto_adjust=False, timeout=TIMEOUT)
-    if d.empty:
-        raise ValueError(f"no hourly data for {ticker}")
-    s = d["Close"].dropna()
-    s.index = s.index.tz_convert("UTC")
-    return s
+    key = (ticker, pd.Timestamp(start).date(), pd.Timestamp(end).date())
+    if key not in _HOURLY:
+        d = yf.Ticker(ticker).history(start=(pd.Timestamp(start) - pd.Timedelta(days=1)).strftime("%Y-%m-%d"),
+                                      end=(pd.Timestamp(end) + pd.Timedelta(days=2)).strftime("%Y-%m-%d"),
+                                      interval="1h", auto_adjust=False, timeout=TIMEOUT)
+        if d.empty:
+            raise ValueError(f"no hourly data for {ticker}")
+        d = d[["Open", "Close"]].dropna()
+        d.index = d.index.tz_convert("UTC")
+        _HOURLY[key] = d
+    return _HOURLY[key]
 
 
 def _close_at(s: pd.Series, bar_start: pd.Timestamp) -> float:
@@ -151,48 +159,167 @@ def _daily_last_before(ticker: str, day) -> float:
     return float(s.iloc[-1])
 
 
-def _fred_last_before(day) -> float:
+
+
+REOPEN_GAP = pd.Timedelta(hours=3)   # a longer gap between hourly bars = the market was shut (weekend, holiday)
+ZT_DURATION = 1.9   # modified duration of the 2-year note future (cheapest-to-deliver ~1.9 years):
+                    # yield change (percentage points) ~= -(price % change) / 1.9; an approximation
+ZN_DURATION = 6.5   # the same for the 10-year note future (last-resort 10Y fallback only)
+
+
+def _short(t) -> str:
+    return london_time(t).replace(":00", "")                     # "1pm", "11pm"
+
+
+def market_window(prev_origin: pd.Timestamp, origin: pd.Timestamp) -> dict:
+    """The window shown for the Treasuries and the Fed odds (one shared label).
+
+    Normally the past 24 hours: previous origin bar close -> this origin bar close (1pm -> 1pm
+    London), sampled at the closes of the ZT=F hourly bars. If the market was shut in between
+    (a gap of more than REOPEN_GAP between bars: the weekend on Mondays, or a holiday), only the
+    trading since the reopen: from the first bar's open (Sunday 6pm New York = 11pm London
+    normally, read from the data so clock-change weeks are right) to the origin close; Friday
+    afternoon after 1pm is not shown. If ZT=F can't be fetched, the NQ trading hours stand in."""
+    end = origin + pd.Timedelta(hours=1)
+    ref = "ZT=F"
+    try:
+        idx = _hourly_ohlc("ZT=F", prev_origin, origin).index
+        bars = idx[(idx >= prev_origin) & (idx <= origin)]
+        if not len(bars) or bars[-1] != origin:
+            raise ValueError("ZT=F has no bar at the origin")
+    except Exception as e:  # noqa: BLE001
+        log.warning("market window: ZT=F unavailable (%s); using NQ trading hours", e)
+        ref = "NQ trading hours"
+        bars = pd.DatetimeIndex([t for t in pd.date_range(prev_origin, origin, freq="1h")
+                                 if cal.is_tradable_hour(t.to_pydatetime())])
+    gaps = [k for k in range(1, len(bars)) if bars[k] - bars[k - 1] > REOPEN_GAP]
+    if gaps:
+        reopen = bars[gaps[-1]]
+        use = bars[bars >= reopen]
+        times = pd.DatetimeIndex([reopen] + list(use + pd.Timedelta(hours=1)))
+        hours = int(round((end - reopen) / pd.Timedelta(hours=1)))
+        rl, el = reopen.tz_convert(cal.LONDON), end.tz_convert(cal.LONDON)
+        label = f"Past {hours}h · {rl:%a} {_short(reopen)} – {el:%a} {_short(end)}"
+        return {"kind": "since_reopen", "start_utc": iso(reopen), "end_utc": iso(end), "hours": hours,
+                "label": label, "times": times, "first_is_open": True, "reference": ref}
+    hours = int(round((end - (prev_origin + pd.Timedelta(hours=1))) / pd.Timedelta(hours=1)))
+    times = pd.DatetimeIndex(bars + pd.Timedelta(hours=1))
+    return {"kind": "past_24h", "start_utc": iso(times[0]), "end_utc": iso(end), "hours": hours,
+            "label": "Past 24h", "times": times, "first_is_open": False, "reference": ref}
+
+
+def _sample(df: pd.DataFrame, win: dict) -> np.ndarray | None:
+    """Values at the window's times: the first bar's open for a since-reopen window, otherwise the
+    close of the bar ending at each time (last bar within 3 hours). None if coverage < 80%."""
+    out, real = [], 0
+    for k, t in enumerate(win["times"]):
+        if k == 0 and win["first_is_open"]:
+            x = df[(df.index <= t) & (df.index > t - pd.Timedelta(hours=3))]
+            v = float(x["Open"].iloc[-1]) if len(x) else np.nan
+            real += bool(len(x) and x.index[-1] == t)
+        else:
+            x = df[(df.index <= t - pd.Timedelta(hours=1)) & (df.index > t - pd.Timedelta(hours=4))]
+            v = float(x["Close"].iloc[-1]) if len(x) else np.nan
+            real += bool(len(x) and x.index[-1] == t - pd.Timedelta(hours=1))
+        out.append(v)
+    v = np.array(out)
+    if np.isnan(v[0]) or np.isnan(v[-1]) or real < 0.8 * len(v):
+        return None
+    return pd.Series(v).ffill().to_numpy()
+
+
+def _clean_hourly(ticker: str, origin: pd.Timestamp, days: int = 60) -> bool:
+    """At least `days` recent trading days of near-complete hourly bars (>= 18 a day on 95% of
+    them), the last one no older than 3 days: good enough to use as a yield series."""
+    import yfinance as yf
+    try:
+        d = yf.Ticker(ticker).history(period="120d", interval="1h", timeout=TIMEOUT)
+    except Exception:  # noqa: BLE001
+        return False
+    if d.empty:
+        return False
+    idx = d.index.tz_convert("UTC")
+    idx = idx[idx <= origin]
+    if not len(idx) or origin - idx[-1] > pd.Timedelta(days=3):
+        return False
+    per_day = pd.Series(idx.tz_convert(cal.NY).date).value_counts().sort_index().tail(days)
+    return len(per_day) >= days and (per_day >= 18).mean() >= 0.95
+
+
+def _fred_dgs2_last(day) -> tuple[pd.Timestamp, float]:
     import requests
     r = requests.get(FRED_DGS2, timeout=TIMEOUT)          # FRED answers the default client fastest
     r.raise_for_status()
     rows = [ln.split(",") for ln in r.text.strip().splitlines()[1:]]
     vals = [(pd.Timestamp(d), float(v)) for d, v in rows if v not in (".", "")]
-    vals = [v for d, v in vals if d < pd.Timestamp(day)]
+    vals = [(d, v) for d, v in vals if d < pd.Timestamp(day)]
     if not vals:
         raise ValueError("no DGS2 value before the origin")
     return vals[-1]
 
 
+def _yield_10y(win, prev_origin, origin) -> tuple[np.ndarray, str, bool]:
+    """10Y yield path (%): ^TNX hourly if it covers the window (it's a cash-hours index, so it
+    usually doesn't overnight), else 10Y=F (CBOT 10-Year Yield futures, hourly around the clock),
+    else ZN=F converted with ZN_DURATION and anchored to ^TNX's last daily close (approximate)."""
+    start = pd.Timestamp(win["start_utc"]) - pd.Timedelta(hours=2)
+    for tk in ("^TNX", "10Y=F"):
+        try:
+            v = _sample(_hourly_ohlc(tk, start, origin), win)
+            if v is not None:
+                return v, f"Yahoo {tk} hourly", False
+        except Exception as e:  # noqa: BLE001
+            log.warning("10Y: %s unavailable (%s)", tk, e)
+    zn = _sample(_hourly_ohlc("ZN=F", start, origin), win)
+    if zn is None:
+        raise ValueError("no 10Y yield source covers the window")
+    y0 = _daily_last_before("^TNX", origin.tz_convert(cal.NY).date())
+    return y0 - (zn / zn[0] - 1) * 100 / ZN_DURATION, "ZN=F converted (approximate)", True
+
+
+def _yield_2y(win, prev_origin, origin) -> tuple[np.ndarray, str, bool]:
+    """2Y yield path (%): 2YY=F if it has clean hourly data for 60+ days; otherwise derived from
+    ZT=F: yield = the latest FRED DGS2 close before the origin's day, moved by the ZT-implied
+    change since that close (-(price % change) / ZT_DURATION). Approximate."""
+    start = pd.Timestamp(win["start_utc"]) - pd.Timedelta(hours=2)
+    if _clean_hourly("2YY=F", origin):
+        v = _sample(_hourly_ohlc("2YY=F", start, origin), win)
+        if v is not None:
+            return v, "Yahoo 2YY=F hourly", False
+    d0, y0 = _fred_dgs2_last(origin.tz_convert(cal.NY).date())
+    anchor = pd.Timestamp(datetime(d0.year, d0.month, d0.day, 15), tz=cal.NY).tz_convert("UTC")   # ~3pm NY close
+    zt = _hourly_ohlc("ZT=F", min(anchor, start), origin)
+    p0 = zt[(zt.index <= anchor) & (zt.index > anchor - pd.Timedelta(hours=6))]["Close"]
+    if p0.empty:
+        raise ValueError("no ZT=F price at the DGS2 close")
+    zv = _sample(zt, win)
+    if zv is None:
+        raise ValueError("ZT=F doesn't cover the window")
+    return y0 - (zv / float(p0.iloc[-1]) - 1) * 100 / ZT_DURATION, \
+        f"ZT=F-implied from FRED DGS2 {d0:%d %b} (approximate)", True
+
+
 def treasuries(f: dict, prev_origin: pd.Timestamp, now) -> dict:
+    """2Y and 10Y yields over the shared window (market_window): change in basis points, the
+    level at the origin close, and the hourly yield path for the sparkline."""
     origin = pd.Timestamp(f["origin_utc"])
-    day = origin.tz_convert(cal.NY).date()
+    win = market_window(prev_origin, origin)
     rows, errors = [], []
-    for label, fut, yld in (("2Y", "ZT=F", "fred"), ("10Y", "ZN=F", "^TNX")):
-        row = {"label": label, "ticker": fut}
+    for label, fn in (("2Y", _yield_2y), ("10Y", _yield_10y)):
+        row = {"label": label}
         try:
-            s = _hourly(fut, prev_origin, origin)
-            a, b = _close_at(s, prev_origin), _close_at(s, origin)
-            w = s[(s.index >= prev_origin) & (s.index <= origin)]
-            row.update({"move_pct": round(100 * (b / a - 1), 3), "start_close": a, "end_close": b,
-                        "spark": [round(float(v), 6) for v in w.to_numpy()]})
+            y, src, approx = fn(win, prev_origin, origin)
+            row.update({"change_bp": round(float((y[-1] - y[0]) * 100), 1), "yield_pct": round(float(y[-1]), 3),
+                        "spark": [round(float(v), 4) for v in y], "source": src, "approx": approx})
         except Exception as e:  # noqa: BLE001
-            errors.append(f"{label} move: {type(e).__name__}: {e}")
-            row["move_pct"] = None
-        try:
-            row["yield_pct"] = round(_fred_last_before(day) if yld == "fred" else _daily_last_before(yld, day), 2)
-            row["yield_source"] = "FRED DGS2" if yld == "fred" else "Yahoo ^TNX"
-        except Exception as e:  # noqa: BLE001
-            errors.append(f"{label} yield: {type(e).__name__}: {e}")
-            row["yield_pct"] = None
+            errors.append(f"{label}: {type(e).__name__}: {e}")
+            row["change_bp"] = None
         rows.append(row)
-    ok = any(r["move_pct"] is not None for r in rows)
-    pl, ol = prev_origin + pd.Timedelta(hours=1), origin + pd.Timedelta(hours=1)
-    pl_l, ol_l = pl.tz_convert(cal.LONDON), ol.tz_convert(cal.LONDON)
-    short = lambda t: london_time(t).replace(":00", "")      # noqa: E731  "1pm"
+    ok = any(r["change_bp"] is not None for r in rows)
     return {"ok": ok, "generated_utc": iso(now), "origin_utc": iso(origin),
-            "window_start_utc": iso(pl), "window_end_utc": iso(ol),
-            "window_label": f"{pl_l:%a} {short(pl)} – {ol_l:%a} {short(ol)}",
-            "rows": rows, "errors": errors or None}
+            "window_kind": win["kind"], "window_label": win["label"], "window_hours": win["hours"],
+            "window_start_utc": win["start_utc"], "window_end_utc": win["end_utc"], "points": len(win["times"]),
+            "window_reference": win["reference"], "rows": rows, "errors": errors or None}
 
 
 # ---- news ----------------------------------------------------------------------------------
@@ -594,21 +721,6 @@ def _bucket(m: dict) -> str | None:
     return None
 
 
-def window_times(prev_origin: pd.Timestamp, origin: pd.Timestamp) -> pd.DatetimeIndex:
-    """The Treasuries sparkline's sample times: closes of the ZT=F hourly bars from the previous
-    origin bar to this one (weekend and daily-break hours absent, as in the yields). If ZT=F
-    can't be fetched: closes of the NQ trading hours in the same span."""
-    try:
-        s = _hourly("ZT=F", prev_origin, origin)
-        idx = s.index[(s.index >= prev_origin) & (s.index <= origin)]
-        if len(idx) >= 2 and idx[0] == prev_origin and idx[-1] == origin:
-            return pd.DatetimeIndex(idx + pd.Timedelta(hours=1))
-    except Exception as e:  # noqa: BLE001
-        log.warning("fed_odds: ZT=F times unavailable (%s); using NQ trading hours", e)
-    hrs = pd.date_range(prev_origin, origin, freq="1h")
-    return pd.DatetimeIndex([t + pd.Timedelta(hours=1) for t in hrs if cal.is_tradable_hour(t.to_pydatetime())])
-
-
 MIDPOINT_FRESH = pd.Timedelta(minutes=30)   # use the live bid-ask midpoint only this close to the window end
 
 
@@ -636,7 +748,8 @@ def fed_odds(f: dict, prev_origin: pd.Timestamp, now) -> dict:
     meeting = next_fomc(origin)
     ev = find_fed_event(meeting["time_utc"])
     w0, w1 = prev_origin + pd.Timedelta(hours=1), origin + pd.Timedelta(hours=1)
-    grid = window_times(prev_origin, origin)
+    win = market_window(prev_origin, origin)          # the Treasuries' window and timestamps
+    grid = win["times"]
     live = pd.Timestamp(now) - grid[-1] <= MIDPOINT_FRESH
     names = ("Hike", "Hold", "Cut")
     sums = {k: np.zeros(len(grid)) for k in names}
@@ -649,7 +762,7 @@ def fed_odds(f: dict, prev_origin: pd.Timestamp, now) -> dict:
         tokens = json.loads(m.get("clobTokenIds") or "[]")
         if not tokens or (outcomes and outcomes[0].lower() != "yes"):
             continue
-        h = _get(f"{CLOB}/prices-history", {"market": tokens[0], "startTs": int(w0.timestamp()) - 6 * 3600,
+        h = _get(f"{CLOB}/prices-history", {"market": tokens[0], "startTs": int(grid[0].timestamp()) - 6 * 3600,
                                             "endTs": int(w1.timestamp()), "fidelity": 60}).get("history") or []
         if not h:
             if m.get("closed"):
@@ -682,8 +795,9 @@ def fed_odds(f: dict, prev_origin: pd.Timestamp, now) -> dict:
              "markets": used[k]} for i, k in enumerate(names)]
     return {"ok": True, "generated_utc": iso(now), "origin_utc": iso(origin),
             "meeting_utc": iso(meeting["time_utc"]), "meeting_label": f"{MONTHS[md.month - 1][:3]} {md.day}",
-            "window_start_utc": iso(grid[0]), "window_end_utc": iso(grid[-1]), "points": len(grid),
-            "sampling": "ZT=F hourly bar closes (as the Treasuries)",
+            "window_kind": win["kind"], "window_label": win["label"], "window_hours": win["hours"],
+            "window_start_utc": win["start_utc"], "window_end_utc": win["end_utc"], "points": len(grid),
+            "sampling": "the Treasuries' timestamps (market_window)",
             "price": ("bid-ask midpoint: CLOB /midpoint at the window end, price history before it"
                       if live else "price history (Polymarket's midpoint price) throughout: run too late for a live midpoint"),
             "normalised": {"raw_sum_end": round(float(total[-1]), 4), "raw_sum_start": round(float(total[0]), 4),

@@ -102,14 +102,27 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   `/events/{id}` gives the outcome markets, CLOB `/prices-history` (fidelity 60) the hourly "Yes"
   prices; Hike / Cut = sum of all increase / decrease markets, Hold = no change. Use the default
   `requests` User-Agent (Cloudflare returns 403 to urllib's). Sparklines have a 10-point minimum scale.
-  Window and sampling = the Treasuries': the ZT=F hourly bar closes from the previous origin bar to this
-  one, so weekend hours are skipped (fallback if ZT=F fails: NQ trading hours). Prices are bid-ask
+  Window and timestamps = the Treasuries' (`market_window`, see below). Prices are bid-ask
   midpoints: CLOB `/midpoint` at the window end when the job runs within 30 min of it (a later re-run
   uses the history, never prices after the origin), the price history (Polymarket's displayed price =
   midpoint, last trade only if the spread > $0.10) before it. Buckets summed into Hike / Hold / Cut and
   normalised to 1 at every point (they sum to ~101-102%); shown % rounded (largest remainder) to total
-  exactly 100; "pts" = shown end minus shown start (sums to 0). One shared window label ("Fri 1pm –
-  Mon 1pm", from the Treasuries' window) sits above "US Treasuries"; both headings are plain.
+  exactly 100; "pts" = shown end minus shown start (sums to 0).
+- **Treasuries (`treasuries.json`) and the shared window (`market_window` in page_data.py):** window =
+  the past 24 hours (previous origin bar close → this one, label "Past 24h"), or, if the ZT=F hourly bars
+  have a gap > 3 h in between (weekend, holiday), only the trading since the reopen: from the first bar's
+  open (Sunday 6pm New York = 11pm London normally, read from the data so clock-change weeks and
+  holiday reopens are right) to the 1pm London origin close, label e.g. "Past 14h · Sun 11pm – Mon 1pm".
+  Friday afternoon after 1pm is not shown on Mondays. Both the Treasuries and the Fed odds use the
+  window's exact hourly timestamps; one shared label sits above "US Treasuries" (both headings plain).
+  Fallback if ZT=F fails: the NQ trading hours. Yields, change in **bp** (up = red, down = teal):
+  10Y = `^TNX` hourly if it covers ≥ 80% of the window (it's a cash-hours index, so usually not
+  overnight), else `10Y=F` (CBOT 10-Year Yield futures, hourly around the clock), else ZN=F converted
+  (duration 6.5, approximate). 2Y = `2YY=F` only if it has clean hourly data for 60 trading days (≥ 18
+  bars a day on 95% of them; on 9 Nov 2026 it had ~5 a day and stopped 13 Oct, so no); else derived from
+  ZT=F: the latest FRED DGS2 close before the origin's day, moved by −(ZT price % change since ~3pm NY
+  that day) ÷ `ZT_DURATION` = 1.9, marked approximate (* in the page, explained in Details). The page
+  still renders the old futures-price format (`move_pct`) of files written before 10 Nov 2026.
 - **News (`news.json`):** headlines published from the previous cash-session close (4pm New York on the
   previous trading day) to the origin bar close (1pm London), **never after it**, however late the job
   runs (on 9 Nov the forced 4pm run showed 3:59pm headlines; fixed). 23 free RSS feeds: Yahoo per-ticker
@@ -200,7 +213,7 @@ alerts; tick **test alert** to check the secret). Actions → forecast → Run w
   page and the README.
 - Don't hand-edit `site/data/*`; it's written by the scripts and the bot. Before committing, `git pull
   --rebase`; if the bot has committed data since, take its data files and regenerate rather than merge.
-- Page CSS/JS links carry a version tag (`style.css?v=20261109g`, same in index.html and accuracy.html):
+- Page CSS/JS links carry a version tag (`style.css?v=20261109h`, same in index.html and accuracy.html):
   bump it whenever site code changes, or browsers keep the old file for Pages' 10-minute cache.
 - New page code goes in its own script or a self-contained block; the page must work at 375 px
   wide with no sideways scrolling, London times only. Check with Playwright at 1280 and 375 px

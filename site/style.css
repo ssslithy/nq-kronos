@@ -165,7 +165,8 @@ body.nq { background: #0A0E11; color: #E8EEF1; font: 14px/1.4 Inter, system-ui, 
 .nq-tsy .l { font-weight: 600; }
 .nq-tsy svg { display: block; width: 100%; height: 20px; }
 .nq-tsy .m { font-family: "JetBrains Mono", monospace; font-weight: 600; color: #5EE0C6; }
-.nq-tsy .m.neg { color: #F07A84; }
+.nq-tsy .m.neg, .nq-tsy .m.up { color: #F07A84; }
+.nq-tsy .m.flat { color: #93A1A9; }
 .nq-tsy .y { font-size: 11px; color: #93A1A9; text-align: right; }
 .nq-fed .y { font-family: "JetBrains Mono", monospace; min-width: 48px; }
 .nq a.nq-h-link { color: #93A1A9; }

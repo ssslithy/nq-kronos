@@ -137,13 +137,24 @@
       }).join("");
       $("cal").hidden = false;
     }
-    const rows = t && t.ok ? (t.rows || []).filter((r) => r.move_pct != null && r.spark && r.spark.length > 1) : [];
+    // yields: change in basis points over the window; up = red (prices down), down = teal
+    // older treasuries.json files (before 10 Nov 2026) hold futures price moves (move_pct) instead
+    const rows = t && t.ok ? (t.rows || []).filter((r) => (r.change_bp != null || r.move_pct != null) && r.spark && r.spark.length > 1) : [];
+    const bp = (x) => { const r = Math.round(x); return r === 0 ? "0bp" : `${r > 0 ? "+" : "−"}${Math.abs(r)}bp`; };
     if (rows.length) {
       $("tsy-h").textContent = "US Treasuries";
-      $("tsy-rows").innerHTML = rows.map((r) =>
-        `<div class="nq-tsy"><span class="l">${esc(r.label)}</span>${spark(r.spark)}` +
-        `<span class="m${r.move_pct < 0 ? " neg" : ""}">${r.move_pct >= 0 ? "+" : "−"}${Math.abs(r.move_pct).toFixed(2)}%</span>` +
-        `<span class="y">${r.yield_pct != null ? `Yield ${r.yield_pct.toFixed(2)}%` : ""}</span></div>`).join("");
+      $("tsy-rows").innerHTML = rows.map((r) => {
+        if (r.change_bp == null) {                       // old format: futures price move in %
+          return `<div class="nq-tsy"><span class="l">${esc(r.label)}</span>${spark(r.spark)}` +
+            `<span class="m${r.move_pct < 0 ? " neg" : ""}">${r.move_pct >= 0 ? "+" : "−"}${Math.abs(r.move_pct).toFixed(2)}%</span>` +
+            `<span class="y">${r.yield_pct != null ? `Yield ${r.yield_pct.toFixed(2)}%` : ""}</span></div>`;
+        }
+        const dir = Math.round(r.change_bp) > 0 ? " up" : Math.round(r.change_bp) < 0 ? " down" : " flat";
+        const col = dir === " up" ? "#F07A84" : dir === " down" ? "#5EE0C6" : "#93A1A9";
+        return `<div class="nq-tsy"><span class="l">${esc(r.label)}</span>${spark(r.spark, col)}` +
+          `<span class="m${dir}" title="${esc(r.source || "")}">${bp(r.change_bp)}</span>` +
+          `<span class="y">${r.yield_pct != null ? `Yield ${r.yield_pct.toFixed(2)}%${r.approx ? "*" : ""}` : ""}</span></div>`;
+      }).join("");
       $("tsy").hidden = false;
     }
     const fd = D.fed;
@@ -163,7 +174,7 @@
     const win = rows.length ? t : (frows.length ? fd : null);
     if (win) {
       const a = T(win.window_start_utc), b = T(win.window_end_utc);
-      $("mkt-win").textContent = `${day(a)} ${hourOnly(a)} – ${day(b)} ${hourOnly(b)}`;
+      $("mkt-win").textContent = win.window_label || `${day(a)} ${hourOnly(a)} – ${day(b)} ${hourOnly(b)}`;
       $("mkt-win").hidden = false;
       if ($("tsy").hidden) $("fed-h").classList.remove("nq-h2");
     }
@@ -235,8 +246,14 @@
     rows.push(["Fridays", "On Fridays the window runs over the weekend: weekend gap risk isn't fully in Friday's range."]);
     rows.push(["Kronos", "Kronos-small (experimental) can be overlaid on the chart (its P10 and P90 paths). Its 80% band held ~46% of the time vs the 80% target. " +
       (ks.ok ? "Today's run is from the same bar." : `Today: ${ks.why}.`)]);
-    rows.push(["Data", "Yahoo Finance NQ=F, hourly, delayed and unofficial, roll-adjusted. Treasuries: ZT=F and ZN=F note futures (Yahoo), " +
-      "yields FRED DGS2 (2Y) and Yahoo ^TNX (10Y), latest close before the forecast. Calendar: BLS, BEA, Census and the Fed schedules. " +
+    const ty = (D.tsy && D.tsy.rows) || [];
+    const src = (lbl) => { const r = ty.find((x) => x.label === lbl); return r && r.source ? r.source : "n/a"; };
+    rows.push(["Treasuries", "Yield changes in basis points (up = red). Window: the past 24 hours (1pm → 1pm London), or since the " +
+      "market reopened after a weekend or holiday. Mondays cover only the new week's trading (since Sunday's reopen). " +
+      "Friday-afternoon moves after 1pm aren't shown. The Fed odds use the same window and hourly timestamps. " +
+      `10Y: ${src("10Y")}. 2Y: ${src("2Y")}.` + (ty.some((x) => x.approx) ? " * = approximate: derived from the note future's price change " +
+      "÷ its duration (2Y: 1.9) and added to the latest official close (FRED DGS2 for the 2Y)." : "")]);
+    rows.push(["Data", "Yahoo Finance NQ=F, hourly, delayed and unofficial, roll-adjusted. Calendar: BLS, BEA, Census and the Fed schedules. " +
       "Headlines: Yahoo Finance, CNBC, MarketWatch and Nasdaq.com RSS, published between the previous 4pm New York close and 1pm London; " +
       "the bars are a rule-based significance (Fed and macro, the biggest Nasdaq names' earnings and major news = 3)."]);
     if (D.fed && D.fed.ok) rows.push(["Fed odds", `Polymarket crowd betting odds for the ${D.fed.meeting_label} FOMC decision ` +

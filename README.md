@@ -26,11 +26,12 @@ All times are London, 12-hour ("1:00pm"); New York appears only in Details.
   interval (PI)**, with up to 12 tech headlines under them (3 visible, the rest scroll; links
   only): published between the previous 4pm New York close and 1pm London, newest first, each
   with 1–3 significance bars (rules in `forecast/news_rules.yaml`). In the right column: the next
-  3 US releases (impact bars), the 2Y / 10Y Treasury note futures' 1pm → 1pm move with a
-  sparkline and yields, and Polymarket's odds for the next Fed decision (Hike / Hold / Cut, over
-  the same window and hours as the Treasuries, from bid–ask midpoints scaled to add up to 100%,
+  3 US releases (impact bars), the 2Y / 10Y Treasury yields' change in basis points with a
+  sparkline and the level, and Polymarket's odds for the next Fed decision (Hike / Hold / Cut, on
+  the same hourly timestamps as the yields, from bid–ask midpoints scaled to add up to 100%,
   change in points; crowd betting odds, not a forecast from this site). One shared label above
-  them shows that window (e.g. "Fri 1pm – Mon 1pm"). On phones the headlines come before the
+  them shows the window: "Past 24h", or on Mondays "Past 14h · Sun 11pm – Mon 1pm" (only the new
+  week's trading since Sunday's reopen; likewise after a holiday). On phones the headlines come before the
   right column's blocks.
 - **Chart:** 48 hourly candles, then the forecast fan to the end of the window. Buttons 99 / 95 /
   90 / 85 / 80% (multi-select, 90% on by default) draw stacked bands; at the last step each band
@@ -187,8 +188,9 @@ read the topic, so keep it secret. Without the secret nothing is sent. Manual fo
 - Direction on NQ is close to unpredictable for any model. Read the fan's **width**
   (expected range), not a median, as the main signal, and check the accuracy page to see
   whether that width has been realistic.
-- Treasuries: the % move is of the 2Y / 10Y note futures (`ZT=F`, `ZN=F`, Yahoo hourly), not of
-  yields; yields are the latest daily values before the forecast (FRED `DGS2`, Yahoo `^TNX`).
+- Treasuries: yields from Yahoo hourly data (10Y: `^TNX` or the `10Y=F` yield future). The 2Y is
+  approximate: the 2-year note future's (`ZT=F`) price change ÷ a duration of 1.9, added to the
+  latest FRED `DGS2` close, unless Yahoo's `2YY=F` yield future has clean hourly data.
   Headlines come from free RSS feeds (Yahoo Finance, CNBC, MarketWatch, Nasdaq.com): titles and
   links only, never anything published after 1pm London. Fed odds are Polymarket's public prices (crowd betting odds), not a
   forecast from this site.
