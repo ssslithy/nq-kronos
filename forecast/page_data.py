@@ -219,6 +219,7 @@ def load_news_rules(path: Path = NEWS_RULES) -> dict:
                                 ("rating", raw["rating"]), ("always_1", raw["always_1"]),
                                 ("shock", raw["market_shock"]), ("hard", raw["hard_action"]),
                                 ("listicle", raw["listicle_shape"]),
+                                ("wrap_market", raw["market_wrap"]), ("wrap_movers", raw["movers_roundup"]),
                                 ("ex_title", raw["exclude_title"]), ("ex_link", raw["exclude_link"]))}
     R["companies"] = ([(name, re.compile(pat(a), re.I)) for name, al in raw["top_names"].items() for a in al] +
                       [(a.lower(), re.compile(pat(a), re.I)) for a in raw["other_names"]])
@@ -268,6 +269,15 @@ def publisher_label(pub: str | None) -> str | None:
     if not pub:
         return None
     return {"barrons.com": "Barron's", "gurufocus.com": "GuruFocus"}.get(pub.lower(), re.sub(r"\.com$", "", pub).strip())
+
+
+def wrap_kind(title: str, R: dict) -> str | None:
+    """"market_wrap" (pre-bell / futures / open / close summaries) or "movers_roundup", else None."""
+    if R["wrap_movers"].search(title):
+        return "movers_roundup"
+    if R["wrap_market"].search(title):
+        return "market_wrap"
+    return None
 
 
 def news_relevant(title: str, summary: str, link: str, R: dict) -> bool:
@@ -403,6 +413,7 @@ def _fetch_feed(outlet_url):
 
 
 CLUSTER_HOURS = 24
+WRAP_FALLBACK_BELOW = 3            # fewer listed items than this: add the most recent market wrap
 
 
 def _split(impacts: list[int]) -> dict:
@@ -418,8 +429,10 @@ def news(f: dict, prev_origin, now, n: int = NEWS_MAX) -> dict:
     outlet; listed newest first. Headlines about the same story within 24 hours (same main company
     and a shared event group or proper name, or near-identical titles) are one story: the
     highest-ranked source's headline at the earliest time. Syndicated low-quality publishers are
-    dropped (Yahoo-hosted items: the publisher read from the article page). "split" logs the
-    3 / 2 / 1-bar mix of all stories and of the listed ones."""
+    dropped (Yahoo-hosted items: the publisher read from the article page). Market wraps and movers
+    roundups are not listed; if fewer than WRAP_FALLBACK_BELOW items remain, the most recent wrap is
+    added at 1 bar ("wrap" set). "split" logs the 3 / 2 / 1-bar mix of all non-wrap stories and of
+    the listed non-wrap ones."""
     from concurrent.futures import ThreadPoolExecutor
     start, end = news_window(f, prev_origin)
     R = load_news_rules()
@@ -435,14 +448,21 @@ def news(f: dict, prev_origin, now, n: int = NEWS_MAX) -> dict:
     if not ok_feeds:
         raise RuntimeError("; ".join(errors) or "no feeds")
     lo, hi = start.to_pydatetime(), end.to_pydatetime()
-    seen_links, cand = set(), []
-    stats = {"fetched": len(items), "in_window": 0, "relevant": 0, "blocked_publisher": 0, "clustered": 0}
+    seen_links, cand, wraps = set(), [], []
+    stats = {"fetched": len(items), "in_window": 0, "wraps": {"market_wrap": 0, "movers_roundup": 0}, "relevant": 0,
+             "blocked_publisher": 0, "clustered": 0}
     rank = lambda it: R["source_rank"].get(it["_feed"], len(R["source_rank"]))  # noqa: E731
     for it in sorted(items, key=lambda x: x["_t"]):                 # oldest first
         if not (lo <= it["_t"] <= hi) or it["link"] in seen_links:
             continue
         stats["in_window"] += 1
         seen_links.add(it["link"])
+        kind = wrap_kind(it["title"], R)
+        if kind:                                   # wraps and movers roundups: not listed (fallback only)
+            if not blocked_publisher(None, it["link"], it["title"], R) and not R["ex_title"].search(it["title"]):
+                stats["wraps"][kind] += 1
+                wraps.append(dict(it, wrap=kind))
+            continue
         if news_relevant(it["title"], it["summary"], it["link"], R):
             cand.append(it)
     # the real publisher of Yahoo-hosted syndicated items (from the article page), in parallel
@@ -501,6 +521,15 @@ def news(f: dict, prev_origin, now, n: int = NEWS_MAX) -> dict:
                     "published_utc": iso(it["_t"]), "time_london": london_time(it["_t"]),
                     "impact": it["impact"], "cluster": it["cluster"]})
     split["listed"] = _split([it["impact"] for it in out])
+    split["note"] = "non-wrap items only: market wraps and movers roundups are excluded"
+    if len(out) < WRAP_FALLBACK_BELOW and wraps:       # too little news: the single most recent wrap, at 1 bar
+        w = max(wraps, key=lambda x: x["_t"])
+        pub = yahoo_publisher(w["link"]) if YAHOO_PAGE.match(w["link"]) else None
+        if not blocked_publisher(pub, w["link"], w["title"], R):
+            out.append({"source": publisher_label(pub) or w["source"], "title": w["title"], "link": w["link"],
+                        "published_utc": iso(w["_t"]), "time_london": london_time(w["_t"]), "impact": 1,
+                        "cluster": 1, "wrap": w["wrap"]})
+            out.sort(key=lambda x: x["published_utc"], reverse=True)
     return {"ok": True, "generated_utc": iso(now), "window_start_utc": iso(start), "window_end_utc": iso(end),
             "items": out, "split": split, "stats": stats, "feeds_ok": ok_feeds, "feeds_total": len(FEEDS),
             "errors": errors or None, "rules": NEWS_RULES.name}

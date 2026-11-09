@@ -130,8 +130,11 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   Nasdaq; **2** = hard news only: a named action (results, guidance, probe, lawsuit / ruling, deal,
   launch, outage, upgrade / downgrade, layoffs, CEO / CFO exit, buyback, production halt, focus-list
   change) with a Nasdaq-100 subject or a sector term; **1** = commentary, interviews, features, board
-  changes below C-level, earnings-date notices, previews, roundups, index wraps. `split` in news.json
-  logs the 3 / 2 / 1 mix of all stories and of the listed ones (target ~20 / 40 / 40 on a typical
+  changes below C-level, earnings-date notices, previews, week-ahead calendars. **Market wraps**
+  (`market_wrap`: pre-bell / futures / open / close summaries) and **movers roundups** (`movers_roundup`)
+  are not listed and not in the split (counted in `stats.wraps`); if fewer than 3 items remain, the
+  single most recent wrap is added at 1 bar (`"wrap"` set on it). `split` in news.json logs the
+  3 / 2 / 1 mix of all non-wrap stories and of the listed non-wrap ones (target ~20 / 40 / 40 on a typical
   day; measured 9 Nov, a weekend window: 5 / 15 / 80 of 20 stories; over 6 days of feed items:
   7 / 19 / 74 of 70; most 1s are wraps, roundups and commentary).
   Clustering: headlines within **24 h** naming a common Nasdaq-100 company with a shared `event_words`
@@ -197,7 +200,7 @@ alerts; tick **test alert** to check the secret). Actions → forecast → Run w
   page and the README.
 - Don't hand-edit `site/data/*`; it's written by the scripts and the bot. Before committing, `git pull
   --rebase`; if the bot has committed data since, take its data files and regenerate rather than merge.
-- Page CSS/JS links carry a version tag (`style.css?v=20261109f`, same in index.html and accuracy.html):
+- Page CSS/JS links carry a version tag (`style.css?v=20261109g`, same in index.html and accuracy.html):
   bump it whenever site code changes, or browsers keep the old file for Pages' 10-minute cache.
 - New page code goes in its own script or a self-contained block; the page must work at 375 px
   wide with no sideways scrolling, London times only. Check with Playwright at 1280 and 375 px

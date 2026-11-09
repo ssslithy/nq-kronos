@@ -1,42 +1,15 @@
 {
  "ok": true,
- "generated_utc": "2026-11-09T17:49:28Z",
+ "generated_utc": "2026-11-09T18:02:00Z",
  "window_start_utc": "2026-11-06T21:00:00Z",
  "window_end_utc": "2026-11-09T13:00:00Z",
  "items": [
-  {
-   "source": "MT Newswires",
-   "title": "US Equity Futures Higher Pre-Bell as Traders Assess Oil Price Drop, Await AI-Related Earnings This Week",
-   "link": "https://finance.yahoo.com/markets/stocks/articles/us-equity-futures-higher-pre-125311861.html?.tsrc=rss",
-   "published_utc": "2026-11-09T12:53:11Z",
-   "time_london": "12:53pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Barron's",
-   "title": "Markets Rally as Nvidia Fears Subside and Rotation Gathers Pace",
-   "link": "https://finance.yahoo.com/m/28536364-a7ca-370f-a180-5ef6c5371807/markets-rally-as-nvidia-fears.html?.tsrc=rss",
-   "published_utc": "2026-11-09T11:50:40Z",
-   "time_london": "11:50am",
-   "impact": 1,
-   "cluster": 1
-  },
   {
    "source": "MT Newswires",
    "title": "US Equity Investors to Monitor Key Tech Earnings, Inflation This Week as Democrats Midterm Victory Hits AI Trade",
    "link": "https://finance.yahoo.com/technology/ai/articles/us-equity-investors-monitor-key-105739479.html?.tsrc=rss",
    "published_utc": "2026-11-09T10:57:39Z",
    "time_london": "10:57am",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Yahoo Finance",
-   "title": "US Stock Futures Mixed as Investors Assess Berkshire Hathaway Earnings, Nvidia Reports and AI Regulation Plans: Dow Jones, S&P, Nasdaq, Wall Street",
-   "link": "https://investorshub.advfn.com/market-news/article/39501/us-stock-futures-mixed-as-investors-assess-berkshire-hathaway-earnings-nvidia-reports-and-ai-regulation-plans-dow-jones-sp-nasdaq-wall-street?.tsrc=rss",
-   "published_utc": "2026-11-09T09:59:52Z",
-   "time_london": "9:59am",
    "impact": 1,
    "cluster": 1
   },
@@ -50,13 +23,40 @@
    "cluster": 1
   },
   {
+   "source": "Yahoo Finance",
+   "title": "Netflix boss says creativity and regulation 'are not happy bedfellows' in Europe",
+   "link": "https://www.euronews.com/2026/11/09/netflix-boss-says-creativity-and-regulation-are-not-happy-bedfellows-when-in-europe?.tsrc=rss",
+   "published_utc": "2026-11-09T05:35:16Z",
+   "time_london": "5:35am",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Yahoo Finance",
+   "title": "Costco closes popular California store location after 37 years",
+   "link": "https://www.thestreet.com/retail/costco-closes-popular-california-store-location-after-37-years?.tsrc=rss",
+   "published_utc": "2026-11-09T04:09:56Z",
+   "time_london": "4:09am",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
    "source": "CNBC",
    "title": "Nvidia CEO Jensen Huang faces bipartisan congressional scrutiny over reported China spy link",
    "link": "https://www.cnbc.com/2026/11/08/jensen-huang-nvidia-china-spy-congress.html",
    "published_utc": "2026-11-08T22:19:00Z",
    "time_london": "10:19pm",
    "impact": 3,
-   "cluster": 6
+   "cluster": 4
+  },
+  {
+   "source": "Barron's",
+   "title": "Inflation Data, Constellation Energy, Skydance, Applied Materials, and More to Watch This Week",
+   "link": "https://finance.yahoo.com/m/826f68d8-6715-357e-b04d-885d04102528/inflation-data%2C-constellation.html?.tsrc=rss",
+   "published_utc": "2026-11-08T19:00:00Z",
+   "time_london": "7:00pm",
+   "impact": 1,
+   "cluster": 1
   },
   {
    "source": "MarketWatch",
@@ -106,13 +106,13 @@
  ],
  "split": {
   "stories": {
-   "n": 20,
+   "n": 17,
    "bars3": 1,
    "bars2": 3,
-   "bars1": 16,
-   "pct3": 5,
-   "pct2": 15,
-   "pct1": 80
+   "bars1": 13,
+   "pct3": 6,
+   "pct2": 18,
+   "pct1": 76
   },
   "listed": {
    "n": 11,
@@ -122,14 +122,19 @@
    "pct3": 9,
    "pct2": 27,
    "pct1": 64
-  }
+  },
+  "note": "non-wrap items only: market wraps and movers roundups are excluded"
  },
  "stats": {
-  "fetched": 424,
-  "in_window": 103,
-  "relevant": 25,
-  "blocked_publisher": 15,
-  "clustered": 5
+  "fetched": 418,
+  "in_window": 99,
+  "wraps": {
+   "market_wrap": 4,
+   "movers_roundup": 1
+  },
+  "relevant": 20,
+  "blocked_publisher": 12,
+  "clustered": 3
  },
  "feeds_ok": 23,
  "feeds_total": 23,

@@ -7,9 +7,11 @@
 #   a macro term in the headline;
 #   a sector term AND a market word in the headline (the piece moves a sector), so generic
 #   AI / workplace pieces without a company are dropped.
+# Market wraps (market_wrap) and movers roundups (movers_roundup) are not listed and not in the
+# split; only if fewer than 3 other items remain is the single most recent wrap shown, at 1 bar.
 # Significance (bars), from the headline:
-#   1  anything matching always_1 (earnings-date notices, previews, "stocks to watch" and movers
-#      roundups, index wraps), whatever else it mentions
+#   1  anything matching always_1 (earnings-date notices, previews, "stocks to watch", week-ahead
+#      calendars), whatever else it mentions
 #   3  a macro term; or a Nasdaq-100 company as the subject (named in the first 25 characters) with
 #      an earnings_result term; or a top-8 company as the subject with a major_event term; or a
 #      market_shock term about a top-8 company, the Nasdaq or chips / AI / tech stocks
@@ -389,11 +391,37 @@ rating:
   - 'outperform'
   - 'underperform'
 
-# Always 1 bar: earnings-date notices, previews, 'stocks to watch' and movers roundups, index wraps.
-always_1:
+# Market wraps (pre-bell / futures / open / close summaries): not listed (see the header).
+market_wrap:
   - 'benchmarks?'
   - 'start the (?:week|day)'
-  - '(?:stocks|indexes|indices|indices) (?:open|close|end)\w*'
+  - '(?:stocks|indexes|indices) (?:open|close|end)\w*'
+  - '(?:equity |stock |index |nasdaq |s&p |dow )?futures (?:rise|fall|rally|slip|edge|climb|drop|mixed|higher|lower|flat|point|gain|dip)\w*'
+  - 'pre-bell'
+  - 'stock market today'
+  - 'markets? today'
+  - 'market (?:wrap|recap|close|open)'
+  - 'wrap'
+  - 'recap'
+  - 're:\b(?:dow(?:''s)?|s&p(?: 500)?|nasdaq(?: composite)?|wall street|stock market|u\.?s\.? stocks|(?:^|: )stocks)\b[^.]{0,40}\b(?:open|close|end|finish|rall(?:y|ies)|slide|slip|rise|fall|gain|drop|jump|surge|soar|sink|tumble|rebound|climb|edge)s?\b'
+  - 'markets? (?:rally|rallies|slide|slips?|rise|falls?|opens?|closes?|ends?|mixed|rebound|jump|surge|tumble|sink)'
+  - 'stocks? (?:mixed|higher|lower|flat|edge \w+|climb|slip) as (?:investors|traders)'
+  - '(?:investors|traders) (?:assess|weigh|digest|await|eye|monitor)'
+
+# Movers roundups: not listed.
+movers_roundup:
+  - 'making the biggest moves'
+  - 'biggest (?:stock )?movers'
+  - '(?:premarket|pre-market|after-hours|after hours|midday|top) movers'
+  - 'movers (?:and shakers)?'
+  - 'top (?:gainers|losers)'
+  - 'gainers and losers'
+  - 'sector leaders'
+  - '(?:stocks|names) moving'
+  - 'trending stocks?'
+
+# Always 1 bar: earnings-date notices, previews, 'stocks to watch' and movers roundups, index wraps.
+always_1:
   - 'earnings test'
   - 'options traders'
   - 're:\bexpects? (?:a )?\d+% (?:swing|move)'
@@ -405,24 +433,13 @@ always_1:
   - 'what to (?:expect|watch)'
   - 'stocks? to watch'
   - 'to watch'
-  - 'movers'
-  - 'making the biggest moves'
   - 'week ahead'
   - 'weekly agenda'
   - 'economic calendar'
   - 'this week'
   - 'morning (?:brief|report|bid|briefing)'
   - 'things to know'
-  - 'recap'
   - 'roundup'
-  - 'wrap'
-  - 'premarket'
-  - 'pre-bell'
-  - 'stock market today'
-  - 'markets? today'
-  - 'futures (?:rise|fall|rally|slip|edge|climb|drop|mixed|higher|lower|flat|point|gain|dip)\w*'
-  - 're:\b(?:dow|s&p(?: 500)?|nasdaq(?: composite)?|wall street|stock market|u\.?s\.? stocks)\b[^.]{0,40}\b(?:open|close|end|finish|rall(?:y|ies)|slide|slip|rise|fall|gain|drop)s?\b'
-  - 'markets? (?:rally|rallies|slide|slips?|rise|falls?|opens?|closes?|ends?|mixed)'
 
 # Story clustering: event groups. Same main company + a shared group within 12h = one story.
 event_words:
