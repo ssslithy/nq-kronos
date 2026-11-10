@@ -1,11 +1,11 @@
 name: vol-watchdog
 
-# Second line behind garch_vol.yml's 7 cron slots (GitHub's scheduler is best effort: on
-# 9 Nov 2026 the only in-window slot never fired). At 13:45 and 14:45 UTC on weekdays,
-# forecast/vol_watchdog.py checks site/data/vol_status.json. It acts only between 09:30 and
-# 10:30 New York (one of the two slots in both EDT and EST), so at most once a day: if today's
-# forecast isn't published, it sends an ntfy "forecast late" note and dispatches garch-vol with
-# force=true (which forecasts from today's 07:00 NY bar and sends the normal alert).
+# Second line behind the external timer and garch_vol.yml's own slots (GitHub's scheduler drops
+# or delays most scheduled runs in this repo). At 13:45 and 14:45 UTC on weekdays (often started
+# hours late by GitHub), forecast/vol_watchdog.py checks site/data/vol_status.json and acts any
+# time after 09:30 New York on a trading day: if today's forecast isn't published, it sends an
+# ntfy "forecast late" note and dispatches garch-vol with force=true (which forecasts from today's
+# 07:00 NY bar and sends the normal alert), unless a garch-vol run is already queued or running.
 # Standard library only: no pip install, ~15 s.
 on:
   schedule:
@@ -35,5 +35,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          busy=0
+          for st in queued in_progress; do
+            n=$(gh run list --repo "${{ github.repository }}" --workflow garch_vol.yml --status "$st" --json databaseId --jq length)
+            busy=$((busy + n))
+          done
+          if [ "$busy" -gt 0 ]; then
+            echo "::warning::today's forecast is late, but a garch-vol run is already queued or running; not dispatching another"
+            exit 0
+          fi
           gh workflow run garch_vol.yml --repo "${{ github.repository }}" --ref "${{ github.event.repository.default_branch }}" -f force=true
           echo "::warning::today's forecast was late; garch-vol dispatched with force=true"

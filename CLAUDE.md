@@ -11,17 +11,23 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
 
 ## Daily schedule (everything runs once per trading day)
 
-- `.github/workflows/garch_vol.yml`, cron `7,27,47 12 * * 1-5`, `7,27,47 13 * * 1-5`, `7 14 * * 1-5`
-  (UTC). Four slots land in 08:00–09:25 New York in both EST and EDT; `forecast/run_vol.py` decides:
-  the first in-window run forecasts, the others exit "not a forecast window" / "already made". Why
-  seven: GitHub's scheduler is best effort. On 9 Nov 2026 (EST) the old schedule had one in-window
-  slot (13:05 UTC), it never fired, and nothing was published.
-- `.github/workflows/vol_watchdog.yml` (`forecast/vol_watchdog.py`, standard library only), cron
-  `45 13 * * 1-5` and `45 14 * * 1-5`: acts only 09:30–10:30 New York (one slot per day in EST and
-  EDT). If `vol_status.json`'s origin isn't today's, it sends an ntfy "forecast late" note and
-  dispatches garch-vol with `force=true` once.
+- **Triggers.** GitHub's scheduler drops or delays most scheduled runs in this repo (Nov 2026: the vol
+  job's schedule never fired on 9 or 10 Nov; the old hourly Kronos cron ran 3 times in ~36 h; the
+  driver check ran 6 h late). So the 1pm run has three lines:
+  1. **External timer (primary):** cron-job.org calls the GitHub API (`workflow_dispatch` of
+     garch_vol.yml, `force=false`) at 08:07 and 08:22 New York, Mon–Fri, with a fine-grained token that
+     can only run workflows on this repo. Set up by the owner; the token lives only at cron-job.org.
+  2. `.github/workflows/garch_vol.yml`'s own cron (`7,27,47 12`, `7,27,47 13`, `7 14` UTC, weekdays).
+  3. `.github/workflows/vol_watchdog.yml` (`forecast/vol_watchdog.py`, standard library only), cron
+     `45 13` / `45 14` UTC: acts whenever it runs after 09:30 New York on a trading day. If
+     `vol_status.json`'s origin isn't today's, an ntfy "forecast late" note and a `force=true` dispatch
+     (skipped if a garch-vol run is already queued or running).
+  `forecast/run_vol.py` decides: before 08:00 NY, weekends, holidays and "already made" exit quietly;
+  08:00–09:25 forecasts on time; **any later run that day still forecasts once (late)**, using data only
+  up to the origin bar, with the alert titled "NQ daily volatility (late)".
 - `.github/workflows/driver_check.yml` (`lab/driver_check.py`, lab only), cron `30 21 * * 1-5` and
-  `30 22 * * 1-5` (acts once a day after 22:15 London): the drivers named in the day's closing market
+  `30 22 * * 1-5` (acts once per trading day: after 17:00 NY for that day, or before 08:00 NY for the
+  previous one, so late starts still count): the drivers named in the day's closing market
   wraps vs the 1pm snapshot (news items, brief, Since-US-close cells) → `lab/results/driver_check.jsonl`,
   and `driver_check.md` (share caught, most common misses) once there are 10 days. Never changes a rule
   and never touches the forecast, the alert or site/.
@@ -218,6 +224,11 @@ alerts; tick **test alert** to check the secret). Actions → forecast → Run w
 - **9 Nov 2026, no forecast at 1pm:** GitHub never started the 13:05 UTC garch-vol run (no run exists;
   its only in-window slot in EST). Fixed: 7 cron slots (4 in-window in EST and EDT), the vol-watchdog
   workflow, and a forced re-run that published at 15:59 UTC with the alert.
+- **10 Nov 2026, again no 1pm run:** none of the 5 morning slots started (GitHub's scheduler, not a code
+  error; the evening driver check ran 6 h late too). A manual dispatch published at 13:46 UTC with the
+  alert; the first Pages deploy failed ("try again later"), the Kronos deploy published at 13:56. Fixed:
+  an external timer (cron-job.org) as the primary trigger, late runs still forecast once, the watchdog
+  acts whenever it runs after 09:30 NY.
 
 ## Rules for future changes
 

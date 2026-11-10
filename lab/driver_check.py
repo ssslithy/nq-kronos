@@ -13,7 +13,7 @@ One line per day is appended to lab/results/driver_check.jsonl. Once there are 1
 lab/results/driver_check.md is (re)written: the share of drivers caught by 1pm and the most
 common misses. Nothing changes any rule automatically; it's for review.
 
-    python lab/driver_check.py                 # as the workflow does (acts once a day, 22:15-23:59 London)
+    python lab/driver_check.py                 # as the workflow does (acts once per day, after 17:00 NY)
     python lab/driver_check.py --force         # run now, whatever the time (still once per date)
 """
 from __future__ import annotations
@@ -37,7 +37,7 @@ SUMMARY = ROOT / "lab" / "results" / "driver_check.md"
 DATA = ROOT / "site" / "data"
 MIN_DAYS = 10
 CLOSE_FROM = time(15, 45)                # New York: closing wraps from here on
-RUN_FROM = time(22, 15)                  # London: the evening slot
+RUN_AFTER = time(17, 0)                  # New York: check the day after this; before 08:00 the previous day
 
 THEMES = {
     "oil": r"\b(?:oil|crude|opec\+?|brent|wti)\b",
@@ -129,12 +129,18 @@ def main() -> int:
     ap.add_argument("--force", action="store_true", help="run now, whatever the London time")
     args = ap.parse_args()
     now = datetime.now(timezone.utc)
-    lon, ny = now.astimezone(cal.LONDON), now.astimezone(cal.NY)
+    ny = now.astimezone(cal.NY)
     day = ny.date()
+    # GitHub often starts the evening run hours late: from 17:00 NY check that day; between
+    # midnight and 08:00 NY (before the next 1pm snapshot) check the previous trading day.
+    if ny.time() < time(8, 0):
+        day -= timedelta(days=1)
+        while day.weekday() >= 5 or cal.is_holiday(day):
+            day -= timedelta(days=1)
+    elif not args.force and ny.time() < RUN_AFTER:
+        print(f"New York time {ny:%H:%M} is before {RUN_AFTER:%H:%M}: the day isn't over"); return 0
     if day.weekday() >= 5 or cal.is_holiday(day):
         print(f"{day} is not a trading day"); return 0
-    if not args.force and not (RUN_FROM <= lon.time()):
-        print(f"London time {lon:%H:%M} is before the evening slot {RUN_FROM:%H:%M}"); return 0
     rows = [json.loads(x) for x in OUT.read_text().splitlines() if x.strip()] if OUT.exists() else []
     if any(r["date"] == day.isoformat() for r in rows):
         print(f"{day} already checked"); return 0

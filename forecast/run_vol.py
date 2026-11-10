@@ -1,13 +1,15 @@
 """Daily 08:00 NY (1pm London) vol forecast (HAR-RV): decide whether to run, forecast, write site/data.
 
-Run by .github/workflows/garch_vol.yml on weekdays at :07 / :27 / :47 past 12 and 13 UTC and
-at 14:07 UTC (GitHub sometimes drops a scheduled run). Four of the slots land between 08:00 and
-09:25 New York whatever the US/UK daylight-saving state; the first one forecasts, the rest exit
-quietly. The script runs only when all of these hold, otherwise it exits 0 untouched:
+Started by an external timer (cron-job.org, workflow_dispatch at 08:07 and 08:22 New York) and by
+.github/workflows/garch_vol.yml's own weekday slots. GitHub's scheduler drops or delays most
+scheduled runs in this repo (Nov 2026: hours late, ~90% skipped), so neither is trusted alone.
+The script runs only when all of these hold, otherwise it exits 0 untouched:
 
   - today (New York) is an NQ trading day: weekday, not an nq_calendar holiday, and the
     07:00-08:00 NY bar is a tradable hour;
-  - New York time is between 08:00 and 09:25;
+  - New York time is 08:00 or later (08:00-09:25 is on time; a later run is "late" but still
+    forecasts today's origin, with data only up to the origin bar, and its alert is titled
+    "NQ daily volatility (late)");
   - today's forecast hasn't been made yet (vol_latest.json already has today's origin).
 
 Then it loads bars closed by 08:00 NY and needs the 07:00-08:00 NY bar to be the last one
@@ -94,8 +96,16 @@ def read_json(path: Path):
         return None
 
 
+def is_late(now: datetime, origin: datetime) -> bool:
+    """After the 08:00-09:25 NY window of the origin's day (or on a later day)."""
+    ny, o = now.astimezone(cal.NY), origin.astimezone(cal.NY)
+    return ny.date() > o.date() or (ny.hour, ny.minute) > WINDOW_END
+
+
 def decide(now: datetime, latest: dict | None, force: bool) -> datetime:
-    """The origin (UTC) to forecast from, or raise NotAWindow."""
+    """The origin (UTC) to forecast from, or raise NotAWindow. On a trading day any run from 08:00
+    NY on forecasts today's origin once (late runs included); before 08:00, weekends, holidays
+    and "already made" exit quietly."""
     ny = now.astimezone(cal.NY)
     d = ny.date()
     if force:
@@ -106,8 +116,10 @@ def decide(now: datetime, latest: dict | None, force: bool) -> datetime:
         raise NotAWindow(f"{ny:%A}")
     if not is_forecast_day(d):
         raise NotAWindow(f"{d} is an NQ holiday")
-    if not (WINDOW_START <= (ny.hour, ny.minute) <= WINDOW_END):
-        raise NotAWindow(f"New York time is {ny:%H:%M}, outside 08:00-09:25")
+    if (ny.hour, ny.minute) < WINDOW_START:
+        raise NotAWindow(f"New York time is {ny:%H:%M}, before 08:00 (the origin bar hasn't closed)")
+    # After 09:25 NY the run is late (GitHub's scheduler often starts runs hours late or drops
+    # them): it still forecasts today's origin once, rather than leaving the page without one.
     o = origin_for(d)
     if latest and latest.get("origin_utc") and pd.Timestamp(latest["origin_utc"]) == pd.Timestamp(o):
         raise NotAWindow(f"today's forecast (origin {iso(o)}) was already made")
@@ -200,8 +212,9 @@ def main() -> int:
             fh.write(f"made=true\norigin={iso(origin)}\n")
     if not (args.now or args.no_alert):             # never for a pretend time
         text = vol_alert.alert_text(f)
-        if vol_alert.send(text):
-            print(f"alert sent: {text}")
+        late = is_late(now, origin)
+        if vol_alert.send(text, title="NQ daily volatility (late)" if late else None):
+            print(f"alert sent{' (late)' if late else ''}: {text}")
     try:                                            # extras: after the forecast and alert, never fatal
         t1 = time.perf_counter()
         skip = {x.strip() for x in args.fail.split(",") if x.strip()}

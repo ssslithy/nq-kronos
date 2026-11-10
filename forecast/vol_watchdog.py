@@ -3,12 +3,12 @@
 GitHub's scheduler is best effort: on 9 Nov 2026 the only in-window garch-vol slot never
 fired and nothing was published. garch_vol.yml now has 7 slots; this is the second line.
 
-Scheduled at 13:45 and 14:45 UTC on weekdays. It acts only between 09:30 and 10:30 New York,
-after the forecast window (08:00-09:25 NY) has closed, which is exactly one of the two slots
-in both EDT and EST, so it re-dispatches at most once a day. If today is an NQ trading day and
-site/data/vol_status.json's forecast origin isn't today's 07:00 NY bar, it prints late=true for
-the workflow (which then dispatches garch_vol.yml with force=true) and sends an ntfy note
-saying the forecast is late (if NTFY_TOPIC is set). Standard library only (no pip install).
+Scheduled at 13:45 and 14:45 UTC on weekdays. GitHub often starts these hours late, so it acts
+whenever it runs after 09:30 New York on a trading day (the forecast window 08:00-09:25 NY has
+closed). If site/data/vol_status.json's forecast origin isn't today's 07:00 NY bar, it prints
+late=true for the workflow, which sends an ntfy note saying the forecast is late (if NTFY_TOPIC
+is set) and dispatches garch_vol.yml with force=true unless a garch-vol run is already queued
+or running. Standard library only (no pip install).
 
     python forecast/vol_watchdog.py                       # as the workflow does
     python forecast/vol_watchdog.py --now "2026-11-09 09:45" --dry-run   # a past time, New York
@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import nq_calendar as cal  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-ACT_FROM, ACT_UNTIL = time(9, 30), time(10, 30)       # New York
+ACT_FROM, ACT_UNTIL = time(9, 30), time(23, 59)       # New York: any time after the window, same day
 
 
 def today_origin(d) -> datetime:
@@ -41,7 +41,7 @@ def check(now: datetime, status: dict | None) -> tuple[bool, str]:
     if d.weekday() >= 5 or cal.is_holiday(d) or not cal.is_tradable_hour(today_origin(d)):
         return False, f"{d} is not a forecast day"
     if not (ACT_FROM <= ny.time() < ACT_UNTIL):
-        return False, f"New York time {ny:%H:%M} is outside the watchdog slot 09:30-10:30"
+        return False, f"New York time {ny:%H:%M} is before 09:30 (the forecast window is still open)"
     want = today_origin(d)
     have = (status or {}).get("forecast_origin_utc")
     if have and datetime.fromisoformat(have.replace("Z", "+00:00")) == want:
