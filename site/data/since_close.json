@@ -1,0 +1,36 @@
+{
+ "ok": true,
+ "generated_utc": "2026-11-10T13:45:30Z",
+ "origin_utc": "2026-11-10T12:00:00Z",
+ "window_start_utc": "2026-11-09T21:00:00Z",
+ "window_end_utc": "2026-11-10T13:00:00Z",
+ "window_label": "Since US close \u00b7 Mon 9pm \u2013 Tue 1pm",
+ "cells": [
+  {
+   "label": "Oil",
+   "ticker": "CL=F",
+   "unit": "pct",
+   "value": -2.56,
+   "from": 87.06,
+   "to": 84.83
+  },
+  {
+   "label": "VIX",
+   "ticker": "^VIX",
+   "unit": "pts",
+   "value": 0.05,
+   "from": 19.98,
+   "to": 20.03
+  },
+  {
+   "label": "Dollar",
+   "ticker": "DX-Y.NYB",
+   "unit": "pct",
+   "value": 0.09,
+   "from": 101.675,
+   "to": 101.77
+  }
+ ],
+ "errors": null,
+ "note": "falls are teal and rises red for all three (lower oil, volatility and dollar are good for NQ)"
+}

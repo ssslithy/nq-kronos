@@ -1,140 +1,157 @@
 {
  "ok": true,
- "generated_utc": "2026-11-09T18:02:00Z",
- "window_start_utc": "2026-11-06T21:00:00Z",
- "window_end_utc": "2026-11-09T13:00:00Z",
+ "generated_utc": "2026-11-10T13:45:30Z",
+ "window_start_utc": "2026-11-09T21:00:00Z",
+ "window_end_utc": "2026-11-10T13:00:00Z",
+ "brief": {
+  "source": "MarketWatch",
+  "title": "Nvidia couldn\u2019t derail the stock market\u2019s rally. Hot inflation might.",
+  "link": "https://www.marketwatch.com/story/nvidia-couldnt-derail-the-stock-markets-rally-hot-inflation-might-8a572024?mod=mw_rss_topstories",
+  "published_utc": "2026-11-10T12:33:00Z",
+  "time_london": "12:33pm",
+  "kind": "market_wrap"
+ },
  "items": [
   {
-   "source": "MT Newswires",
-   "title": "US Equity Investors to Monitor Key Tech Earnings, Inflation This Week as Democrats Midterm Victory Hits AI Trade",
-   "link": "https://finance.yahoo.com/technology/ai/articles/us-equity-investors-monitor-key-105739479.html?.tsrc=rss",
-   "published_utc": "2026-11-09T10:57:39Z",
-   "time_london": "10:57am",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Bloomberg",
-   "title": "Citi Strategists Cut US Stocks, Upgrade Europe After AI Turmoil",
-   "link": "https://finance.yahoo.com/markets/stocks/articles/citi-strategists-cut-us-stocks-095547644.html?.tsrc=rss",
-   "published_utc": "2026-11-09T09:55:47Z",
-   "time_london": "9:55am",
-   "impact": 2,
-   "cluster": 1
-  },
-  {
    "source": "Yahoo Finance",
-   "title": "Netflix boss says creativity and regulation 'are not happy bedfellows' in Europe",
-   "link": "https://www.euronews.com/2026/11/09/netflix-boss-says-creativity-and-regulation-are-not-happy-bedfellows-when-in-europe?.tsrc=rss",
-   "published_utc": "2026-11-09T05:35:16Z",
-   "time_london": "5:35am",
+   "title": "Microsoft, IBM team up on AI agent platform",
+   "link": "https://www.ciodive.com/news/microsoft-ibm-team-up-ai-agent-platform/874152/?.tsrc=rss",
+   "published_utc": "2026-11-10T13:00:00Z",
+   "time_london": "1:00pm",
    "impact": 1,
    "cluster": 1
   },
   {
-   "source": "Yahoo Finance",
-   "title": "Costco closes popular California store location after 37 years",
-   "link": "https://www.thestreet.com/retail/costco-closes-popular-california-store-location-after-37-years?.tsrc=rss",
-   "published_utc": "2026-11-09T04:09:56Z",
-   "time_london": "4:09am",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "CNBC",
-   "title": "Nvidia CEO Jensen Huang faces bipartisan congressional scrutiny over reported China spy link",
-   "link": "https://www.cnbc.com/2026/11/08/jensen-huang-nvidia-china-spy-congress.html",
-   "published_utc": "2026-11-08T22:19:00Z",
-   "time_london": "10:19pm",
-   "impact": 3,
-   "cluster": 4
-  },
-  {
-   "source": "Barron's",
-   "title": "Inflation Data, Constellation Energy, Skydance, Applied Materials, and More to Watch This Week",
-   "link": "https://finance.yahoo.com/m/826f68d8-6715-357e-b04d-885d04102528/inflation-data%2C-constellation.html?.tsrc=rss",
-   "published_utc": "2026-11-08T19:00:00Z",
-   "time_london": "7:00pm",
+   "source": "Nasdaq",
+   "title": "Sandisk Stock Has Collapsed by 65%, but It's Still Undergoing an 8-for-1 Stock Split on Nov. 19. Here's Why I'm Still Not Buying Shares Amidst This Nasdaq Market Slump.",
+   "link": "https://www.nasdaq.com/articles/sandisk-stock-has-collapsed-65-its-still-undergoing-8-1-stock-split-nov-19-heres-why-im",
+   "published_utc": "2026-11-10T12:40:00Z",
+   "time_london": "12:40pm",
    "impact": 1,
    "cluster": 1
   },
   {
    "source": "MarketWatch",
-   "title": "Economic calendar: CPI, PPI and a flotilla of Fed speakers on weekly agenda",
-   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=9622b187-7dd2-4086-87d2-b9448dd2298a&mod=mw_rss_bulletins",
-   "published_utc": "2026-11-08T18:14:41Z",
-   "time_london": "6:14pm",
+   "title": "Economic calendar: Inflation data; later, it's several Fed speakers",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=0eafb7a5-fb84-4034-9d42-7cc05e5705b9&mod=mw_rss_bulletins",
+   "published_utc": "2026-11-10T12:33:40Z",
+   "time_london": "12:33pm",
    "impact": 1,
    "cluster": 1
   },
   {
-   "source": "CNBC",
-   "title": "Meta chief strategy officer Dave Wehner leaves to join AI infrastructure startup Fireworks as CFO",
-   "link": "https://www.cnbc.com/2026/11/07/dave-wehner-meta-fireworks-cfo.html",
-   "published_utc": "2026-11-07T22:01:17Z",
-   "time_london": "10:01pm",
+   "source": "Nasdaq",
+   "title": "Nasdaq-100 Correction: 2 Proven Winners That Can Buck Historic Volatility",
+   "link": "https://www.nasdaq.com/articles/nasdaq-100-correction-2-proven-winners-can-buck-historic-volatility",
+   "published_utc": "2026-11-10T12:26:03Z",
+   "time_london": "12:26pm",
    "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Nasdaq",
+   "title": "Sundar Pichai Just Delivered Stunning News About Google Cloud",
+   "link": "https://www.nasdaq.com/articles/sundar-pichai-just-delivered-stunning-news-about-google-cloud",
+   "published_utc": "2026-11-10T12:22:00Z",
+   "time_london": "12:22pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Investing",
+   "title": "Microsoft pushes Trump to halt Chinese data center component ban: Reuters",
+   "link": "https://finance.yahoo.com/technology/ai/articles/microsoft-pushes-trump-halt-chinese-120408623.html?.tsrc=rss",
+   "published_utc": "2026-11-10T12:04:08Z",
+   "time_london": "12:04pm",
+   "impact": 3,
+   "cluster": 1
+  },
+  {
+   "source": "AFP",
+   "title": "Stock markets climb as oil prices slide",
+   "link": "https://finance.yahoo.com/markets/world-indices/articles/tech-leads-asian-stock-rally-023930562.html?.tsrc=rss",
+   "published_utc": "2026-11-10T12:01:39Z",
+   "time_london": "12:01pm",
+   "impact": 3,
+   "cluster": 1
+  },
+  {
+   "source": "MT Newswires",
+   "title": "Market Chatter: Amazon, Two Managers Face Potential Trial Over Chinese Imports in Italy",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/market-chatter-amazon-two-managers-115231212.html?.tsrc=rss",
+   "published_utc": "2026-11-10T11:52:31Z",
+   "time_london": "11:52am",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Investing",
+   "title": "U.S. inflation data ahead; Huang scandal fallout - what\u2019s moving markets",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/u-inflation-data-ahead-huang-093822541.html?.tsrc=rss",
+   "published_utc": "2026-11-10T09:38:22Z",
+   "time_london": "9:38am",
+   "impact": 3,
+   "cluster": 1
+  },
+  {
+   "source": "MarketWatch",
+   "title": "Fed governor says a half-point hike may be needed if Oct. CPI is hot",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=6946b21e-6923-4e1a-b20a-53d3d433289f&mod=mw_rss_bulletins",
+   "published_utc": "2026-11-10T09:29:22Z",
+   "time_london": "9:29am",
+   "impact": 3,
    "cluster": 1
   },
   {
    "source": "Yahoo Finance",
-   "title": "T-Mobile launches new internet plan after customer losses",
-   "link": "https://www.thestreet.com/retail/t-mobile-fiber-5-gig-plan-90-dollars-month-customer-losses?.tsrc=rss",
-   "published_utc": "2026-11-07T17:03:00Z",
-   "time_london": "5:03pm",
-   "impact": 2,
+   "title": "Nasdaq futures inch lower as Waller comments stall tech rebound; CPI in focus",
+   "link": "https://finance.yahoo.com/news/u-stock-futures-steady-tech-004342905.html?.tsrc=rss",
+   "published_utc": "2026-11-10T00:43:42Z",
+   "time_london": "12:43am",
+   "impact": 3,
    "cluster": 1
   },
   {
    "source": "CNBC",
-   "title": "Democrat shaping AI policy bought chip stocks despite backing congressional trading ban",
-   "link": "https://www.cnbc.com/2026/11/07/josh-gottheimer-ai-stocks-congress-trading-ban.html",
-   "published_utc": "2026-11-07T13:30:01Z",
-   "time_london": "1:30pm",
-   "impact": 2,
-   "cluster": 1
-  },
-  {
-   "source": "CNBC",
-   "title": "SpaceX says Google exec Don Harrison has resigned from its board",
-   "link": "https://www.cnbc.com/2026/11/06/tesdonald-harrison.html",
-   "published_utc": "2026-11-06T22:30:22Z",
-   "time_london": "10:30pm",
-   "impact": 1,
-   "cluster": 1
+   "title": "Nvidia stock falls 4% as scrutiny turns to Jensen Huang\u2019s affair with alleged Chinese spy",
+   "link": "https://www.cnbc.com/2026/11/09/nvidia-jensen-huang-chinese-spy-investigation.html",
+   "published_utc": "2026-11-09T21:04:19Z",
+   "time_london": "9:04pm",
+   "impact": 3,
+   "cluster": 8
   }
  ],
  "split": {
   "stories": {
-   "n": 17,
-   "bars3": 1,
-   "bars2": 3,
-   "bars1": 13,
-   "pct3": 6,
-   "pct2": 18,
-   "pct1": 76
+   "n": 21,
+   "bars3": 6,
+   "bars2": 0,
+   "bars1": 15,
+   "pct3": 29,
+   "pct2": 0,
+   "pct1": 71
   },
   "listed": {
-   "n": 11,
-   "bars3": 1,
-   "bars2": 3,
-   "bars1": 7,
-   "pct3": 9,
-   "pct2": 27,
-   "pct1": 64
+   "n": 12,
+   "bars3": 6,
+   "bars2": 0,
+   "bars1": 6,
+   "pct3": 50,
+   "pct2": 0,
+   "pct1": 50
   },
   "note": "non-wrap items only: market wraps and movers roundups are excluded"
  },
  "stats": {
-  "fetched": 418,
-  "in_window": 99,
+  "fetched": 430,
+  "in_window": 170,
   "wraps": {
-   "market_wrap": 4,
-   "movers_roundup": 1
+   "market_wrap": 8,
+   "movers_roundup": 0
   },
-  "relevant": 20,
-  "blocked_publisher": 12,
-  "clustered": 3
+  "relevant": 28,
+  "blocked_publisher": 48,
+  "clustered": 7
  },
  "feeds_ok": 23,
  "feeds_total": 23,
