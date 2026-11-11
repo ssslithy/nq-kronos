@@ -1,14 +1,14 @@
 {
  "daily": {
-  "n": 2,
+  "n": 3,
   "hit_rate": 0.0,
-  "mae_median": 486.54,
-  "mae_naive": 396.0,
-  "avg_width": 700.95,
+  "mae_median": 548.92,
+  "mae_naive": 408.0,
+  "avg_width": 617.41,
   "window": 60,
-  "matured": 2
+  "matured": 3
  },
- "generated_utc": "2026-11-10T13:55:45Z",
+ "generated_utc": "2026-11-11T13:17:37Z",
  "window": 30,
  "matured_24h": 36,
  "ready": true,
@@ -18,44 +18,44 @@
  "h24": {
   "n": 30,
   "hit_rate": 0.233,
-  "mae_median": 1059.97,
-  "mae_naive": 1106.22,
+  "mae_median": 1059.84,
+  "mae_naive": 1106.06,
   "avg_width": 756.14
  },
  "by_horizon": {
   "1": {
    "n": 30,
-   "hit_rate": 0.433,
-   "mae_median": 135.68,
-   "mae_naive": 129.46,
-   "avg_width": 201.03
+   "hit_rate": 0.4,
+   "mae_median": 138.77,
+   "mae_naive": 133.53,
+   "avg_width": 195.63
   },
   "6": {
    "n": 30,
    "hit_rate": 0.4,
-   "mae_median": 452.27,
-   "mae_naive": 438.29,
-   "avg_width": 421.69
+   "mae_median": 452.47,
+   "mae_naive": 435.48,
+   "avg_width": 411.29
   },
   "12": {
    "n": 30,
-   "hit_rate": 0.5,
-   "mae_median": 663.41,
-   "mae_naive": 671.85,
-   "avg_width": 527.77
+   "hit_rate": 0.467,
+   "mae_median": 665.98,
+   "mae_naive": 660.79,
+   "avg_width": 525.01
   },
   "23": {
-   "n": 1,
+   "n": 2,
    "hit_rate": 0.0,
-   "mae_median": 649.41,
-   "mae_naive": 574.5,
-   "avg_width": 547.46
+   "mae_median": 661.55,
+   "mae_naive": 503.25,
+   "avg_width": 498.9
   },
   "24": {
    "n": 30,
    "hit_rate": 0.233,
-   "mae_median": 1059.97,
-   "mae_naive": 1106.22,
+   "mae_median": 1059.84,
+   "mae_naive": 1106.06,
    "avg_width": 756.14
   }
  },
@@ -109,10 +109,10 @@
    "p10": 26782.06,
    "p50": 27326.1,
    "p90": 27653.41,
-   "actual": 27078.0,
+   "actual": 27077.75,
    "inside": true,
-   "err_median": 248.1,
-   "err_naive": 40.0,
+   "err_median": 248.35,
+   "err_naive": 40.25,
    "roll_adj": 0,
    "backfill": true
   },
@@ -123,10 +123,10 @@
    "p10": 26432.95,
    "p50": 27099.25,
    "p90": 27815.1,
-   "actual": 27205.5,
+   "actual": 27205.75,
    "inside": true,
-   "err_median": 106.25,
-   "err_naive": 247.25,
+   "err_median": 106.5,
+   "err_naive": 247.5,
    "roll_adj": 0,
    "backfill": true
   },
@@ -165,10 +165,10 @@
    "p10": 26641.67,
    "p50": 27287.55,
    "p90": 27913.34,
-   "actual": 27266.0,
+   "actual": 27265.5,
    "inside": true,
-   "err_median": 21.55,
-   "err_naive": 286.25,
+   "err_median": 22.05,
+   "err_naive": 285.75,
    "roll_adj": 0,
    "backfill": true
   }
