@@ -1,0 +1,32 @@
+name: vol-timer
+
+# Starts the daily vol run on time. GitHub runs this repo's scheduled jobs hours late (Nov 2026:
+# ~6-7 h) and skips many, so instead of a cron at 13:07 UTC this job is scheduled through the
+# night (00:07-06:07 UTC, weekdays). Whichever slot GitHub fires first waits on the runner until
+# 08:07 New York (1:07pm London, DST-aware) and dispatches garch-vol (a dispatch from a workflow
+# starts immediately), then again at 08:22 NY if today's forecast still isn't published. If the
+# target is more than ~5.3 h away it sleeps 5.3 h and dispatches the next timer run to carry on;
+# more than 13 h away, it leaves it to a later slot. Extra slots exit at once when another timer
+# run is already waiting or the forecast is published. forecast/vol_timer.py has the logic.
+# Backups: garch-vol's own (late) slots and the watchdog still publish, late, if no slot fires.
+on:
+  schedule:
+    - cron: "7 0-6 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write                  # list timer runs, dispatch garch_vol.yml and the next timer run
+
+jobs:
+  timer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Wait for 08:07 New York and start the vol run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ github.event.repository.default_branch }}
+        run: python3 forecast/vol_timer.py

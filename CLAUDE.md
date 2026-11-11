@@ -14,9 +14,13 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
 - **Triggers.** GitHub's scheduler drops or delays most scheduled runs in this repo (Nov 2026: the vol
   job's schedule never fired on 9 or 10 Nov; the old hourly Kronos cron ran 3 times in ~36 h; the
   driver check ran 6 h late). So the 1pm run has three lines:
-  1. **External timer (primary):** cron-job.org calls the GitHub API (`workflow_dispatch` of
-     garch_vol.yml, `force=false`) at 08:07 and 08:22 New York, Mon–Fri, with a fine-grained token that
-     can only run workflows on this repo. Set up by the owner; the token lives only at cron-job.org.
+  1. **`.github/workflows/vol_timer.yml` (primary, `forecast/vol_timer.py`):** scheduled through the night
+     (`7 0-6 * * 1-5` UTC); whichever slot GitHub fires first (hours late is fine) waits on the runner
+     until 08:07 New York (DST-aware), dispatches garch-vol (dispatches from a workflow start
+     immediately), and again at 08:22 if today's forecast isn't published. Too far ahead (> 5h20m) it
+     sleeps 5h20m and dispatches the next timer run; > 13 h ahead it leaves it to a later slot; extra
+     slots exit at once. (An external cron-job.org timer was tried on 10 Nov: its test calls never
+     created a run, so it isn't used.)
   2. `.github/workflows/garch_vol.yml`'s own cron (`7,27,47 12`, `7,27,47 13`, `7 14` UTC, weekdays).
   3. `.github/workflows/vol_watchdog.yml` (`forecast/vol_watchdog.py`, standard library only), cron
      `45 13` / `45 14` UTC: acts whenever it runs after 09:30 New York on a trading day. If
@@ -228,7 +232,8 @@ alerts; tick **test alert** to check the secret). Actions → forecast → Run w
   error; the evening driver check ran 6 h late too). A manual dispatch published at 13:46 UTC with the
   alert; the first Pages deploy failed ("try again later"), the Kronos deploy published at 13:56. Fixed:
   an external timer (cron-job.org) as the primary trigger, late runs still forecast once, the watchdog
-  acts whenever it runs after 09:30 NY.
+  acts whenever it runs after 09:30 NY. Then (11 Nov) the vol-timer workflow replaced the external
+  timer, whose test calls never reached GitHub.
 
 ## Rules for future changes
 
