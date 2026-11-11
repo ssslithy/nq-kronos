@@ -1,17 +1,8 @@
 {
  "ok": true,
- "generated_utc": "2026-11-10T13:45:30Z",
- "origin_utc": "2026-11-10T12:00:00Z",
+ "generated_utc": "2026-11-11T13:07:31Z",
+ "origin_utc": "2026-11-11T12:00:00Z",
  "items": [
-  {
-   "time_utc": "2026-11-10T13:30:00Z",
-   "kind": "CPI",
-   "name": "CPI",
-   "impact": 3,
-   "today": true,
-   "date_london": "Today",
-   "time_london": "1:30pm"
-  },
   {
    "time_utc": "2026-11-17T13:30:00Z",
    "kind": "RETAIL",
@@ -28,6 +19,15 @@
    "impact": 2,
    "today": false,
    "date_london": "Wed 25 Nov",
+   "time_london": "1:30pm"
+  },
+  {
+   "time_utc": "2026-12-04T13:30:00Z",
+   "kind": "NFP",
+   "name": "Payrolls (NFP)",
+   "impact": 3,
+   "today": false,
+   "date_london": "Fri 4 Dec",
    "time_london": "1:30pm"
   }
  ],

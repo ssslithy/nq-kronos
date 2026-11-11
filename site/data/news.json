@@ -1,157 +1,157 @@
 {
  "ok": true,
- "generated_utc": "2026-11-10T13:45:30Z",
- "window_start_utc": "2026-11-09T21:00:00Z",
- "window_end_utc": "2026-11-10T13:00:00Z",
+ "generated_utc": "2026-11-11T13:07:31Z",
+ "window_start_utc": "2026-11-10T21:00:00Z",
+ "window_end_utc": "2026-11-11T13:00:00Z",
  "brief": {
-  "source": "MarketWatch",
-  "title": "Nvidia couldn\u2019t derail the stock market\u2019s rally. Hot inflation might.",
-  "link": "https://www.marketwatch.com/story/nvidia-couldnt-derail-the-stock-markets-rally-hot-inflation-might-8a572024?mod=mw_rss_topstories",
-  "published_utc": "2026-11-10T12:33:00Z",
-  "time_london": "12:33pm",
+  "source": "Investor's Business Daily",
+  "title": "Dow Jones Futures Rise, Techs Jump On CoreWeave Earnings; Look For This Bullish Market Signal",
+  "link": "https://finance.yahoo.com/m/656fca57-9896-3dfb-96e8-e0af2bc227df/dow-jones-futures-rise%2C-techs.html?.tsrc=rss",
+  "published_utc": "2026-11-11T12:55:12Z",
+  "time_london": "12:55pm",
   "kind": "market_wrap"
  },
  "items": [
   {
    "source": "Yahoo Finance",
-   "title": "Microsoft, IBM team up on AI agent platform",
-   "link": "https://www.ciodive.com/news/microsoft-ibm-team-up-ai-agent-platform/874152/?.tsrc=rss",
-   "published_utc": "2026-11-10T13:00:00Z",
+   "title": "Nvidia\u2019s chips are powering China\u2019s AI revolution",
+   "link": "https://uk.finance.yahoo.com/news/nvidia-chips-powering-china-ai-130000071.html?.tsrc=rss",
+   "published_utc": "2026-11-11T13:00:00Z",
    "time_london": "1:00pm",
    "impact": 1,
    "cluster": 1
   },
   {
-   "source": "Nasdaq",
-   "title": "Sandisk Stock Has Collapsed by 65%, but It's Still Undergoing an 8-for-1 Stock Split on Nov. 19. Here's Why I'm Still Not Buying Shares Amidst This Nasdaq Market Slump.",
-   "link": "https://www.nasdaq.com/articles/sandisk-stock-has-collapsed-65-its-still-undergoing-8-1-stock-split-nov-19-heres-why-im",
-   "published_utc": "2026-11-10T12:40:00Z",
-   "time_london": "12:40pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
    "source": "MarketWatch",
-   "title": "Economic calendar: Inflation data; later, it's several Fed speakers",
-   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=0eafb7a5-fb84-4034-9d42-7cc05e5705b9&mod=mw_rss_bulletins",
-   "published_utc": "2026-11-10T12:33:40Z",
-   "time_london": "12:33pm",
+   "title": "Keep Jensen Huang at Nvidia \u2014 but end the one-man show",
+   "link": "https://www.marketwatch.com/story/keep-jensen-huang-at-nvidia-but-end-the-one-man-show-305c19a2?mod=mw_rss_topstories",
+   "published_utc": "2026-11-11T12:30:00Z",
+   "time_london": "12:30pm",
    "impact": 1,
    "cluster": 1
   },
   {
-   "source": "Nasdaq",
-   "title": "Nasdaq-100 Correction: 2 Proven Winners That Can Buck Historic Volatility",
-   "link": "https://www.nasdaq.com/articles/nasdaq-100-correction-2-proven-winners-can-buck-historic-volatility",
-   "published_utc": "2026-11-10T12:26:03Z",
+   "source": "Investing",
+   "title": "Nvidia stock gets a rare Wall Street downgrade on supply issues",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/nvidia-stock-gets-rare-wall-122608074.html?.tsrc=rss",
+   "published_utc": "2026-11-11T12:26:08Z",
    "time_london": "12:26pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Nasdaq",
-   "title": "Sundar Pichai Just Delivered Stunning News About Google Cloud",
-   "link": "https://www.nasdaq.com/articles/sundar-pichai-just-delivered-stunning-news-about-google-cloud",
-   "published_utc": "2026-11-10T12:22:00Z",
-   "time_london": "12:22pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Investing",
-   "title": "Microsoft pushes Trump to halt Chinese data center component ban: Reuters",
-   "link": "https://finance.yahoo.com/technology/ai/articles/microsoft-pushes-trump-halt-chinese-120408623.html?.tsrc=rss",
-   "published_utc": "2026-11-10T12:04:08Z",
-   "time_london": "12:04pm",
-   "impact": 3,
-   "cluster": 1
-  },
-  {
-   "source": "AFP",
-   "title": "Stock markets climb as oil prices slide",
-   "link": "https://finance.yahoo.com/markets/world-indices/articles/tech-leads-asian-stock-rally-023930562.html?.tsrc=rss",
-   "published_utc": "2026-11-10T12:01:39Z",
-   "time_london": "12:01pm",
-   "impact": 3,
-   "cluster": 1
-  },
-  {
-   "source": "MT Newswires",
-   "title": "Market Chatter: Amazon, Two Managers Face Potential Trial Over Chinese Imports in Italy",
-   "link": "https://finance.yahoo.com/markets/stocks/articles/market-chatter-amazon-two-managers-115231212.html?.tsrc=rss",
-   "published_utc": "2026-11-10T11:52:31Z",
-   "time_london": "11:52am",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Investing",
-   "title": "U.S. inflation data ahead; Huang scandal fallout - what\u2019s moving markets",
-   "link": "https://finance.yahoo.com/markets/stocks/articles/u-inflation-data-ahead-huang-093822541.html?.tsrc=rss",
-   "published_utc": "2026-11-10T09:38:22Z",
-   "time_london": "9:38am",
-   "impact": 3,
-   "cluster": 1
-  },
-  {
-   "source": "MarketWatch",
-   "title": "Fed governor says a half-point hike may be needed if Oct. CPI is hot",
-   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=6946b21e-6923-4e1a-b20a-53d3d433289f&mod=mw_rss_bulletins",
-   "published_utc": "2026-11-10T09:29:22Z",
-   "time_london": "9:29am",
-   "impact": 3,
+   "impact": 2,
    "cluster": 1
   },
   {
    "source": "Yahoo Finance",
-   "title": "Nasdaq futures inch lower as Waller comments stall tech rebound; CPI in focus",
-   "link": "https://finance.yahoo.com/news/u-stock-futures-steady-tech-004342905.html?.tsrc=rss",
-   "published_utc": "2026-11-10T00:43:42Z",
-   "time_london": "12:43am",
+   "title": "Microsoft Stock Fell After Anthropic Launches Claude Sheets to Rival Excel",
+   "link": "https://www.ibtimes.com/microsoft-shares-fall-anthropic-office-ai-tools-3809631?.tsrc=rss",
+   "published_utc": "2026-11-11T12:13:24Z",
+   "time_london": "12:13pm",
+   "impact": 2,
+   "cluster": 1
+  },
+  {
+   "source": "MarketWatch",
+   "title": "Market angst is driving investors into low-volatility stocks as AI trade stumbles",
+   "link": "https://www.marketwatch.com/story/market-angst-is-driving-investors-into-low-volatility-stocks-as-ai-trade-stumbles-23d905e9?mod=mw_rss_topstories",
+   "published_utc": "2026-11-11T12:00:00Z",
+   "time_london": "12:00pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "CNBC",
+   "title": "CoreWeave provides silver lining for neoclouds as Nvidia storm swirls",
+   "link": "https://www.cnbc.com/2026/11/11/coreweave-provides-silver-lining-for-neoclouds-as-nvidia-storm-swirls.html",
+   "published_utc": "2026-11-11T11:56:11Z",
+   "time_london": "11:56am",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Financial Times",
+   "title": "US tech stocks set to rebound after CoreWeave results",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/us-tech-stocks-set-rebound-104504951.html?.tsrc=rss",
+   "published_utc": "2026-11-11T10:45:04Z",
+   "time_london": "10:45am",
+   "impact": 2,
+   "cluster": 1
+  },
+  {
+   "source": "MarketWatch",
+   "title": "What Goldman Sachs now sees from the Fed after hot CPI data",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=7195ab29-1b0c-4b7b-8307-e6b0954b7df0&mod=mw_rss_bulletins",
+   "published_utc": "2026-11-11T10:43:06Z",
+   "time_london": "10:43am",
+   "impact": 3,
+   "cluster": 1
+  },
+  {
+   "source": "MarketWatch",
+   "title": "Why Goldman Sachs is now changing its Federal Reserve interest-rate forecast",
+   "link": "https://www.marketwatch.com/story/why-goldman-sachs-is-now-changing-its-federal-reserve-interest-rate-forecast-3753f968?mod=mw_rss_topstories",
+   "published_utc": "2026-11-11T10:37:00Z",
+   "time_london": "10:37am",
+   "impact": 3,
+   "cluster": 1
+  },
+  {
+   "source": "Investing",
+   "title": "Asian stocks mixed as CoreWeave lifts chipmakers; hot U.S. inflation weighs",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/asian-stocks-mixed-coreweave-lifts-042658517.html?.tsrc=rss",
+   "published_utc": "2026-11-11T04:26:58Z",
+   "time_london": "4:26am",
    "impact": 3,
    "cluster": 1
   },
   {
    "source": "CNBC",
-   "title": "Nvidia stock falls 4% as scrutiny turns to Jensen Huang\u2019s affair with alleged Chinese spy",
-   "link": "https://www.cnbc.com/2026/11/09/nvidia-jensen-huang-chinese-spy-investigation.html",
-   "published_utc": "2026-11-09T21:04:19Z",
-   "time_london": "9:04pm",
+   "title": "Nvidia sells off for second day in fallout from Jensen Huang\u2019s affair with alleged spy",
+   "link": "https://www.cnbc.com/2026/11/10/nvidia-nvda-jensen-huang-affair-chinese-spy.html",
+   "published_utc": "2026-11-10T22:08:25Z",
+   "time_london": "10:08pm",
    "impact": 3,
-   "cluster": 8
+   "cluster": 6
+  },
+  {
+   "source": "Yahoo Finance",
+   "title": "Stocks Settle Lower on Fed Rate Hike Fears",
+   "link": "https://www.barchart.com/story/news/8768300/stocks-settle-lower-on-fed-rate-hike-fears?.tsrc=rss",
+   "published_utc": "2026-11-10T21:39:15Z",
+   "time_london": "9:39pm",
+   "impact": 3,
+   "cluster": 1
   }
  ],
  "split": {
   "stories": {
-   "n": 21,
-   "bars3": 6,
-   "bars2": 0,
-   "bars1": 15,
-   "pct3": 29,
-   "pct2": 0,
-   "pct1": 71
+   "n": 29,
+   "bars3": 5,
+   "bars2": 3,
+   "bars1": 21,
+   "pct3": 17,
+   "pct2": 10,
+   "pct1": 72
   },
   "listed": {
    "n": 12,
-   "bars3": 6,
-   "bars2": 0,
-   "bars1": 6,
-   "pct3": 50,
-   "pct2": 0,
-   "pct1": 50
+   "bars3": 5,
+   "bars2": 3,
+   "bars1": 4,
+   "pct3": 42,
+   "pct2": 25,
+   "pct1": 33
   },
   "note": "non-wrap items only: market wraps and movers roundups are excluded"
  },
  "stats": {
-  "fetched": 430,
-  "in_window": 170,
+  "fetched": 431,
+  "in_window": 197,
   "wraps": {
-   "market_wrap": 8,
+   "market_wrap": 7,
    "movers_roundup": 0
   },
-  "relevant": 28,
-  "blocked_publisher": 48,
-  "clustered": 7
+  "relevant": 34,
+  "blocked_publisher": 41,
+  "clustered": 5
  },
  "feeds_ok": 23,
  "feeds_total": 23,
