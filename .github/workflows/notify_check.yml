@@ -1,0 +1,38 @@
+name: notify-check
+
+# Manual only: list the messages ntfy.sh holds for the alert topic (secret NTFY_TOPIC) over the
+# last 48 hours: time, title and the start of each message. Shows whether alerts reach ntfy.sh
+# (if they do but the phone shows nothing, the phone isn't subscribed to this topic, or its
+# notifications are off). Never prints the topic; changes nothing.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Messages on the alert topic (last 48 h)
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          if [ -z "$NTFY_TOPIC" ]; then echo "::error::the NTFY_TOPIC secret is not set"; exit 1; fi
+          echo "topic length: ${#NTFY_TOPIC} characters (name not shown)"
+          curl -s "https://ntfy.sh/${NTFY_TOPIC}/json?poll=1&since=48h" | python3 -c '
+          import json, sys, datetime
+          n = 0
+          for line in sys.stdin:
+              line = line.strip()
+              if not line:
+                  continue
+              m = json.loads(line)
+              if m.get("event") != "message":
+                  continue
+              n += 1
+              t = datetime.datetime.fromtimestamp(m["time"], datetime.timezone.utc).strftime("%a %d %b %H:%M UTC")
+              title, text = m.get("title") or "", (m.get("message") or "")[:70]
+              print(t, "|", title, "|", text)
+          print(f"{n} message(s) in the last 48 hours")'
