@@ -1,157 +1,157 @@
 {
  "ok": true,
- "generated_utc": "2026-11-11T13:07:31Z",
- "window_start_utc": "2026-11-10T21:00:00Z",
- "window_end_utc": "2026-11-11T13:00:00Z",
+ "generated_utc": "2026-11-12T13:07:24Z",
+ "window_start_utc": "2026-11-11T21:00:00Z",
+ "window_end_utc": "2026-11-12T13:00:00Z",
  "brief": {
   "source": "Investor's Business Daily",
-  "title": "Dow Jones Futures Rise, Techs Jump On CoreWeave Earnings; Look For This Bullish Market Signal",
-  "link": "https://finance.yahoo.com/m/656fca57-9896-3dfb-96e8-e0af2bc227df/dow-jones-futures-rise%2C-techs.html?.tsrc=rss",
-  "published_utc": "2026-11-11T12:55:12Z",
-  "time_london": "12:55pm",
+  "title": "Dow Jones Futures: Techs Fall As Nvidia Board Mulls Ousting CEO Jensen Huang; CoreWeave Rival Nebius Dives On Results",
+  "link": "https://finance.yahoo.com/m/672e6ef4-2ba3-319b-b948-a356a7f1fcbe/dow-jones-futures%3A-techs-fall.html?.tsrc=rss",
+  "published_utc": "2026-11-12T12:54:44Z",
+  "time_london": "12:54pm",
   "kind": "market_wrap"
  },
  "items": [
   {
-   "source": "Yahoo Finance",
-   "title": "Nvidia\u2019s chips are powering China\u2019s AI revolution",
-   "link": "https://uk.finance.yahoo.com/news/nvidia-chips-powering-china-ai-130000071.html?.tsrc=rss",
-   "published_utc": "2026-11-11T13:00:00Z",
-   "time_london": "1:00pm",
+   "source": "MarketWatch",
+   "title": "The \u2018bank of Nvidia\u2019 is in jeopardy, threatening the entire AI boom",
+   "link": "https://www.marketwatch.com/story/jensen-huang-built-nvidia-into-a-behemoth-his-scandal-puts-the-entire-ai-boom-in-jeopardy-c374b079?mod=mw_rss_topstories",
+   "published_utc": "2026-11-12T12:55:00Z",
+   "time_london": "12:55pm",
    "impact": 1,
    "cluster": 1
   },
   {
-   "source": "MarketWatch",
-   "title": "Keep Jensen Huang at Nvidia \u2014 but end the one-man show",
-   "link": "https://www.marketwatch.com/story/keep-jensen-huang-at-nvidia-but-end-the-one-man-show-305c19a2?mod=mw_rss_topstories",
-   "published_utc": "2026-11-11T12:30:00Z",
-   "time_london": "12:30pm",
+   "source": "Nasdaq",
+   "title": "2 AI Robotics Stocks That Could Help Set You Up for Life",
+   "link": "https://www.nasdaq.com/articles/2-ai-robotics-stocks-could-help-set-you-life",
+   "published_utc": "2026-11-12T12:15:00Z",
+   "time_london": "12:15pm",
    "impact": 1,
    "cluster": 1
   },
   {
-   "source": "Investing",
-   "title": "Nvidia stock gets a rare Wall Street downgrade on supply issues",
-   "link": "https://finance.yahoo.com/markets/stocks/articles/nvidia-stock-gets-rare-wall-122608074.html?.tsrc=rss",
-   "published_utc": "2026-11-11T12:26:08Z",
-   "time_london": "12:26pm",
-   "impact": 2,
-   "cluster": 1
-  },
-  {
    "source": "Yahoo Finance",
-   "title": "Microsoft Stock Fell After Anthropic Launches Claude Sheets to Rival Excel",
-   "link": "https://www.ibtimes.com/microsoft-shares-fall-anthropic-office-ai-tools-3809631?.tsrc=rss",
-   "published_utc": "2026-11-11T12:13:24Z",
-   "time_london": "12:13pm",
-   "impact": 2,
-   "cluster": 1
-  },
-  {
-   "source": "MarketWatch",
-   "title": "Market angst is driving investors into low-volatility stocks as AI trade stumbles",
-   "link": "https://www.marketwatch.com/story/market-angst-is-driving-investors-into-low-volatility-stocks-as-ai-trade-stumbles-23d905e9?mod=mw_rss_topstories",
-   "published_utc": "2026-11-11T12:00:00Z",
+   "title": "Why AMD CEO Lisa Su is Yahoo Finance's 'CEO of the Year'",
+   "link": "https://finance.yahoo.com/technology/article/why-amd-ceo-lisa-su-is-yahoo-finances-ceo-of-the-year-120000902.html?.tsrc=rss",
+   "published_utc": "2026-11-12T12:00:00Z",
    "time_london": "12:00pm",
    "impact": 1,
    "cluster": 1
   },
   {
-   "source": "CNBC",
-   "title": "CoreWeave provides silver lining for neoclouds as Nvidia storm swirls",
-   "link": "https://www.cnbc.com/2026/11/11/coreweave-provides-silver-lining-for-neoclouds-as-nvidia-storm-swirls.html",
-   "published_utc": "2026-11-11T11:56:11Z",
-   "time_london": "11:56am",
+   "source": "Barron's",
+   "title": "Nvidia, Dell, Super Micro, Sandisk, and More Stocks That Explain Today\u2019s Market",
+   "link": "https://finance.yahoo.com/m/923c0fbe-6605-3913-952c-4b295e62fcac/nvidia%2C-dell%2C-super-micro%2C.html?.tsrc=rss",
+   "published_utc": "2026-11-12T11:43:00Z",
+   "time_london": "11:43am",
    "impact": 1,
    "cluster": 1
   },
   {
-   "source": "Financial Times",
-   "title": "US tech stocks set to rebound after CoreWeave results",
-   "link": "https://finance.yahoo.com/markets/stocks/articles/us-tech-stocks-set-rebound-104504951.html?.tsrc=rss",
-   "published_utc": "2026-11-11T10:45:04Z",
-   "time_london": "10:45am",
+   "source": "MarketWatch",
+   "title": "Tech stocks may soon enjoy a \u2018violent bounce\u2019 \u2014 but one strategist warns investors not to take the bait",
+   "link": "https://www.marketwatch.com/story/tech-stocks-may-soon-enjoy-a-violent-bounce-but-one-strategist-warns-investors-not-to-take-the-bait-1a41f9c4?mod=mw_rss_topstories",
+   "published_utc": "2026-11-12T11:34:00Z",
+   "time_london": "11:34am",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Investing",
+   "title": "AMD, Broadcom gain after reports say Nvidia board preparing to oust Huang",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/amd-broadcom-gain-reports-nvidia-112100529.html?.tsrc=rss",
+   "published_utc": "2026-11-12T11:21:00Z",
+   "time_london": "11:21am",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Barron's",
+   "title": "AMD and Broadcom Stocks Jump. What It Says About the Future of the AI Trade.",
+   "link": "https://finance.yahoo.com/m/e24000fb-771f-351d-965d-387bb526b5ce/amd-and-broadcom-stocks-jump..html?.tsrc=rss",
+   "published_utc": "2026-11-12T11:14:00Z",
+   "time_london": "11:14am",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Yahoo Finance",
+   "title": "Foxconn Reports 34% Rise in Quarterly Profit to T$77.5 Billion, Expects Continued AI Demand",
+   "link": "https://investorshub.advfn.com/market-news/article/39863/foxconn-reports-34-rise-in-quarterly-profit-to-t77-5-billion-expects-continued-ai-demand?.tsrc=rss",
+   "published_utc": "2026-11-12T11:10:58Z",
+   "time_london": "11:10am",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Yahoo Finance",
+   "title": "Nvidia's future, AI's road forward, and an inflation-battered economy: Welcome to Yahoo Finance Invest 2026!",
+   "link": "https://finance.yahoo.com/markets/article/nvidias-future-ais-road-forward-and-an-inflation-battered-economy-welcome-to-yahoo-finance-invest-2026-110000138.html?.tsrc=rss",
+   "published_utc": "2026-11-12T11:00:00Z",
+   "time_london": "11:00am",
+   "impact": 3,
+   "cluster": 1
+  },
+  {
+   "source": "Nasdaq",
+   "title": "Semiconductor ETFs to Buy as Qualcomm Plunges Despite Q4 Earnings Beat",
+   "link": "https://www.nasdaq.com/articles/semiconductor-etfs-buy-qualcomm-plunges-despite-q4-earnings-beat",
+   "published_utc": "2026-11-12T10:53:00Z",
+   "time_london": "10:53am",
    "impact": 2,
    "cluster": 1
   },
   {
    "source": "MarketWatch",
-   "title": "What Goldman Sachs now sees from the Fed after hot CPI data",
-   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=7195ab29-1b0c-4b7b-8307-e6b0954b7df0&mod=mw_rss_bulletins",
-   "published_utc": "2026-11-11T10:43:06Z",
-   "time_london": "10:43am",
-   "impact": 3,
-   "cluster": 1
-  },
-  {
-   "source": "MarketWatch",
-   "title": "Why Goldman Sachs is now changing its Federal Reserve interest-rate forecast",
-   "link": "https://www.marketwatch.com/story/why-goldman-sachs-is-now-changing-its-federal-reserve-interest-rate-forecast-3753f968?mod=mw_rss_topstories",
-   "published_utc": "2026-11-11T10:37:00Z",
-   "time_london": "10:37am",
-   "impact": 3,
-   "cluster": 1
-  },
-  {
-   "source": "Investing",
-   "title": "Asian stocks mixed as CoreWeave lifts chipmakers; hot U.S. inflation weighs",
-   "link": "https://finance.yahoo.com/markets/stocks/articles/asian-stocks-mixed-coreweave-lifts-042658517.html?.tsrc=rss",
-   "published_utc": "2026-11-11T04:26:58Z",
-   "time_london": "4:26am",
+   "title": "Lower oil prices aren't bringing down bond yields. What it means for inflation.",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=ec87fcea-3112-47c2-b9d9-9c3e2d0e9c33&mod=mw_rss_bulletins",
+   "published_utc": "2026-11-11T21:53:40Z",
+   "time_london": "9:53pm",
    "impact": 3,
    "cluster": 1
   },
   {
    "source": "CNBC",
-   "title": "Nvidia sells off for second day in fallout from Jensen Huang\u2019s affair with alleged spy",
-   "link": "https://www.cnbc.com/2026/11/10/nvidia-nvda-jensen-huang-affair-chinese-spy.html",
-   "published_utc": "2026-11-10T22:08:25Z",
-   "time_london": "10:08pm",
+   "title": "Jensen Huang's affair with alleged spy revives push to tighten China chip curbs ahead of Trump-Xi summit",
+   "link": "https://www.cnbc.com/2026/11/12/nvidia-trump-jensen-chip-export-controls-china-xi-.html",
+   "published_utc": "2026-11-11T21:04:36Z",
+   "time_london": "9:04pm",
    "impact": 3,
-   "cluster": 6
-  },
-  {
-   "source": "Yahoo Finance",
-   "title": "Stocks Settle Lower on Fed Rate Hike Fears",
-   "link": "https://www.barchart.com/story/news/8768300/stocks-settle-lower-on-fed-rate-hike-fears?.tsrc=rss",
-   "published_utc": "2026-11-10T21:39:15Z",
-   "time_london": "9:39pm",
-   "impact": 3,
-   "cluster": 1
+   "cluster": 19
   }
  ],
  "split": {
   "stories": {
-   "n": 29,
-   "bars3": 5,
-   "bars2": 3,
-   "bars1": 21,
-   "pct3": 17,
-   "pct2": 10,
-   "pct1": 72
+   "n": 23,
+   "bars3": 3,
+   "bars2": 1,
+   "bars1": 19,
+   "pct3": 13,
+   "pct2": 4,
+   "pct1": 83
   },
   "listed": {
    "n": 12,
-   "bars3": 5,
-   "bars2": 3,
-   "bars1": 4,
-   "pct3": 42,
-   "pct2": 25,
-   "pct1": 33
+   "bars3": 3,
+   "bars2": 1,
+   "bars1": 8,
+   "pct3": 25,
+   "pct2": 8,
+   "pct1": 67
   },
   "note": "non-wrap items only: market wraps and movers roundups are excluded"
  },
  "stats": {
-  "fetched": 431,
-  "in_window": 197,
+  "fetched": 433,
+  "in_window": 208,
   "wraps": {
-   "market_wrap": 7,
-   "movers_roundup": 0
+   "market_wrap": 10,
+   "movers_roundup": 1
   },
-  "relevant": 34,
-  "blocked_publisher": 41,
-  "clustered": 5
+  "relevant": 41,
+  "blocked_publisher": 53,
+  "clustered": 18
  },
  "feeds_ok": 23,
  "feeds_total": 23,
