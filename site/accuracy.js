@@ -1,5 +1,5 @@
 // Accuracy page: reads data/vol_history.jsonl (one line per daily vol forecast) and draws
-// the 1pm -> 1pm and cash-session hit charts, the hit-rate tables (80/85/90/95/99%) and the
+// the 24-hour (9am -> 9am New York) and cash-session hit charts, the hit-rate tables (80/85/90/95/99%) and the
 // rolling 60-day hit rate of the 90% range (the headline). Also the live Kronos daily check.
 "use strict";
 (() => {
@@ -75,7 +75,7 @@
            `move ${r.move_pct >= 0 ? "+" : "−"}${Math.abs(r.move_pct).toFixed(2)}%, 90% range ±${m90(r).toFixed(2)}%` +
            `${ev ? " · " + r.events.join(", ") : ""}${r.backfill ? " · Backfill" : ""}</title></circle>`;
     });
-    el.innerHTML = svg(f, b, "1pm to 1pm moves against the 90% and 95% forecast ranges");
+    el.innerHTML = svg(f, b, "24-hour moves against the 90% and 95% forecast ranges");
   }
 
   // ---- 2. cash chart ---------------------------------------------------------------------
@@ -157,7 +157,7 @@
     let b = yAxis(f, lo, hi, 10, "%") + xMonths(f, all);
     b += `<line x1="${f.pl}" x2="${f.W - f.pr}" y1="${f.Y(90)}" y2="${f.Y(90)}" stroke="${COL.target}" stroke-dasharray="4 3"/>`;
     b += line(rc, yc, COL.cash) + line(r24, y24, COL.teal);
-    el.innerHTML = svg(f, b, "Rolling 60-day hit rate of the 90% range, 1pm to 1pm and cash session");
+    el.innerHTML = svg(f, b, "Rolling 60-day hit rate of the 90% range, 24 hours and cash session");
   }
 
   // live daily Kronos runs vs their own P10-P90 (data/band_check.json)
@@ -182,8 +182,8 @@
       .sort((a, b) => Date.parse(a.origin_utc) - Date.parse(b.origin_utc));
     const m = ROWS.filter((x) => typeof x.inside90 === "boolean");
     const h = rate(m, "inside90"), c = rate(ROWS, "cash_inside90");
-    $("acc-intro").innerHTML = `Daily volatility forecasts (HAR-RV since Nov 2026; the whole year is re-forecast with it) made from the 7:00–8:00am New York bar (1pm London), each using only data available then, ` +
-      `for the 23 trading hours to 1pm London the next trading day. ` +
+    $("acc-intro").innerHTML = `Daily volatility forecasts (HAR-RV since Nov 2026; the whole year is re-forecast with it) made at 9:00am New York (2pm London), each using only data available then, ` +
+      `for the 23 trading hours to the same time the next trading day. ` +
       `${m.length} matured forecasts (${day.format(new Date(m[0].origin_utc))} to ${day.format(new Date(m[m.length - 1].origin_utc))}): ` +
       `the actual move landed inside the 90% range <b>${pct(h.v)}</b> of the time; cash session <b>${pct(c.v)}</b> of ${c.n}.`;
     tables(); render();

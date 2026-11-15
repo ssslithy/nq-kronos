@@ -1,29 +1,30 @@
 name: garch-vol
 
-# The site's daily run, as of the 08:00 New York bar close. GitHub cron is UTC-only, best
+# The site's daily run, as of the 09:00 New York bar close (08:00 until 13 Nov 2026). GitHub cron is UTC-only, best
 # effort, and can start late or not at all (on 9 Nov 2026 the only in-window slot, 13:05 UTC,
-# never fired). So it fires 7 times, at :07 / :27 / :47 past 12 and 13 UTC and at 14:07 UTC:
-# 4 slots land in 08:00-09:25 NY in both EDT (12:00-13:25 UTC) and EST (13:00-14:25 UTC).
+# never fired). The vol-timer workflow now starts it on time; these slots are the backup. It
+# fires 7 times, at :07 / :27 / :47 past 13 and 14 UTC and at 15:07 UTC:
+# 4 slots land in 09:00-10:25 NY in both EDT (13:00-14:25 UTC) and EST (14:00-15:25 UTC).
 # forecast/run_vol.py decides: the first in-window run forecasts, every other run exits quietly
-# ("outside 08:00-09:25" or "already made"). Off the top of the hour, where GitHub drops most
+# ("before 09:00" or "already made"; a run after 10:25 still forecasts once, late). Off the top of the hour, where GitHub drops most
 # scheduled runs. When it makes a forecast:
-#   vol     1pm->1pm London volatility (run_vol.py; HAR-RV since Nov 2026, the job keeps its
+#   vol     9am->9am New York (2pm->2pm London) volatility (run_vol.py; HAR-RV since Nov 2026, the job keeps its
 #           old name) + phone alert, then calendar / Treasuries / Fed odds / news (fail-soft),
 #           commit, push   (~2-6 min)
 #   deploy  Pages deploy of the vol forecast, straight away
-#   kronos  Kronos-small from the same 07:00-08:00 NY bar (run_forecast.py --origin), its own
+#   kronos  Kronos-small from the same 08:00-09:00 NY bar (run_forecast.py --origin), its own
 #           job with a 15-minute limit; if it fails or times out, only Kronos is marked stale
 #   deploy-kronos  second Pages deploy with the Kronos forecast (or its stale flag)
 # Kronos can't delay or block the vol commit, alert or deploy.
 on:
   schedule:
-    - cron: "7,27,47 12 * * 1-5"
     - cron: "7,27,47 13 * * 1-5"
-    - cron: "7 14 * * 1-5"
+    - cron: "7,27,47 14 * * 1-5"
+    - cron: "7 15 * * 1-5"
   workflow_dispatch:
     inputs:
       force:
-        description: "Forecast from the latest daily origin even outside 08:00-09:25 NY"
+        description: "Forecast from the latest daily origin even outside 09:00-10:25 NY"
         type: boolean
         default: false
       test_alert:

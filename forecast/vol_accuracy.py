@@ -1,4 +1,4 @@
-"""Accuracy log for the daily GARCH vol forecast (1pm -> 1pm London), and the 1-year backfill.
+"""Accuracy log for the daily vol forecast (9am -> 9am New York), and the 1-year backfill.
 
 site/data/vol_history.jsonl holds one line per daily forecast (one per origin). Once the
 forecast's last bar (horizon_end_utc, HORIZON = 23 bars after the origin) has closed, the line gets:
@@ -13,7 +13,7 @@ count as a move (the same rule as the calibration factor k). If Yahoo has no bar
 origin or horizon end, the line gets "missing": true and is skipped.
 
 run_vol.py updates the log on every forecast run, using the bars it already loaded. Those end
-with today's 07:00 NY origin bar, which is also the last bar of yesterday's horizon, so a
+with today's origin bar, which is also the last bar of yesterday's horizon, so a
 forecast matures on the next run. (Lines from before Nov 2026 used a 24-bar horizon.)
 
 Cash session: see cash_outcome(); its 90% range uses a measured multiplier (cash_m90).
@@ -130,7 +130,7 @@ def update_accuracy(rows: list[dict], bars: pd.DataFrame, now: datetime | None =
 
 # ---- cash session (09:00-16:00 NY on the forecast day) ------------------------------------
 
-CASH_START_NY, CASH_END_NY = 8, 15        # close of the 08:00-09:00 bar -> close of the 15:00-16:00 bar
+CASH_START_NY, CASH_END_NY = 8, 15        # close of the 08:00-09:00 bar (the origin since Nov 2026) -> close of the 15:00-16:00 bar
 K_CASH_DAYS, K_CASH_MIN = 250, 60
 
 
@@ -339,7 +339,8 @@ def main() -> int:
     ap.add_argument("--backfill", action="store_true", help="forecast the last --days daily origins")
     ap.add_argument("--days", type=int, default=BACKFILL_DAYS)
     ap.add_argument("--all", action="store_true",
-                    help="with --backfill: recompute live lines too (they keep backfill=false)")
+                    help="with --backfill: recompute live lines too (they keep backfill=false); lines made "
+                         "from another origin hour (before an origin change) are dropped")
     ap.add_argument("--now", help="use bars up to this time (New York unless a zone is given)")
     ap.add_argument("--out", default=str(ROOT / "site" / "data"))
     args = ap.parse_args()
@@ -351,6 +352,11 @@ def main() -> int:
     bars, _ = gv.load_bars(gv.parse_now(args.now))
     print(f"{len(bars):,} bars {bars.index[0]:%Y-%m-%d} -> {bars.index[-1]:%Y-%m-%d %H:%M} UTC; "
           f"{len(rows)} lines in {path.name}")
+    if args.backfill and args.all:                      # after an origin change: one line per day, at the current origin
+        keep = [r for r in rows if pd.Timestamp(r["origin_utc"]).tz_convert(cal.NY).hour == gv.ORIGIN_NY_HOUR]
+        if len(keep) < len(rows):
+            print(f"  dropped {len(rows) - len(keep)} line(s) made from another origin hour")
+        rows = keep
     if args.backfill:
         live = {pd.Timestamp(r["origin_utc"]) for r in rows if not r.get("backfill")}
         new, skipped = backfill(bars, args.days, skip=set() if args.all else live)

@@ -1,4 +1,4 @@
-"""Daily NQ volatility forecast (1pm -> 1pm London, 23 tradable hours) (volatility only, not direction).
+"""Daily NQ volatility forecast (9am -> 9am New York = 2pm -> 2pm London, 23 tradable hours) (volatility only, not direction).
 
 Raw sigma model: VOL_MODEL. Since 9 Nov 2026 it is "har": HAR-RV (see har_sigmas; chosen by
 NQ_VOL_FIX_PLAN.md, lab/results/vol_fix.md, because hourly GARCH forgot shocks within a day and its
@@ -14,7 +14,7 @@ Model choices are copied from the Phase 6 lab (lab/baselines.py):
   was tested in lab/garch_vol_calibration.py and changed nothing: hit rates 93-94% either way.)
 - Fit: the trailing 2,000 returns ending at the forecast bar; GARCH(1,1), zero mean,
   Student-t errors, `arch` with rescale=False. Refitted at every forecast.
-- Horizon: the next 23 bars (HORIZON): from the close of the 07:00-08:00 NY origin bar (1pm London)
+- Horizon: the next 23 bars (HORIZON): from the close of the 08:00-09:00 NY origin bar (9am New York, 2pm London; until 13 Nov 2026 the 07:00-08:00 bar)
   to the close of the next trading day's origin bar, skipping the daily break and weekends.
   The page still calls it "Next 24 hours". Until Nov 2026 it was 24 bars (to 09:00 NY).
 - Raw sigma: square root of the summed HORIZON analytic variance forecasts.
@@ -22,7 +22,7 @@ Model choices are copied from the Phase 6 lab (lab/baselines.py):
   it; otherwise (expired contracts 404) the switch bar is the largest upward jump in
   [roll date - 1 day, expiry + 4 days] and the gap is CARRY x price. Same as the lab.
 
-Calibration (lab/garch_vol_calibration.py, 429 daily 07:00 NY origins Oct 2024 - Nov 2026):
+Calibration (lab/garch_vol_calibration.py, 429 daily 07:00 NY origins, the origin then Oct 2024 - Nov 2026):
 at this origin the raw sigma is too wide (RMS(move / sigma) ~0.63; +-1.28 sigma held 94%).
 The cause is GARCH's variance level (forecast variance ~2.4x the realised sum of squared hourly
 returns), not gaps or hourly mean reversion. So:
@@ -44,7 +44,7 @@ returns), not gaps or hourly mean reversion. So:
   the trailing 60 trading days). GARCH alone would spread variance evenly (7/24).
 
     python forecast/garch_vol.py                              # forecast as of now
-    python forecast/garch_vol.py --now "2026-11-05 08:10"     # a past time, New York
+    python forecast/garch_vol.py --now "2026-11-05 09:10"     # a past time, New York
 """
 from __future__ import annotations
 
@@ -67,10 +67,11 @@ import nq_calendar as cal  # noqa: E402
 log = logging.getLogger("garch_vol")
 
 WINDOW = 2000          # hourly returns in each fit
-HORIZON = 23           # bars: origin close (1pm London) -> next origin close (1pm London next trading day)
+HORIZON = 23           # bars: origin close (9am New York) -> next origin close (9am New York next trading day)
 SIMS = 10_000
 DAYS = 729             # history to download (Yahoo's 1h cap); covers the k and regime lookbacks
-ORIGIN_NY_HOUR = 7     # the 07:00-08:00 NY bar: the last complete bar before 08:30 NY
+ORIGIN_NY_HOUR = 8     # the 08:00-09:00 NY bar: the 08:30 NY releases are in its close, and the cash window
+                       # (09:00-16:00 NY) starts at it. 7 until 13 Nov 2026 (lab/results/origin_9am.md)
 CASH_NY_HOURS = range(9, 16)   # bars starting 09:00..15:00 NY = 7 hours 09:00-16:00
 REGIME_DAYS = 252
 CANDLES = 48                   # bars before the origin shown on the chart
@@ -229,7 +230,7 @@ def roll_note(future: list[datetime]) -> str | None:
 # ---- prior daily forecasts: calibration factor, regime, realised ----------------------
 
 def daily_origins(df: pd.DataFrame) -> np.ndarray:
-    """Positions of the 07:00 NY bar on every NQ trading weekday present in the data."""
+    """Positions of the origin bar (ORIGIN_NY_HOUR, New York) on every NQ trading weekday present in the data."""
     ny = df.index.tz_convert(cal.NY)
     ok = (ny.hour == ORIGIN_NY_HOUR) & (ny.minute == 0) & (ny.weekday < 5)
     pos = np.flatnonzero(ok)
@@ -280,7 +281,7 @@ def har_origins(bars: pd.DataFrame) -> np.ndarray:
 
 
 def prior_forecasts(bars: pd.DataFrame, n: int = 330, model: str | None = None) -> pd.DataFrame:
-    """Raw sigma and realised HORIZON-bar move for up to `n` daily 07:00 NY origins before the last
+    """Raw sigma and realised HORIZON-bar move for up to `n` daily origins before the last
     bar, each made only from data up to its own origin (GARCH: the WINDOW returns to it; HAR-RV:
     see har_sigmas). `move` is NaN until the forecast's HORIZON bars have closed (by the last bar
     of `bars`). 330 leaves K_DAYS matured forecasts after the ~18% that touch a roll window are
@@ -423,7 +424,7 @@ def fan_paths(last: float, sigma: float, weights: np.ndarray, mults: dict[int, f
 
 def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
                  prior: pd.DataFrame | None = None) -> dict:
-    """Pure: calibrated 1pm -> 1pm London (HORIZON bars) volatility forecast as of the last bar in `bars`.
+    """Pure: calibrated 9am -> 9am New York (HORIZON bars) volatility forecast as of the last bar in `bars`.
 
     `prior` (from prior_forecasts) may be passed in to avoid recomputing it; it must come
     from the same bars. Needs > WINDOW bars plus enough history for K_MIN matured forecasts.
@@ -633,7 +634,7 @@ def main() -> int:
     t1 = time.perf_counter()
     o = df.index[-1]
     if o.tz_convert(cal.NY).hour != ORIGIN_NY_HOUR:
-        print(f"note: last closed bar starts {o.tz_convert(cal.NY):%a %H:%M} NY, not the 07:00 NY bar; "
+        print(f"note: last closed bar starts {o.tz_convert(cal.NY):%a %H:%M} NY, not the {ORIGIN_NY_HOUR:02d}:00 NY bar; "
               f"forecasting from it anyway")
     prior = prior_forecasts(df)
     t2 = time.perf_counter()

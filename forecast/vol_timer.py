@@ -1,10 +1,10 @@
 """Timer for the daily vol run (.github/workflows/vol_timer.yml): starts garch-vol on time.
 
 GitHub's scheduler runs this repo's scheduled jobs hours late (Nov 2026: ~6-7 h) and skips many,
-so a cron at 13:07 UTC can't start the 1pm run. This job is scheduled through the night instead;
-whichever slot GitHub fires first waits on the runner until TARGET (08:07 New York = 1:07pm
+so a cron at 14:07 UTC can't start the daily run. This job is scheduled through the night instead;
+whichever slot GitHub fires first waits on the runner until TARGET (09:07 New York = 2:07pm
 London; DST-aware), then dispatches garch_vol.yml (workflow_dispatch from a workflow starts
-immediately, unlike a schedule). At BACKUP (08:22 NY) it dispatches again if today's forecast
+immediately, unlike a schedule). At BACKUP (09:22 NY) it dispatches again if today's forecast
 still isn't published. A job may run 6 h at most, so if the target is further away it sleeps
 CHAIN_SLEEP and dispatches the next timer run to carry on.
 
@@ -29,7 +29,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import nq_calendar as cal  # noqa: E402
 
-TARGET, BACKUP = time(8, 7), time(8, 22)          # New York
+TARGET, BACKUP = time(9, 7), time(9, 22)          # New York
+ORIGIN = time(8, 0)                               # the origin bar's start (garch_vol.ORIGIN_NY_HOUR)
 LATE_LIMIT = timedelta(minutes=30)                # after BACKUP + this, leave it to the late runs
 MAX_WAIT = timedelta(hours=5, minutes=20)         # + 15 min to BACKUP stays inside the 355-min job limit
 CHAIN_SLEEP = timedelta(hours=5, minutes=20)
@@ -41,7 +42,7 @@ def ny_at(d, t) -> datetime:
 
 
 def forecast_day(d) -> bool:
-    return d.weekday() < 5 and not cal.is_holiday(d) and cal.is_tradable_hour(ny_at(d, time(7, 0)).astimezone(timezone.utc))
+    return d.weekday() < 5 and not cal.is_holiday(d) and cal.is_tradable_hour(ny_at(d, ORIGIN).astimezone(timezone.utc))
 
 
 def published_origin(repo: str) -> str | None:
@@ -58,7 +59,7 @@ def published_origin(repo: str) -> str | None:
 
 def made_today(repo: str, d) -> bool:
     o = published_origin(repo)
-    return bool(o) and datetime.fromisoformat(o.replace("Z", "+00:00")) == ny_at(d, time(7, 0))
+    return bool(o) and datetime.fromisoformat(o.replace("Z", "+00:00")) == ny_at(d, ORIGIN)
 
 
 def others_waiting(repo: str) -> int:

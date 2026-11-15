@@ -1,7 +1,7 @@
 name: driver-check
 
 # Lab only (NQ_PREOPEN.md part 4): every trading-day evening at ~22:30 London, compare the
-# drivers named in the day's closing market wraps with what the 1pm snapshot showed, and append
+# drivers named in the day's closing market wraps with what the morning (9am New York) snapshot showed, and append
 # a line to lab/results/driver_check.jsonl (+ driver_check.md after 10 days). It never touches
 # the forecast, the alert or site/. 21:30 and 22:30 UTC cover 22:30 London in BST and GMT;
 # lab/driver_check.py acts once per date, after 22:15 London.

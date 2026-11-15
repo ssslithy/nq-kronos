@@ -4,14 +4,14 @@ GitHub's scheduler is best effort: on 9 Nov 2026 the only in-window garch-vol sl
 fired and nothing was published. garch_vol.yml now has 7 slots; this is the second line.
 
 Scheduled at 13:45 and 14:45 UTC on weekdays. GitHub often starts these hours late, so it acts
-whenever it runs after 09:30 New York on a trading day (the forecast window 08:00-09:25 NY has
-closed). If site/data/vol_status.json's forecast origin isn't today's 07:00 NY bar, it prints
+whenever it runs after 09:40 New York on a trading day (the timer's 09:07 and 09:22 starts have
+had their chance). If site/data/vol_status.json's forecast origin isn't today's 08:00 NY bar, it prints
 late=true for the workflow, which sends an ntfy note saying the forecast is late (if NTFY_TOPIC
 is set) and dispatches garch_vol.yml with force=true unless a garch-vol run is already queued
 or running. Standard library only (no pip install).
 
     python forecast/vol_watchdog.py                       # as the workflow does
-    python forecast/vol_watchdog.py --now "2026-11-09 09:45" --dry-run   # a past time, New York
+    python forecast/vol_watchdog.py --now "2026-11-16 09:45" --dry-run   # a past time, New York
 """
 from __future__ import annotations
 
@@ -27,11 +27,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import nq_calendar as cal  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-ACT_FROM, ACT_UNTIL = time(9, 30), time(23, 59)       # New York: any time after the window, same day
+ACT_FROM, ACT_UNTIL = time(9, 40), time(23, 59)       # New York: any time after the timer's starts, same day
+ORIGIN_NY_HOUR = 8                                    # as garch_vol.ORIGIN_NY_HOUR (kept here: standard library only)
 
 
 def today_origin(d) -> datetime:
-    return datetime(d.year, d.month, d.day, 7, tzinfo=cal.NY).astimezone(timezone.utc)
+    return datetime(d.year, d.month, d.day, ORIGIN_NY_HOUR, tzinfo=cal.NY).astimezone(timezone.utc)
 
 
 def check(now: datetime, status: dict | None) -> tuple[bool, str]:
@@ -41,7 +42,7 @@ def check(now: datetime, status: dict | None) -> tuple[bool, str]:
     if d.weekday() >= 5 or cal.is_holiday(d) or not cal.is_tradable_hour(today_origin(d)):
         return False, f"{d} is not a forecast day"
     if not (ACT_FROM <= ny.time() < ACT_UNTIL):
-        return False, f"New York time {ny:%H:%M} is before 09:30 (the forecast window is still open)"
+        return False, f"New York time {ny:%H:%M} is before 09:40 (the timer may still be starting the run)"
     want = today_origin(d)
     have = (status or {}).get("forecast_origin_utc")
     if have and datetime.fromisoformat(have.replace("Z", "+00:00")) == want:
@@ -83,7 +84,7 @@ def main() -> int:
             ny = now.astimezone(cal.NY)
             lon = now.astimezone(cal.LONDON)
             hhmm = f"{lon.hour % 12 or 12}:{lon.minute:02d}{'am' if lon.hour < 12 else 'pm'}"
-            ok = notify(f"Today's 1pm London forecast hadn't published by {hhmm} London "
+            ok = notify(f"Today's forecast hadn't published by {hhmm} London "
                         f"({ny:%H:%M} New York). Re-running the job now; it should arrive in a few minutes.", topic)
             print(f"ntfy note sent: {ok}")
     return 0

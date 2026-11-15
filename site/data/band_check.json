@@ -2,13 +2,13 @@
  "daily": {
   "n": 5,
   "hit_rate": 0.4,
-  "mae_median": 436.3,
-  "mae_naive": 319.3,
+  "mae_median": 438.95,
+  "mae_naive": 321.95,
   "avg_width": 678.24,
   "window": 60,
   "matured": 5
  },
- "generated_utc": "2026-11-13T13:15:16Z",
+ "generated_utc": "2026-11-15T03:47:00Z",
  "window": 30,
  "matured_24h": 36,
  "ready": true,
@@ -25,10 +25,10 @@
  "by_horizon": {
   "1": {
    "n": 30,
-   "hit_rate": 0.4,
-   "mae_median": 140.71,
-   "mae_naive": 134.09,
-   "avg_width": 195.51
+   "hit_rate": 0.433,
+   "mae_median": 138.42,
+   "mae_naive": 132.78,
+   "avg_width": 196.76
   },
   "6": {
    "n": 30,
@@ -47,8 +47,8 @@
   "23": {
    "n": 4,
    "hit_rate": 0.5,
-   "mae_median": 464.45,
-   "mae_naive": 344.75,
+   "mae_median": 467.77,
+   "mae_naive": 348.06,
    "avg_width": 634.19
   },
   "24": {

@@ -127,7 +127,7 @@
   const pct = (r) => { const v = r.pct != null ? r.pct : Math.round(100 * r.p); return v === 0 && r.p > 0 ? "<1%" : `${v}%`; };
   const ptsChange = (x) => { const r = Math.round(x); return r === 0 ? "0 pts" : `${r > 0 ? "+" : "−"}${Math.abs(r)} pts`; };
 
-  // "Since US close": oil, VIX, dollar from the previous 4pm New York close to 1pm London.
+  // "Since US close": oil, VIX, dollar from the previous 4pm New York close to the forecast time.
   // Falls are teal, rises red (lower oil, volatility and dollar are good for NQ); missing = "–".
   function since(D) {
     const s = D.since;
@@ -255,14 +255,14 @@
         `×${mu.m85.toFixed(2)} / ×${mu.m90.toFixed(2)} / ×${mu.m95.toFixed(2)} / ×${mu.m99.toFixed(2)} of σ ${v.sigma_pct.toFixed(2)}%; ` +
         `80% = ±1.28σ. The 99% rests on few observations (rough).`],
       ["Recent moves", v.realised_rms_5d_pct && v.realised_rms_20d_pct
-        ? `average 1pm → 1pm move ${v.realised_rms_5d_pct.toFixed(2)}% (5 days) · ${v.realised_rms_20d_pct.toFixed(2)}% (20 days), root mean square`
+        ? `average ${hourOnly(a)} → ${hourOnly(b)} move ${v.realised_rms_5d_pct.toFixed(2)}% (5 days) · ${v.realised_rms_20d_pct.toFixed(2)}% (20 days), root mean square`
         : "not enough history"],
     ];
     if (c.pts) {
       const open = new Date(T(c.start_utc).getTime() + 30 * 60e3);
       rows.push(["Cash session", `New York ${clock(open, NYC)}–${clock(T(c.end_utc), NYC)} = ${clock(open)}–${clock(T(c.end_utc))} London. ` +
-        `The cash window is measured from the 9:00am New York bar, half an hour before the open. ` +
-        `The cash range is centred on the ${clock(a)} price. ${c.level}% range = ` +
+        `The cash window and its range start from the ${clock(a)} forecast price (${clock(a, NYC)} New York, half an hour before the open). ` +
+        `${c.level}% range = ` +
         (c.level === 90 ? `measured multiplier ×${c.mult.toFixed(2)}` : "±1.28") + ` × the cash σ (${c.variance_share ? Math.round(100 * c.variance_share) : "?"}% of the window's variance).`]);
     }
     if (ev.length) rows.push(["Releases", ev.map((e) => `${e.name} ${at(T(e.time_utc))}`).join(" · ") +
@@ -274,20 +274,20 @@
     const ty = (D.tsy && D.tsy.rows) || [];
     const src = (lbl) => { const r = ty.find((x) => x.label === lbl); return r && r.source ? r.source : "n/a"; };
     if (D.since && D.since.ok) rows.push(["Since US close", "Oil (CL=F, % change), VIX (Cboe ^VIX, which trades from 3:15am New York, " +
-      "change in points) and the dollar index (DX-Y.NYB, % change) from the previous 4:00pm New York close to 1pm London. " +
-      "Falls are teal, rises red. Context only: overnight moves are already in the 1pm price and don't predict the session " +
+      `change in points) and the dollar index (DX-Y.NYB, % change) from the previous 4:00pm New York close to ${hourOnly(a)} London. ` +
+      `Falls are teal, rises red. Context only: overnight moves are already in the ${hourOnly(a)} price and don't predict the session ` +
       "(tested: the overnight move had no skill for the cash session)."]);
-    rows.push(["Treasuries", "Yield changes in basis points (up = red). Window: the past 24 hours (1pm → 1pm London), or since the " +
+    rows.push(["Treasuries", `Yield changes in basis points (up = red). Window: the past 24 hours (${hourOnly(a)} → ${hourOnly(a)} London), or since the ` +
       "market reopened after a weekend or holiday. Mondays cover only the new week's trading (since Sunday's reopen). " +
-      "Friday-afternoon moves after 1pm aren't shown. The Fed odds use the same window and hourly timestamps. " +
+      `Friday-afternoon moves after ${hourOnly(a)} aren't shown. ` + "The Fed odds use the same window and hourly timestamps. " +
       `10Y: ${src("10Y")}. 2Y: ${src("2Y")}.` + (ty.some((x) => x.approx) ? " * = approximate: derived from the note future's price change " +
       "÷ its duration (2Y: 1.9) and added to the latest official close (FRED DGS2 for the 2Y)." : "")]);
     rows.push(["Data", "Yahoo Finance NQ=F, hourly, delayed and unofficial, roll-adjusted. Calendar: BLS, BEA, Census and the Fed schedules. " +
-      "Headlines: Yahoo Finance, CNBC, MarketWatch and Nasdaq.com RSS, published between the previous 4pm New York close and 1pm London; " +
+      "Headlines: Yahoo Finance, CNBC, MarketWatch and Nasdaq.com RSS, published between the previous 4pm New York close and the forecast time; " +
       "the bars are a rule-based significance (Fed and macro, the biggest Nasdaq names' earnings and major news = 3). " +
-      "BRIEF = the latest pre-market market wrap (6am–1pm London), pinned first; other market wraps and movers roundups are left out."]);
+      "BRIEF = the latest pre-market market wrap (from 6am London to the forecast time), pinned first; other market wraps and movers roundups are left out."]);
     if (D.fed && D.fed.ok) rows.push(["Fed odds", `Polymarket crowd betting odds for the ${D.fed.meeting_label} FOMC decision ` +
-      "(Hike = all increase outcomes, Cut = all decrease outcomes), hourly over the same 1pm → 1pm window. " +
+      "(Hike = all increase outcomes, Cut = all decrease outcomes), hourly over the same window as the Treasuries. " +
       "Each outcome's price is its bid–ask midpoint; the three are scaled to add up to 100% (Polymarket's buckets usually sum to a " +
       "little over 100%), and the shown whole numbers are rounded to total exactly 100. " +
       "They are what bettors are pricing, not a forecast from this site."]);

@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NQ forecast accuracy</title>
-  <meta name="description" content="How often NQ's actual 1pm-to-1pm (London) and cash-session moves landed inside the daily volatility forecast ranges, plus the Kronos lab results.">
+  <meta name="description" content="How often NQ's actual 24-hour (9am to 9am New York) and cash-session moves landed inside the daily volatility forecast ranges, plus the Kronos lab results.">
   <meta name="theme-color" content="#090c0e">
-  <link rel="stylesheet" href="style.css?v=20261109j">
+  <link rel="stylesheet" href="style.css?v=20261115a">
 </head>
 <body class="acc">
   <header class="top">
@@ -19,12 +19,12 @@
     </div>
   </header>
 
-  <p class="acc-intro" id="acc-intro">Daily volatility forecasts made from the 07:00–08:00 New York bar, each using only data available then. Loading…</p>
+  <p class="acc-intro" id="acc-intro">Daily volatility forecasts made at 9:00am New York, each using only data available then. Loading…</p>
 
-  <section class="band acc-card" aria-label="1pm to 1pm moves vs the forecast range">
+  <section class="band acc-card" aria-label="24-hour moves vs the forecast range">
     <div class="band-head">
-      <h2>1pm → 1pm move vs forecast range</h2>
-      <span class="band-sub">last 250 forecasts · Actual move from the 1pm London close to the same time the next trading day (23 trading hours)</span>
+      <h2>24-hour move vs forecast range</h2>
+      <span class="band-sub">last 250 forecasts · Actual move from 9:00am New York (2pm London) to the same time the next trading day (23 trading hours)</span>
     </div>
     <div class="acc-legend"><span><i class="sw sw-band"></i>90% range</span><span><i class="sw sw-outer"></i>95% range</span><span><i class="dot"></i>inside 90%</span><span><i class="dot out"></i>outside 90%</span><span><i class="dot ev"></i>scheduled release in the window</span></div>
     <div class="acc-chart" id="chart-24h"></div>
@@ -44,7 +44,7 @@
       <h2>Hit rates</h2>
       <span class="band-sub">share of days the actual move landed inside each range (target = the range's %)</span>
     </div>
-    <h3 class="acc-h3">1pm → 1pm (23 hours)</h3>
+    <h3 class="acc-h3">Next 24 hours (23 trading hours)</h3>
     <div class="acc-table-wrap"><table class="band-table acc-table" id="table-24h"></table></div>
     <h3 class="acc-h3">Cash session</h3>
     <div class="acc-table-wrap"><table class="band-table acc-table" id="table-cash"></table></div>
@@ -56,7 +56,7 @@
       <h2>Rolling 60-day hit rate (90% range)</h2>
       <span class="band-sub">dashed line = the 90% target</span>
     </div>
-    <div class="acc-legend"><span><i class="sw sw-sig"></i>1pm → 1pm</span><span><i class="sw sw-cash"></i>cash session</span><span><i class="sw sw-target"></i>90% target</span></div>
+    <div class="acc-legend"><span><i class="sw sw-sig"></i>24 hours</span><span><i class="sw sw-cash"></i>cash session</span><span><i class="sw sw-target"></i>90% target</span></div>
     <div class="acc-chart acc-chart-roll" id="chart-roll"></div>
   </section>
 
@@ -91,9 +91,9 @@
 
   <footer>
     <p class="disclaimer">Volatility only, not direction. Past hit rates are not a guarantee. Not investment advice.</p>
-    <p>Backfilled days were forecast afterwards using only data before each 7:00–8:00am New York bar (1pm London). Research write-ups: <code>lab/results/vol_contest.md</code> (GARCH kept), <code>lab/results/vol_fix.md</code> (HAR-RV replaced GARCH: faster after shocks) and <code>lab/results/regime.md</code> (no regime chip). Data: Yahoo Finance <code>NQ=F</code>, delayed and unofficial.</p>
+    <p>Backfilled days were forecast afterwards using only data up to 9:00am New York (2pm London) on that day. Until 13 Nov 2026 the live forecast was made an hour earlier; the whole year was then re-forecast from 9:00am (<code>lab/results/origin_9am.md</code>). Research write-ups: <code>lab/results/vol_contest.md</code> (GARCH kept), <code>lab/results/vol_fix.md</code> (HAR-RV replaced GARCH: faster after shocks) and <code>lab/results/regime.md</code> (no regime chip). Data: Yahoo Finance <code>NQ=F</code>, delayed and unofficial.</p>
   </footer>
 
-  <script src="accuracy.js?v=20261109j"></script>
+  <script src="accuracy.js?v=20261115a"></script>
 </body>
 </html>

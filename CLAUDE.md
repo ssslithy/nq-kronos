@@ -3,8 +3,8 @@
 ## Purpose
 
 A free, self-updating page for Nasdaq-100 futures (NQ) at https://ssslithy.github.io/nq-kronos/.
-Once per US trading day, at 1pm London, it publishes a **calibrated HAR-RV volatility forecast for
-1pm → 1pm London** (23 trading hours; size of the move, never direction) with five prediction
+Once per US trading day, at 9:00am New York (2pm London; 1pm in the weeks when US and UK clocks differ),
+it publishes a **calibrated HAR-RV volatility forecast for 9am → 9am New York** (23 trading hours; size of the move, never direction) with five prediction
 intervals (90% is the headline), the cash-session range, the US calendar, Treasuries, Polymarket
 Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-small runs from the same bar as an
 **experimental** overlay only. Research tool, not investment advice.
@@ -13,29 +13,31 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
 
 - **Triggers.** GitHub's scheduler drops or delays most scheduled runs in this repo (Nov 2026: the vol
   job's schedule never fired on 9 or 10 Nov; the old hourly Kronos cron ran 3 times in ~36 h; the
-  driver check ran 6 h late). So the 1pm run has three lines:
+  driver check ran 6 h late). So the daily run has three lines:
   1. **`.github/workflows/vol_timer.yml` (primary, `forecast/vol_timer.py`):** scheduled through the night
-     (`7 0-6 * * 1-5` UTC); whichever slot GitHub fires first (hours late is fine) waits on the runner
-     until 08:07 New York (DST-aware), dispatches garch-vol (dispatches from a workflow start
-     immediately), and again at 08:22 if today's forecast isn't published. Too far ahead (> 5h20m) it
+     (`7 1-7 * * 1-5` UTC); whichever slot GitHub fires first (hours late is fine) waits on the runner
+     until 09:07 New York (DST-aware), dispatches garch-vol (dispatches from a workflow start
+     immediately), and again at 09:22 if today's forecast isn't published. Too far ahead (> 5h20m) it
      sleeps 5h20m and dispatches the next timer run; > 13 h ahead it leaves it to a later slot; extra
      slots exit at once. (An external cron-job.org timer was tried on 10 Nov: its test calls never
      created a run, so it isn't used.)
-  2. `.github/workflows/garch_vol.yml`'s own cron (`7,27,47 12`, `7,27,47 13`, `7 14` UTC, weekdays).
+  2. `.github/workflows/garch_vol.yml`'s own cron (`7,27,47 13`, `7,27,47 14`, `7 15` UTC, weekdays).
   3. `.github/workflows/vol_watchdog.yml` (`forecast/vol_watchdog.py`, standard library only), cron
-     `45 13` / `45 14` UTC: acts whenever it runs after 09:30 New York on a trading day. If
+     `45 13` / `45 14` UTC (9:45am New York in US summer / winter time): acts whenever it runs after 09:40
+     New York on a trading day. If
      `vol_status.json`'s origin isn't today's, an ntfy "forecast late" note and a `force=true` dispatch
      (skipped if a garch-vol run is already queued or running).
-  `forecast/run_vol.py` decides: before 08:00 NY, weekends, holidays and "already made" exit quietly;
-  08:00–09:25 forecasts on time; **any later run that day still forecasts once (late)**, using data only
+  `forecast/run_vol.py` decides: before 09:00 NY, weekends, holidays and "already made" exit quietly;
+  09:00–10:25 forecasts on time; **any later run that day still forecasts once (late)**, using data only
   up to the origin bar, with the alert titled "NQ daily volatility (late)".
 - `.github/workflows/driver_check.yml` (`lab/driver_check.py`, lab only), cron `30 21 * * 1-5` and
-  `30 22 * * 1-5` (acts once per trading day: after 17:00 NY for that day, or before 08:00 NY for the
+  `30 22 * * 1-5` (acts once per trading day: after 17:00 NY for that day, or before 09:00 NY for the
   previous one, so late starts still count): the drivers named in the day's closing market
-  wraps vs the 1pm snapshot (news items, brief, Since-US-close cells) → `lab/results/driver_check.jsonl`,
+  wraps vs the morning (9am New York) snapshot (news items, brief, Since-US-close cells) → `lab/results/driver_check.jsonl`,
   and `driver_check.md` (share caught, most common misses) once there are 10 days. Never changes a rule
   and never touches the forecast, the alert or site/.
-- Origin = the **07:00–08:00 NY bar** (closed 08:00 NY). Jobs:
+- Origin = the **08:00–09:00 NY bar** (closed 09:00 NY; `ORIGIN_NY_HOUR = 8` in garch_vol.py. Until 13 Nov
+  2026 it was the 07:00–08:00 bar, see "Origin" below). Jobs:
   1. `vol`: `run_vol.py`: vol forecast → `site/data/vol_latest.json`, `vol_history.jsonl`,
      `vol_status.json`; fills in earlier forecasts' accuracy; sends the ntfy alert (secret `NTFY_TOPIC`);
      THEN `page_data.py` writes `calendar.json`, `treasuries.json`, `fed_odds.json`, `news.json` (fail-soft: a failed
@@ -49,14 +51,26 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   4. `deploy-kronos`: second Pages deploy (after the vol one). All deploys share the
      `pages-deploy` concurrency group with `forecast.yml`.
 - Timing: the vol forecast (alert + deploy) is live within ~5 min of the start; Kronos ~8–10 min after that.
-  Even a 20-minute-late start with a Kronos timeout finishes well before 09:30 NY.
+  Even a 20-minute-late start with a Kronos timeout finishes by about 09:50 NY.
 - `forecast.yml` has **no schedule**: manual Kronos run from the latest bar, and a deploy on pushes to
   `site/**` (not `site/data/**`). A push that only changes `site/data` does not deploy by itself.
-- Accuracy timing: the window ends with the next day's 07:00 NY origin bar, so a forecast's result
+- Accuracy timing: the window ends with the next day's origin bar, so a forecast's result
   (and its cash-session result, 09:00–16:00 NY) is filled by the next run.
 
 ## Key design decisions (don't change without re-running the backfill and saying why)
 
+- **Origin: 9:00am New York since 16 Nov 2026** (NQ_9AM_ORIGIN.md, `lab/origin_9am.py`,
+  `lab/results/origin_9am.md`). At 08:00 the 08:30 releases (CPI, payrolls, PCE, GDP, retail sales) fell
+  just after the forecast; at 09:00 they are in the origin price, and the cash window (09:00–16:00 NY)
+  starts at the origin, so the cash range is measured from the forecast price itself. Same-days backtest,
+  08:00 / 09:00, last 250 (older, newer half): 80% 81.6, 79.2 / 84.8, 80.8; 90% 91.2, 88.0 / 91.2, 88.8;
+  cash 90% 88.8, 89.6 / 88.8, 88.8; QLIKE 0.289 / 0.286; 90% width 4.08% / 4.14%. On the 32 release days
+  of 2026 the 09:00 forecast was not narrower or more accurate over 24 hours (90% 90.6 / 87.5, width
+  4.25% / 4.41%); the cash range was (87.5 / 90.6). Each window now ends half an hour after the next
+  morning's 08:30 release, which the alert and Details name with its day. `site/data/vol_history.jsonl`
+  was re-forecast from 09:00 (`vol_accuracy.py --backfill --all` drops lines from another origin hour;
+  the old 08:00 lines are in git history before that commit). London shows 2:00pm, or 1:00pm in the
+  clock-change mismatch weeks; every label is built from the data.
 - **Model: HAR-RV since 9 Nov 2026** (`VOL_MODEL = "har"` in garch_vol.py; `"garch"` switches back).
   log RV(next 23 bars) = b0 + b1 log RV1 + b5 log RV5 + b22 log RV22, RV1 = sum of the 23 squared hourly
   % returns ending at the origin, RV5 / RV22 = mean RV1 over the last 5 / 22 daily origins; OLS on the
@@ -69,7 +83,7 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   candidates (daily floor 5d / 10d, GARCH+VXN, HAR-RV, two-speed GARCH) to pass all five gates.
   The GARCH(1,1)-t on the trailing 2,000 hourly returns is still fitted daily as a diagnostic (CLI table,
   `model.garch_*` in vol_latest.json). **Horizon = 23 bars** (`HORIZON`): the
-  origin bar's close (1pm London, 12pm in US/UK clock-change mismatch weeks) to the next trading
+  origin bar's close (9am New York = 2pm London, 1pm in US/UK clock-change mismatch weeks) to the next trading
   day's origin bar close. The page still says "Next 24 hours"; every time label is built from the
   data, never hard-coded. (Until Nov 2026 it was 24 bars.)
 - **Calibration:** σ = **k × raw σ** (k ≈ 1.18 for HAR-RV; it was ≈ 0.66 for GARCH, whose raw σ was too wide), k = RMS(move / raw σ) over the
@@ -79,12 +93,13 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   percentile of |move / kσ| over the same 250 (measured multipliers ≈1.36 / 1.59 / 2.16 / 2.73).
   **90% is the headline** (card, alert, footer hit rate; `HEADLINE` in garch_vol.py). 99% is rough.
 - **Cash session:** σ_cash = window variance × the cash hours' share of the hour-of-day profile
-  (trailing 60 days); no k_cash. The page shows the **cash 90% range** = ±cash_m90 σ_cash, centred on
-  the 1pm price, cash_m90 = 90th percentile of |cash move / σ_cash| over the trailing 250 finished
+  (trailing 60 days); no k_cash. The page shows the **cash 90% range** = ±cash_m90 σ_cash, from
+  the origin price (the 9:00am NY bar close, where the cash window starts), cash_m90 = 90th percentile of |cash move / σ_cash| over the trailing 250 finished
   sessions before that date (min 60; `vol_accuracy.assign_k_cash`). `CASH_LEVEL = 80` in
-  vol_accuracy.py switches the page back to ±1.28 σ_cash ("Based on the 80% PI"). Measured from the
-  9:00am NY bar close (half an hour before the open); labelled 2:30pm–9:00pm London (the real open).
-- **Gates, all on the 250-forecast backfill, older / newer half.** With HAR-RV (Nov 2026 vol fix):
+  vol_accuracy.py switches the page back to ±1.28 σ_cash ("Based on the 80% PI"). The origin is half an hour before the open; the session is labelled 2:30pm–9:00pm London (the real open).
+- **Gates, all on the 250-forecast backfill, older / newer half.** At the 09:00 origin (15 Nov 2026):
+  A: 80% 84.8 / 80.8, 90% 91.2 / 88.8: pass. B: cash 90% 87.7 / 88.9 (191 days with a multiplier): pass.
+  At the 08:00 origin, with HAR-RV (Nov 2026 vol fix):
   A: 80% 80.0 / 79.2 (needs 75–85), 90% 90.4 / 88.0 (needs 86–94): pass.
   B: cash 90% 87.4 / 91.7 (191 days with a multiplier; needs 86–94): pass, so the cash block shows 90%.
   (With GARCH, Nov 2026 redesign: A 79.2 / 79.2 and 88.8 / 88.8; B 92.6 / 86.5.)
@@ -104,11 +119,12 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
 - **Events:** `forecast/events_2026_2027.yaml` (FOMC 14:00; CPI, NFP, PCE, GDP advance, retail sales
   08:30 NY). `covered_from` 2026-01-01 / `covered_until` 2027-12-31; outside that the flag says
   "not loaded". **Update every January** from the official calendars cited in the file.
-- **Backfill results, HAR-RV (3 Nov 2025 – 5 Nov 2026, 250 forecasts, 23h window, older / newer half):**
-  80% 80.0 / 79.2, 85% 83.2 / 83.2, 90% 90.4 / 88.0, 95% 93.6 / 96.0, 99% 98.4 / 99.2.
+- **Backfill results, HAR-RV, 09:00 origin (10 Nov 2025 – 12 Nov 2026, 250 forecasts, older / newer half):**
+  80% 84.8 / 80.8, 85% 87.2 / 83.2, 90% 91.2 / 88.8, 95% 95.2 / 94.4, 99% 98.4 / 100.0.
+  (08:00 origin, 3 Nov 2025 – 5 Nov 2026: 80.0 / 79.2, 83.2 / 83.2, 90.4 / 88.0, 93.6 / 96.0, 98.4 / 99.2.)
 - **Chart controls:** Last Price · Kronos (experimental) · 99 / 95 / 90 / 85 / 80% band buttons.
   Selected bands' upper and lower prices are always labelled at the right edge (de-overlapped).
-  The chart always shows the full 1pm → 1pm window; the cash-session box, the "Cash" view and the
+  The chart always shows the full forecast window; the cash-session box, the "Cash" view and the
   "Levels" checkboxes were removed (NQ_CHART_CASH_REMOVAL.md). The cash session stays in the top
   card and in vol_latest.json.
 - **Fed odds (`fed_odds.json`):** Polymarket crowd betting odds for the next FOMC decision after the
@@ -127,15 +143,15 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   Yahoo's hourly ^VIX has Cboe's extended hours from 3:15am New York, checked 9 Nov 2026, so no VIX future
   is needed) and the dollar (`DX-Y.NYB`, %; `DX=F` is empty on Yahoo) from the previous 4:00pm New York
   close (the last bar ending by then; Friday's on Mondays) to the origin bar close. Label e.g. "Since US
-  close · Thu 9pm – Fri 1pm" from the real times. A fall is teal and a rise red for all three (good / bad
+  close · Thu 9pm – Fri 2pm" from the real times. A fall is teal and a rise red for all three (good / bad
   for NQ); a missing value shows "–", and the line hides if all three are missing. Context only: the
   overnight move had no skill for the cash session (lab/results/direction.md, M3).
 - **Treasuries (`treasuries.json`) and the shared window (`market_window` in page_data.py):** window =
   the past 24 hours (previous origin bar close → this one, label "Past 24h"), or, if the ZT=F hourly bars
   have a gap > 3 h in between (weekend, holiday), only the trading since the reopen: from the first bar's
   open (Sunday 6pm New York = 11pm London normally, read from the data so clock-change weeks and
-  holiday reopens are right) to the 1pm London origin close, label e.g. "Past 14h · Sun 11pm – Mon 1pm".
-  Friday afternoon after 1pm is not shown on Mondays. Both the Treasuries and the Fed odds use the
+  holiday reopens are right) to the origin close, label e.g. "Past 15h · Sun 11pm – Mon 2pm".
+  Friday afternoon after the origin time is not shown on Mondays. Both the Treasuries and the Fed odds use the
   window's exact hourly timestamps; one shared label sits above "US Treasuries" (both headings plain).
   Fallback if ZT=F fails: the NQ trading hours. Yields, change in **bp** (up = red, down = teal):
   10Y = `^TNX` hourly if it covers ≥ 80% of the window (it's a cash-hours index, so usually not
@@ -146,7 +162,7 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   that day) ÷ `ZT_DURATION` = 1.9, marked approximate (* in the page, explained in Details). The page
   still renders the old futures-price format (`move_pct`) of files written before 10 Nov 2026.
 - **News (`news.json`):** headlines published from the previous cash-session close (4pm New York on the
-  previous trading day) to the origin bar close (1pm London), **never after it**, however late the job
+  previous trading day) to the origin bar close (9am New York), **never after it**, however late the job
   runs (on 9 Nov the forced 4pm run showed 3:59pm headlines; fixed). 23 free RSS feeds: Yahoo per-ticker
   (^NDX + 15 largest names), CNBC Technology / Markets (Market Insider, id 20409666) / Earnings,
   MarketWatch Top Stories / Breaking, Nasdaq.com Markets / Technology. Not used: Yahoo `NQ=F` (stale
@@ -168,7 +184,7 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   changes below C-level, earnings-date notices, previews, week-ahead calendars. **Market wraps**
   (`market_wrap`: pre-bell / futures / open / close summaries) and **movers roundups** (`movers_roundup`)
   are not listed and not in the split (counted in `stats.wraps`). **Morning brief:** the latest
-  `market_wrap` published 6:00am–1:00pm London on the origin's day is pinned first (`brief` in news.json:
+  `market_wrap` published from 6:00am London to the origin close on the origin's day is pinned first (`brief` in news.json:
   a raised row with a grey BRIEF tag, no bars, not in the split). **Macro shocks** (`macro_shock`: oil /
   OPEC / Middle East / Iran, tariffs / China trade / export controls) widen relevance: 3 bars with a
   `macro_shock_us` term (US inflation, the Fed, a market-wide shift), else 2. Macro terms about another
@@ -184,7 +200,7 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   Up to 12 stories: most significant first, then newest, at most 6 per outlet; listed newest first,
   3 visible, the rest scroll. Yahoo per-ticker feeds hold only ~20 items, so a re-run for a past time
   finds mostly CNBC.
-- **Times are London only, 12-hour ("1:00pm")**, on the page and in the alert; New York appears only
+- **Times are London only, 12-hour ("2:00pm")**, on the page and in the alert; New York appears only
   in Details. The disclaimer "Volatility only, not direction. Not investment advice." lives in Details.
 
 ## Files
@@ -208,14 +224,15 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
 ## Commands (from the repo root, `.venv` is Python 3.11)
 
 ```bash
-./.venv/bin/python forecast/garch_vol.py --now "2026-11-05 08:10"            # table for a past day (NY time)
-./.venv/bin/python forecast/run_vol.py --now "2026-11-05 08:10" --force --out /tmp/vol  # full daily job, elsewhere, no alert
-./.venv/bin/python forecast/run_vol.py --now "2026-11-05 08:10" --force --out /tmp/vol --fail=news  # simulate a failed extra
+./.venv/bin/python forecast/garch_vol.py --now "2026-11-05 09:10"            # table for a past day (NY time)
+./.venv/bin/python forecast/run_vol.py --now "2026-11-05 09:10" --force --out /tmp/vol  # full daily job, elsewhere, no alert
+./.venv/bin/python forecast/run_vol.py --now "2026-11-05 09:10" --force --out /tmp/vol --fail=news  # simulate a failed extra
 ./.venv/bin/python forecast/vol_accuracy.py --out /tmp/vol                  # hit-rate report: 80-99% ranges and cash
 ./.venv/bin/python forecast/vol_accuracy.py --backfill --all --out /tmp/vol_a  # redo the 1-year backfill (scratch first)
 ./.venv/bin/python lab/regime.py && ./.venv/bin/python lab/vol_contest.py   # research gates C and D
 ./.venv/bin/python lab/vol_contest.py --fix                                 # vol-fix scoring (lab/results/vol_fix.md)
-./.venv/bin/python forecast/run_forecast.py --origin 2026-11-06T12:00:00Z --horizon 23   # Kronos (writes site/data!)
+./.venv/bin/python lab/origin_9am.py                                        # 08:00 vs 09:00 origin (lab/results/origin_9am.md)
+./.venv/bin/python forecast/run_forecast.py --origin 2026-11-13T13:00:00Z --horizon 23   # Kronos (writes site/data!)
 ./.venv/bin/python forecast/vol_alert.py [--send | --new-topic]             # alert text / test send
 ./.venv/bin/python -m http.server 8765 -d site                              # preview the page
 ```
@@ -247,7 +264,7 @@ alerts; tick **test alert** to check the secret). Actions → forecast → Run w
   page and the README.
 - Don't hand-edit `site/data/*`; it's written by the scripts and the bot. Before committing, `git pull
   --rebase`; if the bot has committed data since, take its data files and regenerate rather than merge.
-- Page CSS/JS links carry a version tag (`style.css?v=20261109j`, same in index.html and accuracy.html):
+- Page CSS/JS links carry a version tag (`style.css?v=20261115a`, same in index.html and accuracy.html):
   bump it whenever site code changes, or browsers keep the old file for Pages' 10-minute cache.
 - New page code goes in its own script or a self-contained block; the page must work at 375 px
   wide with no sideways scrolling, London times only. Check with Playwright at 1280 and 375 px

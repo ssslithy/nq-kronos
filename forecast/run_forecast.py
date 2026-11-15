@@ -2,10 +2,10 @@
 
     python forecast/run_forecast.py                 # 100 paths, 24h, CPU
     python forecast/run_forecast.py --samples 50
-    python forecast/run_forecast.py --origin 2026-11-09T13:00:00Z   # the daily run (garch_vol.yml)
+    python forecast/run_forecast.py --origin 2026-11-16T13:00:00Z   # the daily run (garch_vol.yml)
 
 Daily schedule: garch_vol.yml runs this once per US trading day with --origin = the start of
-the 07:00-08:00 NY bar the GARCH forecast used, so both models forecast from the same bar.
+the 08:00-09:00 NY bar the vol forecast used, so both models forecast from the same bar.
 
 On any data or model failure the previous site/data/latest.json is left untouched,
 site/data/status.json records the error, and the script exits non-zero.

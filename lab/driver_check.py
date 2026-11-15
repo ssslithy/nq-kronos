@@ -6,11 +6,11 @@ CLOSING market wraps from the same RSS feeds as the page (page_data.FEEDS; marke
 published after 3:45pm New York), extracts the main named drivers with a simple keyword / entity
 match (Nasdaq-100 companies from forecast/news_rules.yaml, plus oil, Fed, inflation, jobs,
 tariffs, China, yields, dollar, VIX, earnings, AI / chips), and checks whether each one appeared
-in that day's 1pm snapshot: the news items, the morning brief, or the "Since US close" cells
-(site/data/news.json and since_close.json as committed at 1pm).
+in that day's morning snapshot (the 9am New York forecast run; 8am until 13 Nov 2026): the news items, the morning brief, or the "Since US close" cells
+(site/data/news.json and since_close.json as committed by that run).
 
 One line per day is appended to lab/results/driver_check.jsonl. Once there are 10 trading days,
-lab/results/driver_check.md is (re)written: the share of drivers caught by 1pm and the most
+lab/results/driver_check.md is (re)written: the share of drivers caught by the morning snapshot and the most
 common misses. Nothing changes any rule automatically; it's for review.
 
     python lab/driver_check.py                 # as the workflow does (acts once per day, after 17:00 NY)
@@ -37,7 +37,7 @@ SUMMARY = ROOT / "lab" / "results" / "driver_check.md"
 DATA = ROOT / "site" / "data"
 MIN_DAYS = 10
 CLOSE_FROM = time(15, 45)                # New York: closing wraps from here on
-RUN_AFTER = time(17, 0)                  # New York: check the day after this; before 08:00 the previous day
+RUN_AFTER = time(17, 0)                  # New York: check the day after this; before 09:00 the previous day
 
 THEMES = {
     "oil": r"\b(?:oil|crude|opec\+?|brent|wti)\b",
@@ -63,14 +63,14 @@ def drivers(text: str, R: dict) -> set[str]:
 
 
 def snapshot_drivers(day, R: dict) -> tuple[set[str], bool]:
-    """Drivers present in that day's 1pm snapshot (news items, brief, Since-US-close cells)."""
+    """Drivers present in that day's morning snapshot (news items, brief, Since-US-close cells)."""
     try:
         news = json.loads((DATA / "news.json").read_text())
     except (FileNotFoundError, json.JSONDecodeError):
         return set(), False
     end = news.get("window_end_utc")
     if not end or datetime.fromisoformat(end.replace("Z", "+00:00")).astimezone(cal.NY).date() != day:
-        return set(), False                                 # no 1pm snapshot for this day
+        return set(), False                                 # no morning snapshot for this day
     found = set()
     for it in (news.get("items") or []) + ([news["brief"]] if news.get("brief") else []):
         found |= drivers(it["title"], R)
@@ -110,13 +110,13 @@ def summarise(rows: list[dict]) -> str:
     hit = sum(sum(r["caught"].values()) for r in days)
     miss = Counter(d for r in days for d, ok in r["caught"].items() if not ok)
     seen = Counter(d for r in days for d in r["drivers"])
-    L = ["# Driver check: did the 1pm snapshot catch what moved NQ by the close?", "",
-         f"{len(days)} trading days with a 1pm snapshot and closing wraps ({days[0]['date']} – {days[-1]['date']}). "
+    L = ["# Driver check: did the morning snapshot catch what moved NQ by the close?", "",
+         f"{len(days)} trading days with a morning snapshot (2pm London; 1pm until 13 Nov 2026) and closing wraps ({days[0]['date']} – {days[-1]['date']}). "
          "Drivers = companies and themes named in the day's closing market wraps; caught = also named in the "
-         "1pm news items, the morning brief, or a Since-US-close cell. For review only: no rule is changed "
+         "snapshot's news items, the morning brief, or a Since-US-close cell. For review only: no rule is changed "
          "automatically.", "",
-         f"**Caught by 1pm: {hit} of {tot} drivers ({100 * hit / tot:.0f}%).**" if tot else "No drivers found.", "",
-         "| driver | named at the close (days) | caught by 1pm | missed |", "|---|--:|--:|--:|"]
+         f"**Caught by the snapshot: {hit} of {tot} drivers ({100 * hit / tot:.0f}%).**" if tot else "No drivers found.", "",
+         "| driver | named at the close (days) | caught by the snapshot | missed |", "|---|--:|--:|--:|"]
     for d, n in seen.most_common():
         L.append(f"| {d} | {n} | {n - miss[d]} | {miss[d]} |")
     L += ["", "Most common misses: " + (", ".join(f"{d} ({n})" for d, n in miss.most_common(5)) or "none") + ".", "",
@@ -132,8 +132,8 @@ def main() -> int:
     ny = now.astimezone(cal.NY)
     day = ny.date()
     # GitHub often starts the evening run hours late: from 17:00 NY check that day; between
-    # midnight and 08:00 NY (before the next 1pm snapshot) check the previous trading day.
-    if ny.time() < time(8, 0):
+    # midnight and 09:00 NY (before the next morning snapshot) check the previous trading day.
+    if ny.time() < time(9, 0):
         day -= timedelta(days=1)
         while day.weekday() >= 5 or cal.is_holiday(day):
             day -= timedelta(days=1)

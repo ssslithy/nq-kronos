@@ -1,20 +1,20 @@
 {
  "ok": true,
- "generated_utc": "2026-11-13T13:07:34Z",
- "origin_utc": "2026-11-13T12:00:00Z",
+ "generated_utc": "2026-11-13T14:10:00Z",
+ "origin_utc": "2026-11-13T13:00:00Z",
  "meeting_utc": "2026-12-09T19:00:00Z",
  "meeting_label": "Dec 9",
  "window_kind": "past_24h",
  "window_label": "Past 24h",
  "window_hours": 24,
- "window_start_utc": "2026-11-12T13:00:00Z",
- "window_end_utc": "2026-11-13T13:00:00Z",
+ "window_start_utc": "2026-11-12T14:00:00Z",
+ "window_end_utc": "2026-11-13T14:00:00Z",
  "points": 24,
  "sampling": "the Treasuries' timestamps (market_window)",
  "price": "bid-ask midpoint: CLOB /midpoint at the window end, price history before it",
  "normalised": {
-  "raw_sum_end": 1.009,
-  "raw_sum_start": 1.0045,
+  "raw_sum_end": 0.999,
+  "raw_sum_start": 1.005,
   "method": "Hike + Hold + Cut scaled to 1 at every point; shown % rounded to total 100"
  },
  "event": {
@@ -26,13 +26,12 @@
  "rows": [
   {
    "label": "Hike",
-   "p": 0.9678,
-   "pct": 97,
-   "change_pts": 1,
+   "p": 0.9585,
+   "pct": 96,
+   "change_pts": 0,
    "pct_start": 96,
-   "raw_p": 0.9765,
+   "raw_p": 0.9575,
    "spark": [
-    0.9602,
     0.9597,
     0.9619,
     0.9607,
@@ -55,7 +54,8 @@
     0.9631,
     0.963,
     0.9649,
-    0.9678
+    0.9659,
+    0.9585
    ],
    "markets": [
     "25 bps increase",
@@ -64,13 +64,12 @@
   },
   {
    "label": "Hold",
-   "p": 0.0233,
-   "pct": 2,
-   "change_pts": -1,
+   "p": 0.0355,
+   "pct": 3,
+   "change_pts": 0,
    "pct_start": 3,
-   "raw_p": 0.0235,
+   "raw_p": 0.0355,
    "spark": [
-    0.0338,
     0.0343,
     0.0322,
     0.0333,
@@ -93,7 +92,8 @@
     0.0271,
     0.0276,
     0.0262,
-    0.0233
+    0.0252,
+    0.0355
    ],
    "markets": [
     "No change"
@@ -101,13 +101,12 @@
   },
   {
    "label": "Cut",
-   "p": 0.0089,
+   "p": 0.006,
    "pct": 1,
    "change_pts": 0,
    "pct_start": 1,
-   "raw_p": 0.009,
+   "raw_p": 0.006,
    "spark": [
-    0.006,
     0.006,
     0.0059,
     0.006,
@@ -130,7 +129,8 @@
     0.0099,
     0.0094,
     0.0089,
-    0.0089
+    0.0089,
+    0.006
    ],
    "markets": [
     "50+ bps decrease",

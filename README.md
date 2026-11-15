@@ -1,8 +1,8 @@
 # NQ Kronos Forecast
 
 A small self-updating web page for Nasdaq-100 futures (NQ). Once per US trading day, at
-1:00pm London (the close of the 07:00–08:00 New York bar), it publishes a calibrated HAR-RV
-volatility forecast for the next 23 trading hours (1pm → 1pm London) with five prediction
+9:00am New York (2:00pm London; the close of the 08:00–09:00 New York bar), it publishes a calibrated HAR-RV
+volatility forecast for the next 23 trading hours (9am → 9am New York) with five prediction
 intervals, the cash-session range, the US release calendar, Treasuries, Fed-decision betting odds
 (Polymarket) and tech headlines, plus an
 experimental [Kronos](https://github.com/shiyu-coder/Kronos)-small run from the same bar, and checks
@@ -18,27 +18,27 @@ never delay or block it.
 
 ## What's on the page
 
-All times are London, 12-hour ("1:00pm"); New York appears only in Details.
+All times are London, 12-hour ("2:00pm"); New York appears only in Details.
 
-- **Header:** forecast time and the 1pm price, next update time, link to the accuracy page.
-- **Top card:** "Next 24 hours" (the 1pm → 1pm window, 23 trading hours) and "NYC Cash Session"
+- **Header:** forecast time and the price then, next update time, link to the accuracy page.
+- **Top card:** "Next 24 hours" (2pm → 2pm London, 23 trading hours) and "NYC Cash Session"
   (2:30pm – 9:00pm London): ± points, ± %, and the price range, from the **90% prediction
   interval (PI)**, with up to 12 tech headlines under them (3 visible, the rest scroll; links
-  only): published between the previous 4pm New York close and 1pm London, newest first, each
+  only): published between the previous 4pm New York close and the forecast time, newest first, each
   with 1–3 significance bars (rules in `forecast/news_rules.yaml`); the latest pre-market market wrap
   is pinned first as a BRIEF. In the right column: a "Since US close" line (oil, VIX and the dollar
-  from the previous 4pm New York close to 1pm London; falls teal, rises red; context only), the next
+  from the previous 4pm New York close to the forecast time; falls teal, rises red; context only), the next
   3 US releases (impact bars), the 2Y / 10Y Treasury yields' change in basis points with a
   sparkline and the level, and Polymarket's odds for the next Fed decision (Hike / Hold / Cut, on
   the same hourly timestamps as the yields, from bid–ask midpoints scaled to add up to 100%,
   change in points; crowd betting odds, not a forecast from this site). One shared label above
-  them shows the window: "Past 24h", or on Mondays "Past 14h · Sun 11pm – Mon 1pm" (only the new
+  them shows the window: "Past 24h", or on Mondays "Past 15h · Sun 11pm – Mon 2pm" (only the new
   week's trading since Sunday's reopen; likewise after a holiday). On phones the headlines come before the
   right column's blocks.
 - **Chart:** 48 hourly candles, then the forecast fan to the end of the window. Buttons 99 / 95 /
   90 / 85 / 80% (multi-select, 90% on by default) draw stacked bands; at the last step each band
   equals that range exactly, and every selected band's upper and lower price is labelled at the
-  right edge. The chart always shows the full 1pm → 1pm window (the cash session is in the top
+  right edge. The chart always shows the full forecast window (the cash session is in the top
   card only). "Kronos (experimental)" overlays Kronos-small's P10 / P90 paths when it ran from the
   same bar (its 80% band held only ~46% in the lab). Kronos lands ~10 minutes after the forecast:
   until then it reads "Kronos (updating…)" and switches on by itself; "not run today" only after
@@ -46,7 +46,7 @@ All times are London, 12-hour ("1:00pm"); New York appears only in Details.
 - **Footer:** the 90% PI's hit rate over the last 250 days, and a Details section (window, model and
   multipliers, recent moves, cash-session notes, Friday weekend-gap note, data sources, and
   "Volatility only, not direction. Not investment advice.").
-- **Accuracy page** (`accuracy.html`): 1pm → 1pm and cash-session moves against the 90% ranges for
+- **Accuracy page** (`accuracy.html`): 24-hour and cash-session moves against the 90% ranges for
   the last 250 days, hit-rate tables (80 / 85 / 90 / 95 / 99%, by half, by release day and type; cash
   90% and 80%, touch rates), rolling 60-day hit rates, the live Kronos daily check and the Phase 6
   Kronos lab.
@@ -100,13 +100,14 @@ from the CPU run).
 - Sampling cost is ~1.5–2 s per path on CPU, because Kronos recomputes its full 512-bar
   context at every step; 100 paths take about 3–5 minutes on a GitHub runner.
 
-## Daily volatility forecast (HAR-RV), 1pm → 1pm London
+## Daily volatility forecast (HAR-RV), 9am → 9am New York
 
-Every US trading day `.github/workflows/garch_vol.yml` (seven slots between 12:07 and 14:07 UTC,
-in case GitHub drops a scheduled run; `vol_watchdog.yml` re-runs it once and sends a "late"
-note if nothing has published by 09:30 New York) runs
-`forecast/run_vol.py`. As of the 07:00–08:00 New York bar close (1pm London; 12pm in the few
-weeks when US and UK clocks change on different dates) it forecasts the volatility of the next
+Every US trading day `.github/workflows/garch_vol.yml` (started at 09:07 New York by `vol_timer.yml`;
+its own seven slots between 13:07 and 15:07 UTC are the backup, and `vol_watchdog.yml` re-runs it
+once and sends a "late" note if nothing has published by 09:40 New York) runs
+`forecast/run_vol.py`. As of the 08:00–09:00 New York bar close (2pm London; 1pm in the few
+weeks when US and UK clocks change on different dates; an hour earlier until 13 Nov 2026, see
+`lab/results/origin_9am.md`) it forecasts the volatility of the next
 **23 trading hours**, to the same bar's close the next trading day, with a calibrated
 HAR-RV model (`forecast/garch_vol.py`, `VOL_MODEL`). It writes `site/data/vol_latest.json`,
 `vol_history.jsonl` and `vol_status.json`, sends the alert, then writes `calendar.json`,
@@ -125,11 +126,10 @@ HAR-RV model (`forecast/garch_vol.py`, `VOL_MODEL`). It writes `site/data/vol_la
   2–3 observations: rough.
 - **Cash session:** σ_cash = σ × the cash hours' share of the window's variance (hour-of-day
   profile). Its 90% range uses its own measured multiplier: the 90th percentile of |cash move /
-  σ_cash| over the trailing 250 finished sessions (≈1.6). The range is centred on the 1pm price.
-- **Backfill, HAR-RV (3 Nov 2025 – 5 Nov 2026, 250 forecasts, 23-hour window, older / newer half):**
-  80% 80.0% / 79.2%, 85% 83.2% / 83.2%, **90% 90.4% / 88.0%**, 95% 93.6% / 96.0%,
-  99% 98.4% / 99.2%. Cash 90%: 87.4% / 91.7% (the 191 days with a measured multiplier);
-  cash 80%: 80.0% / 85.7%.
+  σ_cash| over the trailing 250 finished sessions (≈1.6). The range starts from the forecast price (9:00am New York, where the cash window begins).
+- **Backfill, HAR-RV, 9:00am origin (10 Nov 2025 – 12 Nov 2026, 250 forecasts, older / newer half):**
+  80% 84.8% / 80.8%, 85% 87.2% / 83.2%, **90% 91.2% / 88.8%**, 95% 95.2% / 94.4%,
+  99% 98.4% / 100.0%. Cash 90%: 87.7% / 88.9% (the 191 days with a measured multiplier).
 - **Research (`lab/results/`):** the redesign's volatility contest (GARCH vs GARCH + VXN, HAR-RV,
   XGBoost, GARCH + regime) kept GARCH, because no challenger was ≥5% narrower with lower QLIKE in
   both halves. The vol fix (`vol_fix.md`) then scored misses that cluster after shocks (stress
@@ -139,9 +139,9 @@ HAR-RV model (`forecast/garch_vol.py`, `VOL_MODEL`). It writes `site/data/vol_la
   no regime chip.
 
 ```bash
-python forecast/garch_vol.py --now "2026-11-05 08:10"     # forecast table for a past day (NY time)
-python forecast/run_vol.py --now "2026-11-06 08:10" --force --out /tmp/vol   # full daily job, no alert
-python forecast/run_vol.py --now "2026-11-06 08:10" --force --out /tmp/vol --fail=news   # simulate a failed extra
+python forecast/garch_vol.py --now "2026-11-05 09:10"     # forecast table for a past day (NY time)
+python forecast/run_vol.py --now "2026-11-06 09:10" --force --out /tmp/vol   # full daily job, no alert
+python forecast/run_vol.py --now "2026-11-06 09:10" --force --out /tmp/vol --fail=news   # simulate a failed extra
 ```
 
 **Event calendar: update each January.** `forecast/events_2026_2027.yaml` holds the scheduled
@@ -154,7 +154,8 @@ every January (or when an agency revises its calendar); after `covered_until` th
 the window ends at the next origin bar), its line in `vol_history.jsonl` gets the actual move
 (`move_pct`) and whether it landed inside each range (`inside80`, `inside85`, `inside90`,
 `inside95`, `inside99`). The history is a 1-year backfill (each past day forecast using only the
-data before it, `"backfill": true`), redone in Nov 2026 for the 23-hour window:
+data before it, `"backfill": true`), redone in Nov 2026 for the 23-hour window and again for the 9:00am origin (`--all` drops lines
+made from another origin hour):
 
 ```bash
 python forecast/vol_accuracy.py --backfill --all --out /tmp/vol_a   # try it in a scratch folder first
@@ -163,13 +164,13 @@ python forecast/vol_accuracy.py --backfill --all                    # then regen
 
 **Cash-session backtest.** For each forecast, the cash move is 100·ln(close of the 15:00–16:00 NY
 bar / close of the 08:00–09:00 NY bar) on the forecast day, i.e. measured from the 9:00am New York
-bar, half an hour before the 9:30am open (2:00–9:00pm London). Lines get `cash_move_pct`,
+forecast price, half an hour before the 9:30am open (2:00–9:00pm London). Lines get `cash_move_pct`,
 `cash_inside80`, `cash_inside90` (against the measured `cash_m90`), touch flags and a monitoring
 `k_cash`. The page labels the session with the real open, 2:30pm – 9:00pm London.
 
 **Phone alert (optional).** After each forecast, `forecast/vol_alert.py` posts one line to
 [ntfy.sh](https://ntfy.sh), leading with the 90% range and the window in London time, for example
-`NQ Fri 1:00pm – Mon 1:00pm London: ±448 pts (±1.65%) · 90%: 26,654–27,550 · Cash 2:30pm–9:00pm ±346 pts · Payrolls (NFP) 1:30pm`.
+`NQ Fri 2:00pm – Mon 2:00pm London: ±716 pts (±2.52%) · 90%: 27,710–29,142 · Cash 2:30pm–9:00pm ±519 pts`.
 To turn it on, install the ntfy app and subscribe to a long random topic name
 (`python forecast/vol_alert.py --new-topic` makes one). Then store that name as the repository
 secret `NTFY_TOPIC` (Settings → Secrets and variables → Actions). Anyone who knows the name can
@@ -194,14 +195,14 @@ read the topic, so keep it secret. Without the secret nothing is sent. Manual fo
   approximate: the 2-year note future's (`ZT=F`) price change ÷ a duration of 1.9, added to the
   latest FRED `DGS2` close, unless Yahoo's `2YY=F` yield future has clean hourly data.
   Headlines come from free RSS feeds (Yahoo Finance, CNBC, MarketWatch, Nasdaq.com): titles and
-  links only, never anything published after 1pm London. Fed odds are Polymarket's public prices (crowd betting odds), not a
+  links only, never anything published after the forecast time. Fed odds are Polymarket's public prices (crowd betting odds), not a
   forecast from this site.
 - Kronos's published benchmarks come from its authors and are not yet independently
   replicated.
 - Backfilled history lines (`"backfill": true`, marked "bf" on the page) were generated
   afterwards with 30 paths; they drop out of the 30-forecast window as live ones arrive.
 - **Volatility forecast: volatility only, not direction.** It says how far NQ is likely
-  to move from 1pm to 1pm London (23 trading hours), not which way. Not investment advice.
+  to move over the next 23 trading hours (9am to 9am New York), not which way. Not investment advice.
 - On Fridays the window runs over the weekend; weekend gap risk isn't fully in Friday's range.
 - The model assumes tomorrow looks like the recent past: it reacts to shocks only after they
   happen, and it knows nothing about scheduled releases (FOMC, CPI, payrolls…). The event

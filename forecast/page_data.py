@@ -4,13 +4,13 @@ Each block is written to its own file in site/data. If a source fails, the file 
 with "ok": false and the page hides that block; nothing here can fail or delay the forecast.
 
   since_close.json oil (CL=F, %), VIX (^VIX, points) and the dollar (DX-Y.NYB, %) from the previous
-                   US cash close (4pm New York) to the origin bar close (1pm London); context only
+                   US cash close (4pm New York) to the origin bar close (9am New York); context only
   calendar.json    next 3 scheduled US releases at or after the origin (events YAML), London times
   treasuries.json  2Y / 10Y note futures (ZT=F, ZN=F, Yahoo hourly): % move from the close of the
-                   previous origin bar to the close of this one (1pm -> 1pm London) and the hourly
+                   previous origin bar to the close of this one (9am -> 9am New York) and the hourly
                    closes in between (sparkline); yields: 10Y ^TNX (Yahoo), 2Y DGS2 (FRED CSV)
   news.json        up to 12 tech headlines published from the previous cash-session close (4pm
-                   New York, previous trading day) to the origin bar close (1pm London), never
+                   New York, previous trading day) to the origin bar close (9am New York), never
                    after it, whenever the job runs. Free RSS (headline, outlet, link, time; never
                    article text): Yahoo Finance per-ticker headlines for ^NDX and the 15 largest
                    Nasdaq-100 names, CNBC Technology / Markets (Market Insider) / Earnings,
@@ -22,7 +22,7 @@ with "ok": false and the page hides that block; nothing here can fail or delay t
                    feeds still hold.
   fed_odds.json    Polymarket crowd betting odds for the next FOMC decision after the origin (date
                    from the events YAML): Hike / Hold / Cut = summed "Yes" prices of the event's
-                   increase / no change / decrease markets, hourly over the same 1pm -> 1pm window
+                   increase / no change / decrease markets, hourly over the same window
                    as the Treasuries (bid-ask midpoints, normalised to 100%), sampled at the ZT=F bar times (weekend hours skipped like the
                    yields; if ZT=F fails, the NQ trading hours). Free public APIs, no key: Gamma /public-search and /events
                    (find the event by title month + year; the slug has a random suffix), CLOB
@@ -171,18 +171,18 @@ ZN_DURATION = 6.5   # the same for the 10-year note future (last-resort 10Y fall
 
 
 def _short(t) -> str:
-    return london_time(t).replace(":00", "")                     # "1pm", "11pm"
+    return london_time(t).replace(":00", "")                     # "2pm", "11pm"
 
 
 def market_window(prev_origin: pd.Timestamp, origin: pd.Timestamp) -> dict:
     """The window shown for the Treasuries and the Fed odds (one shared label).
 
-    Normally the past 24 hours: previous origin bar close -> this origin bar close (1pm -> 1pm
-    London), sampled at the closes of the ZT=F hourly bars. If the market was shut in between
+    Normally the past 24 hours: previous origin bar close -> this origin bar close (9am -> 9am
+    New York), sampled at the closes of the ZT=F hourly bars. If the market was shut in between
     (a gap of more than REOPEN_GAP between bars: the weekend on Mondays, or a holiday), only the
     trading since the reopen: from the first bar's open (Sunday 6pm New York = 11pm London
     normally, read from the data so clock-change weeks are right) to the origin close; Friday
-    afternoon after 1pm is not shown. If ZT=F can't be fetched, the NQ trading hours stand in."""
+    afternoon after the origin time is not shown. If ZT=F can't be fetched, the NQ trading hours stand in."""
     end = origin + pd.Timedelta(hours=1)
     ref = "ZT=F"
     try:
@@ -334,8 +334,8 @@ def since_close(f: dict, prev_origin, now) -> dict:
     """Oil (CL=F, % change), VIX (^VIX, change in points; Yahoo's hourly ^VIX includes Cboe's
     extended hours from 3:15am New York, so it has a value at the origin) and the dollar
     (DX-Y.NYB, % change) from the previous US cash close (4:00pm New York on the previous trading
-    day; Friday's on Mondays) to the origin bar close (1pm London). Context only: overnight moves
-    are already in the 1pm price. A missing value is null (the page shows "–")."""
+    day; Friday's on Mondays) to the origin bar close (9am New York). Context only: overnight moves
+    are already in the origin price. A missing value is null (the page shows "–")."""
     origin = pd.Timestamp(f["origin_utc"])
     end = origin + pd.Timedelta(hours=1)
     d = pd.Timestamp(prev_origin).tz_convert(cal.NY).date()
@@ -555,7 +555,7 @@ def _near_duplicate(a: str, b: str) -> bool:
 
 def news_window(f: dict, prev_origin) -> tuple[pd.Timestamp, pd.Timestamp]:
     """Previous cash-session close (4pm New York on the previous trading day) -> the origin bar's
-    close (1pm London). Fixed by the origin, not by when the job runs."""
+    close (9am New York). Fixed by the origin, not by when the job runs."""
     end = pd.Timestamp(f["origin_utc"]) + pd.Timedelta(hours=1)
     if prev_origin is None:
         return end - pd.Timedelta(hours=24), end
@@ -592,16 +592,16 @@ def _fetch_feed(outlet_url):
 
 
 CLUSTER_HOURS = 24
-BRIEF_FROM, BRIEF_TO = 6, 13       # morning brief: a pre-market wrap published 6:00am-1:00pm London
+BRIEF_FROM = 6                     # morning brief: a pre-market wrap published from 6:00am London to the origin close
 
 
 def morning_brief(wraps: list[dict], end: pd.Timestamp, R: dict) -> dict | None:
     """The one pre-market wrap pinned at the top of the news list: the latest market_wrap (not a
-    movers roundup) published between 6:00am and 1:00pm London on the origin's day, from a
+    movers roundup) published between 6:00am London and the origin close on the origin's day, from a
     publisher that isn't blocked. Not counted in the significance split."""
     day = end.tz_convert(cal.LONDON).date()
     lo = pd.Timestamp(datetime(day.year, day.month, day.day, BRIEF_FROM), tz=cal.LONDON)
-    hi = min(pd.Timestamp(datetime(day.year, day.month, day.day, BRIEF_TO), tz=cal.LONDON), end)
+    hi = end
     pool = [w for w in wraps if w["wrap"] == "market_wrap" and lo <= pd.Timestamp(w["_t"]) <= hi]
     for w in sorted(pool, key=lambda x: x["_t"], reverse=True):
         pub = yahoo_publisher(w["link"]) if YAHOO_PAGE.match(w["link"]) else None
@@ -626,7 +626,7 @@ def news(f: dict, prev_origin, now, n: int = NEWS_MAX) -> dict:
     and a shared event group or proper name, or near-identical titles) are one story: the
     highest-ranked source's headline at the earliest time. Syndicated low-quality publishers are
     dropped (Yahoo-hosted items: the publisher read from the article page). Market wraps and movers
-    roundups are not listed; one pre-market wrap (6am-1pm London) is pinned as the morning "brief"
+    roundups are not listed; one pre-market wrap (6am London to the origin) is pinned as the morning "brief"
     (morning_brief; not in the split). "split" logs the 3 / 2 / 1-bar mix of all non-wrap stories
     and of the listed ones."""
     from concurrent.futures import ThreadPoolExecutor
@@ -903,7 +903,7 @@ def collect(f: dict, out: Path, now, prev_origin=None, skip: set[str] | None = N
 
 
 def previous_origin_for(o: pd.Timestamp) -> pd.Timestamp:
-    """The previous trading day's 07:00 NY origin bar (weekends and NQ holidays skipped)."""
+    """The previous trading day's origin bar (weekends and NQ holidays skipped)."""
     d = o.tz_convert(cal.NY).date() - timedelta(days=1)
     while d.weekday() >= 5 or cal.is_holiday(d):
         d -= timedelta(days=1)

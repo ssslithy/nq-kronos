@@ -1,5 +1,5 @@
 // NQ forecasts chart: 48 hourly candles, then the forecast fan to the end of the window
-// (1pm -> 1pm London), as stacked translucent bands for the selected prediction intervals.
+// (9am -> 9am New York), as stacked translucent bands for the selected prediction intervals.
 // Every selected band's upper and lower price is labelled at the right edge.
 // Geometry follows design/Main.dc.html: an SVG on a 1000 x 408 grid, plot x 56..872.
 (() => {

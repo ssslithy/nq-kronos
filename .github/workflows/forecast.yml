@@ -1,6 +1,6 @@
 name: forecast
 
-# Kronos now runs once a day inside garch_vol.yml, from the same 07:00-08:00 NY bar as the
+# Kronos now runs once a day inside garch_vol.yml, from the same 08:00-09:00 NY bar as the
 # GARCH forecast. This workflow is kept for a manual Kronos run from the latest bar
 # (Actions -> forecast -> Run workflow) and to deploy the page when site/ code changes.
 on:

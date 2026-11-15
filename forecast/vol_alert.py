@@ -1,9 +1,9 @@
 """Phone alert for the daily vol forecast via ntfy.sh (free, no account).
 
 After a successful forecast (scheduled, or a manual forced run), run_vol.py POSTs one line
-to https://ntfy.sh/<NTFY_TOPIC>, leading with the 90% range and the 1pm -> 1pm London window:
+to https://ntfy.sh/<NTFY_TOPIC>, leading with the 90% range and the window in London time (9am -> 9am New York):
 
-    NQ Fri 1:00pm – Mon 1:00pm London: ±444 pts (±1.64%) · 90%: 26,659–27,546 · Cash 2:30pm–9:00pm ±329 pts · Payrolls (NFP) 1:30pm
+    NQ Fri 2:00pm – Mon 2:00pm London: ±444 pts (±1.64%) · 90%: 26,659–27,546 · Cash 2:30pm–9:00pm ±329 pts · CPI Tue 1:30pm
 
 NTFY_TOPIC comes from the environment (a GitHub Actions secret in the workflow). If it isn't
 set, nothing is sent and nothing is logged. A failed send is logged as a warning and never
@@ -37,20 +37,20 @@ TIMEOUT = 15
 
 
 def london(t) -> str:
-    """12-hour London clock: 1:00pm, 11:58am."""
+    """12-hour London clock: 2:00pm, 11:58am."""
     lt = datetime.fromisoformat(str(t).replace("Z", "+00:00")).astimezone(LONDON)
     return f"{lt.hour % 12 or 12}:{lt.minute:02d}{'am' if lt.hour < 12 else 'pm'}"
 
 
 def window(f: dict) -> str:
-    """'Fri 1:00pm – Mon 1:00pm' from the origin close to the close of the last horizon bar."""
+    """'Fri 2:00pm – Mon 2:00pm' from the origin close to the close of the last horizon bar."""
     a = datetime.fromisoformat(f["origin_utc"]) + timedelta(hours=1)
     b = datetime.fromisoformat(f["horizon_end_utc"]) + timedelta(hours=1)
     return f"{a.astimezone(LONDON):%a} {london(a)} – {b.astimezone(LONDON):%a} {london(b)}"
 
 
 def alert_text(f: dict) -> str:
-    """One line: the 90% (headline) move and range for the 1pm -> 1pm London window, the cash
+    """One line: the 90% (headline) move and range for the forecast window, the cash
     session range, any scheduled release in the window, and a roll warning."""
     lv = f.get("headline", 90)
     lo, hi = f[f"range{lv}"]

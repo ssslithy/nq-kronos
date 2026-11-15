@@ -1,33 +1,17 @@
 {
  "ok": true,
- "generated_utc": "2026-11-13T13:07:34Z",
+ "generated_utc": "2026-11-13T14:10:00Z",
  "window_start_utc": "2026-11-12T21:00:00Z",
- "window_end_utc": "2026-11-13T13:00:00Z",
- "brief": {
-  "source": "Investor's Business Daily",
-  "title": "Dow Jones Futures Rise, Yields Up Again; Nvidia Steadies After Tumbling On CEO Huang's Exit",
-  "link": "https://finance.yahoo.com/m/4a3dff17-3e8e-33ca-823f-8ac12eff6a4a/dow-jones-futures-rise%2C.html?.tsrc=rss",
-  "published_utc": "2026-11-13T12:54:27Z",
-  "time_london": "12:54pm",
-  "kind": "market_wrap"
- },
+ "window_end_utc": "2026-11-13T14:00:00Z",
+ "brief": null,
  "items": [
   {
-   "source": "MarketWatch",
-   "title": "Economic calendar: Wholesale-inflation report is Friday\u2019s main event",
-   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=84e9759d-6026-4ca9-b73d-aec5a99fb02d&mod=mw_rss_bulletins",
-   "published_utc": "2026-11-13T12:54:57Z",
-   "time_london": "12:54pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Yahoo Finance",
-   "title": "Cerebras stock surges on Q3 results, outlook raise, hyperscaler deals",
-   "link": "https://finance.yahoo.com/markets/stocks/article/cerebras-stock-surges-after-ai-chipmaker-posts-q3-record-revenue-deals-with-hyperscalers-124719638.html?.tsrc=rss",
-   "published_utc": "2026-11-13T12:47:19Z",
-   "time_london": "12:47pm",
-   "impact": 2,
+   "source": "Barron's",
+   "title": "Stock Futures Still Rising After PPI",
+   "link": "https://finance.yahoo.com/m/4e0e3c2e-36cd-3da6-b395-7b2d7b0e37b1/stock-futures-still-rising.html?.tsrc=rss",
+   "published_utc": "2026-11-13T13:46:55Z",
+   "time_london": "1:46pm",
+   "impact": 3,
    "cluster": 1
   },
   {
@@ -50,108 +34,81 @@
   },
   {
    "source": "Yahoo Finance",
-   "title": "Google faces renewed challenge over $1.66bn advertising fine",
-   "link": "https://www.verdict.co.uk/google-renewed-challenge-1-66bn-advertising-fine/?.tsrc=rss",
-   "published_utc": "2026-11-13T11:19:06Z",
-   "time_london": "11:19am",
-   "impact": 3,
+   "title": "Costco's new offering is flying off shelves",
+   "link": "https://www.thestreet.com/retail/costco-new-pokemon-bundle-is-flying-off-shelves?.tsrc=rss",
+   "published_utc": "2026-11-13T12:03:00Z",
+   "time_london": "12:03pm",
+   "impact": 1,
    "cluster": 1
   },
   {
    "source": "CNBC",
-   "title": "Nvidia: Ex-prosecutor Joon Kim and Wachtell, Lipton bring big track record to investigation",
-   "link": "https://www.cnbc.com/2026/11/12/nvidia-jensen-huang-joon-kim-wachtell-china-spy.html",
-   "published_utc": "2026-11-13T04:07:44Z",
-   "time_london": "4:07am",
-   "impact": 3,
-   "cluster": 2
-  },
-  {
-   "source": "MarketWatch",
-   "title": "Microsoft stock slumps on outage that includes the Copilot tool it has been heavily promoting",
-   "link": "https://www.marketwatch.com/story/microsoft-stock-slumps-on-outage-that-includes-the-copilot-tool-it-has-been-heavily-promoting-4007dc4f?mod=mw_rss_topstories",
-   "published_utc": "2026-11-13T02:43:26Z",
-   "time_london": "2:43am",
-   "impact": 3,
-   "cluster": 5
-  },
-  {
-   "source": "Benzinga",
-   "title": "Cathie Wood Calls Humanoid Robots a '$26 Trillion Opportunity' Over the Next 15 Years: 'Embodied AI' Could Eventually Equal '20% of Global GDP'",
-   "link": "https://finance.yahoo.com/technology/ai/articles/cathie-wood-calls-humanoid-robots-023017667.html?.tsrc=rss",
-   "published_utc": "2026-11-13T02:30:17Z",
-   "time_london": "2:30am",
-   "impact": 3,
+   "title": "Nvidia\u2019s turmoil is prompting a rotation across chip stocks. Here's what we know",
+   "link": "https://www.cnbc.com/2026/11/13/nvidia-jensen-huang-affairs-amd-broadcom-tsmc.html",
+   "published_utc": "2026-11-13T08:27:07Z",
+   "time_london": "8:27am",
+   "impact": 1,
    "cluster": 1
   },
   {
-   "source": "MarketWatch",
-   "title": "Bond yields just saw their biggest surge since 2022 amid Fed rate-hike fears",
-   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=04436e19-d448-4154-8553-06e5ef7cdbd6&mod=mw_rss_bulletins",
-   "published_utc": "2026-11-12T22:21:32Z",
-   "time_london": "10:21pm",
-   "impact": 3,
+   "source": "CNBC",
+   "title": "Why Singapore keeps turning up in the fight over Nvidia chips and China",
+   "link": "https://www.cnbc.com/2026/11/13/nvidia-jensen-huang-alice-spy-megaspeed-.html",
+   "published_utc": "2026-11-13T07:15:01Z",
+   "time_london": "7:15am",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Barron's",
+   "title": "Grand Theft Auto VI Makes Take-Two Stock Look Like a Steal",
+   "link": "https://finance.yahoo.com/m/71d9f72e-471f-3b18-a9fd-e82af767e21b/grand-theft-auto-vi-makes.html?.tsrc=rss",
+   "published_utc": "2026-11-13T01:35:00Z",
+   "time_london": "1:35am",
+   "impact": 1,
    "cluster": 1
   },
   {
    "source": "Yahoo Finance",
-   "title": "Stocks Settle Lower on Nvidia Rout and Higher Crude and Bond Yields",
-   "link": "https://www.barchart.com/story/news/8810395/stocks-settle-lower-on-nvidia-rout-and-higher-crude-and-bond-yields?.tsrc=rss",
-   "published_utc": "2026-11-12T21:42:16Z",
-   "time_london": "9:42pm",
-   "impact": 3,
+   "title": "Billionaire investor Bill Ackman on why he's staying bullish on Netflix",
+   "link": "https://finance.yahoo.com/markets/stocks/article/billionaire-investor-bill-ackman-on-why-hes-staying-bullish-on-netflix-213455263.html?.tsrc=rss",
+   "published_utc": "2026-11-12T21:34:55Z",
+   "time_london": "9:34pm",
+   "impact": 1,
    "cluster": 1
-  },
-  {
-   "source": "Investing",
-   "title": "Cisco shares climb 4% on strong earnings beat and raised outlook",
-   "link": "https://finance.yahoo.com/markets/stocks/articles/cisco-shares-climb-4-strong-214347073.html?.tsrc=rss",
-   "published_utc": "2026-11-12T21:20:35Z",
-   "time_london": "9:20pm",
-   "impact": 3,
-   "cluster": 2
-  },
-  {
-   "source": "CNBC",
-   "title": "Jensen Huang scandal casts doubt on Nvidia\u2019s AI dominance \u2014 how we got here",
-   "link": "https://www.cnbc.com/2026/11/13/jensen-huang-scandal-casts-doubt-on-nvidias-ai-dominance-how-we-got-here.html",
-   "published_utc": "2026-11-12T21:17:21Z",
-   "time_london": "9:17pm",
-   "impact": 3,
-   "cluster": 14
   }
  ],
  "split": {
   "stories": {
-   "n": 37,
-   "bars3": 9,
-   "bars2": 2,
-   "bars1": 26,
-   "pct3": 24,
-   "pct2": 5,
-   "pct1": 70
+   "n": 8,
+   "bars3": 2,
+   "bars2": 0,
+   "bars1": 6,
+   "pct3": 25,
+   "pct2": 0,
+   "pct1": 75
   },
   "listed": {
-   "n": 12,
-   "bars3": 9,
-   "bars2": 1,
-   "bars1": 2,
-   "pct3": 75,
-   "pct2": 8,
-   "pct1": 17
+   "n": 8,
+   "bars3": 2,
+   "bars2": 0,
+   "bars1": 6,
+   "pct3": 25,
+   "pct2": 0,
+   "pct1": 75
   },
   "note": "non-wrap items only: market wraps and movers roundups are excluded"
  },
  "stats": {
-  "fetched": 436,
-  "in_window": 221,
+  "fetched": 424,
+  "in_window": 37,
   "wraps": {
-   "market_wrap": 7,
+   "market_wrap": 0,
    "movers_roundup": 1
   },
-  "relevant": 56,
-  "blocked_publisher": 48,
-  "clustered": 19
+  "relevant": 8,
+  "blocked_publisher": 6,
+  "clustered": 0
  },
  "feeds_ok": 23,
  "feeds_total": 23,

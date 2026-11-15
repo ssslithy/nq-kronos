@@ -1,18 +1,18 @@
-"""Daily 08:00 NY (1pm London) vol forecast (HAR-RV): decide whether to run, forecast, write site/data.
+"""Daily 09:00 NY (2pm London) vol forecast (HAR-RV): decide whether to run, forecast, write site/data.
 
-Started by an external timer (cron-job.org, workflow_dispatch at 08:07 and 08:22 New York) and by
+Started by the vol-timer workflow (workflow_dispatch at 09:07 and 09:22 New York) and by
 .github/workflows/garch_vol.yml's own weekday slots. GitHub's scheduler drops or delays most
 scheduled runs in this repo (Nov 2026: hours late, ~90% skipped), so neither is trusted alone.
 The script runs only when all of these hold, otherwise it exits 0 untouched:
 
   - today (New York) is an NQ trading day: weekday, not an nq_calendar holiday, and the
-    07:00-08:00 NY bar is a tradable hour;
-  - New York time is 08:00 or later (08:00-09:25 is on time; a later run is "late" but still
+    08:00-09:00 NY bar is a tradable hour;
+  - New York time is 09:00 or later (09:00-10:25 is on time; a later run is "late" but still
     forecasts today's origin, with data only up to the origin bar, and its alert is titled
     "NQ daily volatility (late)");
   - today's forecast hasn't been made yet (vol_latest.json already has today's origin).
 
-Then it loads bars closed by 08:00 NY and needs the 07:00-08:00 NY bar to be the last one
+Then it loads bars closed by 09:00 NY and needs the 08:00-09:00 NY bar to be the last one
 (retrying up to 3 times, 2 minutes apart, if Yahoo is slow).
 
   success: site/data/vol_latest.json (the forecast), one line appended to
@@ -26,7 +26,7 @@ Then it loads bars closed by 08:00 NY and needs the 07:00-08:00 NY bar to be the
            previous forecast, flagged "stale": true; exit 1 so the run fails.
 
     python forecast/run_vol.py                                   # as the workflow does
-    python forecast/run_vol.py --now "2026-11-06 08:10" --out /tmp/x    # a past day, elsewhere
+    python forecast/run_vol.py --now "2026-11-06 09:10" --out /tmp/x    # a past day, elsewhere
     python forecast/run_vol.py --force                           # ignore the time window
 """
 from __future__ import annotations
@@ -54,7 +54,7 @@ import vol_alert  # noqa: E402
 log = logging.getLogger("run_vol")
 
 ROOT = Path(__file__).resolve().parent.parent
-WINDOW_START, WINDOW_END = (8, 0), (9, 25)      # New York
+WINDOW_START, WINDOW_END = (9, 0), (10, 25)     # New York: on time from the origin bar's close
 RETRIES, RETRY_WAIT = 3, 120                    # Yahoo lag: attempts, seconds apart
 
 
@@ -73,7 +73,7 @@ def write_json_atomic(path: Path, obj, **kw) -> None:
 
 
 def origin_for(d: date) -> datetime:
-    """Start of the 07:00-08:00 NY bar on day d, in UTC."""
+    """Start of the origin bar (08:00-09:00 NY) on day d, in UTC."""
     return datetime(d.year, d.month, d.day, gv.ORIGIN_NY_HOUR, tzinfo=cal.NY).astimezone(cal.UTC)
 
 
@@ -97,14 +97,14 @@ def read_json(path: Path):
 
 
 def is_late(now: datetime, origin: datetime) -> bool:
-    """After the 08:00-09:25 NY window of the origin's day (or on a later day)."""
+    """After the 09:00-10:25 NY window of the origin's day (or on a later day)."""
     ny, o = now.astimezone(cal.NY), origin.astimezone(cal.NY)
     return ny.date() > o.date() or (ny.hour, ny.minute) > WINDOW_END
 
 
 def decide(now: datetime, latest: dict | None, force: bool) -> datetime:
-    """The origin (UTC) to forecast from, or raise NotAWindow. On a trading day any run from 08:00
-    NY on forecasts today's origin once (late runs included); before 08:00, weekends, holidays
+    """The origin (UTC) to forecast from, or raise NotAWindow. On a trading day any run from 09:00
+    NY on forecasts today's origin once (late runs included); before 09:00, weekends, holidays
     and "already made" exit quietly."""
     ny = now.astimezone(cal.NY)
     d = ny.date()
@@ -117,8 +117,8 @@ def decide(now: datetime, latest: dict | None, force: bool) -> datetime:
     if not is_forecast_day(d):
         raise NotAWindow(f"{d} is an NQ holiday")
     if (ny.hour, ny.minute) < WINDOW_START:
-        raise NotAWindow(f"New York time is {ny:%H:%M}, before 08:00 (the origin bar hasn't closed)")
-    # After 09:25 NY the run is late (GitHub's scheduler often starts runs hours late or drops
+        raise NotAWindow(f"New York time is {ny:%H:%M}, before {WINDOW_START[0]:02d}:00 (the origin bar hasn't closed)")
+    # After 10:25 NY the run is late (GitHub's scheduler often starts runs hours late or drops
     # them): it still forecasts today's origin once, rather than leaving the page without one.
     o = origin_for(d)
     if latest and latest.get("origin_utc") and pd.Timestamp(latest["origin_utc"]) == pd.Timestamp(o):
@@ -135,7 +135,7 @@ def load_until(origin: datetime, retries: int, wait: float) -> tuple[pd.DataFram
             df, rolls = gv.load_bars(close)
             if df.index[-1] == pd.Timestamp(origin):
                 return df, rolls
-            err = (f"the 07:00-08:00 NY bar ({iso(origin)}) is not in the data yet; "
+            err = (f"the origin bar ({iso(origin)}) is not in the data yet; "
                    f"last bar starts {iso(df.index[-1])}")
         except fetch.DataError as e:
             err = str(e)
@@ -226,8 +226,8 @@ def main() -> int:
 
 
 def add_cash_range(f: dict, rows: list[dict]) -> None:
-    """Cash-session range on the page: last x exp(+-m x cash sigma), centred on the origin close
-    (1pm London). m = the measured cash 90% multiplier (cash_m90 of this forecast's own history
+    """Cash-session range on the page: last x exp(+-m x cash sigma), from the origin close
+    (9am New York, where the cash window starts). m = the measured cash 90% multiplier (cash_m90 of this forecast's own history
     row, from sessions finished before its date) if acc.CASH_LEVEL is 90 and it exists, else 1.2816."""
     c = f["cash"]
     if not c.get("sigma_pct"):
