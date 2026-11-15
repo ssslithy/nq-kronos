@@ -67,6 +67,9 @@ def alert_text(f: dict) -> str:
         t = datetime.fromisoformat(i["time_utc"])
         same = t.astimezone(LONDON).date() == origin_day
         parts.append(f"{i['name']} {london(t)}" if same else f"{i['name']} {t.astimezone(LONDON):%a} {london(t)}")
+    for ec in f.get("early_closes") or []:
+        t = datetime.fromisoformat(ec["time_utc"])
+        parts.append(f"US early close {t.astimezone(LONDON):%a} {london(t)}")
     if f.get("roll_note"):
         parts.append("roll in window")
     return " · ".join(parts)

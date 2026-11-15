@@ -77,13 +77,17 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   calm-day 90% width **−12.8%**; QLIKE 0.331 vs 0.441 (lower in both halves). The only one of 5
   candidates (daily floor 5d / 10d, GARCH+VXN, HAR-RV, two-speed GARCH) to pass all five gates.
   The GARCH(1,1)-t on the trailing 2,000 hourly returns is still fitted daily as a diagnostic (CLI table,
-  `model.garch_*` in vol_latest.json). **Horizon = 23 bars** (`HORIZON`): the
-  origin bar's close (9am New York = 2pm London, 1pm in US/UK clock-change mismatch weeks) to the next trading
-  day's origin bar close. The page still says "Next 24 hours"; every time label is built from the
-  data, never hard-coded. (Until Nov 2026 it was 24 bars.)
+  `model.garch_*` in vol_latest.json). **Window** (`window_for`): the origin bar's close (9am New York =
+  2pm London, 1pm in US/UK clock-change mismatch weeks) to the **next forecast's** origin bar close, over
+  the tradable hours between: **23 bars** (`HORIZON`) on a normal day. Across a holiday or half-day it
+  has more or fewer bars (`horizon` in the JSON) and σ = k × raw σ × √F, F = the window's share of a
+  normal window's variance under the hour-of-day profile (`window_factor`, 1 normally). Since 15 Nov
+  2026; before, a fixed 23 bars ran 6 h past the next forecast after a Monday holiday or Christmas/New
+  Year, and skipped the half-day's hours. The HAR-RV regression target stays the next 23 bars. The page
+  still says "Next 24 hours"; every time label is built from the data, never hard-coded.
 - **Calibration:** σ = **k × raw σ** (k ≈ 1.18 for HAR-RV; it was ≈ 0.66 for GARCH, whose raw σ was too wide), k = RMS(move / raw σ) over the
-  trailing **250 matured, roll-free daily forecasts** (min 60), only forecasts whose 23 bars closed
-  before the origin. **No look-ahead anywhere**: backfills must use only data before each origin.
+  trailing **250 matured, roll-free daily forecasts** (min 60), only forecasts whose window closed
+  before the origin (each prior raw σ scaled by its own √F, using this forecast's profile). **No look-ahead anywhere**: backfills must use only data before each origin.
 - **Five ranges:** 80% = last × exp(±1.2816 σ); **85 / 90 / 95 / 99% = ±mXX σ**, mXX = the XXth
   percentile of |move / kσ| over the same 250 (measured multipliers ≈1.36 / 1.59 / 2.16 / 2.73).
   **90% is the headline** (card, alert, footer hit rate; `HEADLINE` in garch_vol.py). 99% is rough.
@@ -115,8 +119,18 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
 - **Events:** `forecast/events_2026_2027.yaml` (FOMC 14:00; CPI, NFP, PCE, GDP advance, retail sales
   08:30 NY). `covered_from` 2026-01-01 / `covered_until` 2027-12-31; outside that the flag says
   "not loaded". **Update every January** from the official calendars cited in the file.
-- **Backfill results, HAR-RV, 09:00 origin (10 Nov 2025 – 12 Nov 2026, 250 forecasts, older / newer half):**
-  80% 84.8 / 80.8, 85% 87.2 / 83.2, 90% 91.2 / 88.8, 95% 95.2 / 94.4, 99% 98.4 / 100.0.
+- **US early closes (half-days, since 15 Nov 2026):** `early_closes` in the events YAML (2026-11-27,
+  2026-12-24, 2027-11-26; 2027 has no other) must match `nq_calendar.half_days()` (day after
+  Thanksgiving; 3 Jul and 24 Dec when Mon–Thu); `garch_vol.early_close_mismatch()` checks. Yahoo has only
+  the 09:00–13:15 NY bars then, so **no forecast is made** (no origin bar): `cal.is_forecast_date` is
+  false, run_vol / the watchdog / the late banner treat the day as closed (no "late" ping), and
+  vol-timer sends one ntfy note at 09:07 NY: "No forecast today: US early close (1:00pm NY)". The
+  previous forecast's window counts the half-day's 09:00–13:00 hours (Wed 25 Nov 2026 → Mon 30 Nov:
+  27 bars), the page calendar lists "Early close 1:00pm New York", Details and the alert name it,
+  and "Since US close" / news on the next forecast start at the 1:00pm close.
+- **Backfill results, HAR-RV, 09:00 origin, next-forecast windows (10 Nov 2025 – 12 Nov 2026, 250 forecasts, older / newer half):**
+  80% 86.4 / 81.6, 85% 86.4 / 83.2, 90% 92.0 / 88.8, 95% 95.2 / 94.4, 99% 100.0 / 100.0; cash 90% 87.7 / 88.9.
+  (Fixed 23-bar windows, same days: 84.8 / 80.8, 87.2 / 83.2, 91.2 / 88.8, 95.2 / 94.4, 98.4 / 100.0.)
   (08:00 origin, 3 Nov 2025 – 5 Nov 2026: 80.0 / 79.2, 83.2 / 83.2, 90.4 / 88.0, 93.6 / 96.0, 98.4 / 99.2.)
 - **Chart controls:** Last Price · 99 / 95 / 90 / 85 / 80% band buttons.
   Selected bands' upper and lower prices are always labelled at the right edge (de-overlapped).

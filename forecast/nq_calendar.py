@@ -46,13 +46,13 @@ def _observed(d: date, saturday_to_friday: bool = True) -> date | None:
 
 @lru_cache(maxsize=None)
 def holidays(year: int) -> frozenset[date]:
-    """Trade days with no usable hourly data on Yahoo NQ=F.
+    """Trade days with no usable hourly data on Yahoo NQ=F (US half-days: see half_days).
 
     CME closes fully on New Year, Good Friday and Christmas, and runs short sessions on
-    the other US holidays and half-days. Checked against two years of Yahoo bars: Yahoo
-    has (almost) no bars for any of these trade days, so all are treated as closed. That
-    keeps the 24-step forecast off hours Yahoo will never fill, and keeps those hours
-    out of the missing-bar count.
+    the other US holidays. Checked against two years of Yahoo bars: Yahoo has no regular
+    bars for these trade days (at most the 18:00-23:00 evening before, irregularly), so all
+    are treated as closed. That keeps the forecast window off hours Yahoo will never fill,
+    and keeps those hours out of the missing-bar count.
     """
     d: set[date | None] = {
         _observed(date(year, 1, 1), saturday_to_friday=False),  # New Year
@@ -63,20 +63,42 @@ def holidays(year: int) -> frozenset[date]:
         _observed(date(year, 7, 4)),                            # Independence Day
         _nth_weekday(year, 9, 0, 1),                            # Labor Day
         _nth_weekday(year, 11, 3, 4),                           # Thanksgiving
-        _nth_weekday(year, 11, 3, 4) + timedelta(days=1),       # day after (half day)
         _observed(date(year, 12, 25)),                          # Christmas
     }
     if year >= 2022:
         d.add(_observed(date(year, 6, 19)))                     # Juneteenth
-    if date(year, 7, 3).weekday() < 4:
-        d.add(date(year, 7, 3))                                 # July 3 half day (Mon-Thu)
-    if date(year, 12, 24).weekday() < 4:
-        d.add(date(year, 12, 24))                               # Christmas Eve half day
     return frozenset(x for x in d if x is not None)
+
+
+@lru_cache(maxsize=None)
+def half_days(year: int) -> frozenset[date]:
+    """US early closes (cash market shuts at 13:00 New York): the day after Thanksgiving, and
+    July 3 and December 24 when they fall Monday-Thursday. Yahoo NQ=F has only the 09:00-13:15
+    New York bars on these days (checked 2024-2025), so the trade day counts HALF_DAY_HOURS
+    and no daily forecast is made (there is no 08:00-09:00 origin bar). forecast/events_*.yaml
+    lists the same dates for the page; garch_vol.early_closes checks the two agree."""
+    d = {_nth_weekday(year, 11, 3, 4) + timedelta(days=1)}
+    for m, day in ((7, 3), (12, 24)):
+        if date(year, m, day).weekday() < 4:
+            d.add(date(year, m, day))
+    return frozenset(d)
+
+
+HALF_DAY_HOURS = range(9, 13)   # bars starting 09:00-12:00 New York = 09:00-13:00 (the 13:00-13:15 stub isn't counted)
 
 
 def is_holiday(d: date) -> bool:
     return d in holidays(d.year)
+
+
+def is_half_day(d: date) -> bool:
+    return d in half_days(d.year)
+
+
+def is_forecast_date(d: date, origin_hour: int = 8) -> bool:
+    """A daily forecast is made on d: a weekday, not a holiday, not a half-day (no origin bar)."""
+    return (d.weekday() < 5 and not is_holiday(d) and not is_half_day(d)
+            and is_tradable_hour(datetime(d.year, d.month, d.day, origin_hour, tzinfo=NY)))
 
 
 def is_session_hour(start: datetime) -> bool:
@@ -108,6 +130,8 @@ def is_tradable_hour(start: datetime) -> bool:
     if not is_session_hour(start) or is_holiday(trade_day(start)):
         return False
     ny = start.astimezone(NY)
+    if is_half_day(trade_day(start)):                 # only the morning, on the day itself
+        return ny.date() == trade_day(start) and ny.hour in HALF_DAY_HOURS
     return not (ny.hour >= 18 and is_holiday(ny.date()))
 
 
@@ -123,6 +147,25 @@ def next_tradable_hours(last_bar: datetime, n: int = 24) -> list[datetime]:
         if is_tradable_hour(t):
             out.append(t)
     return out
+
+
+def tradable_hours_through(last_bar: datetime, end_bar: datetime) -> list[datetime]:
+    """The tradable hourly bar-start times after `last_bar` up to and including `end_bar`, in UTC."""
+    t = last_bar.astimezone(UTC).replace(minute=0, second=0, microsecond=0)
+    end = end_bar.astimezone(UTC)
+    out: list[datetime] = []
+    while t < end:
+        t += timedelta(hours=1)
+        if is_tradable_hour(t):
+            out.append(t)
+    return out
+
+
+def next_forecast_date(d: date, origin_hour: int = 8) -> date:
+    d += timedelta(days=1)
+    while not is_forecast_date(d, origin_hour):
+        d += timedelta(days=1)
+    return d
 
 
 def sessions(start: datetime, end: datetime) -> list[tuple[datetime, datetime]]:

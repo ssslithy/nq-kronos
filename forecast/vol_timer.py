@@ -8,7 +8,9 @@ immediately, unlike a schedule). At BACKUP (09:22 NY) it dispatches again if tod
 still isn't published. A job may run 6 h at most, so if the target is further away it sleeps
 CHAIN_SLEEP and dispatches the next timer run to carry on.
 
-It does nothing (and exits at once) if today isn't an NQ trading day, today's forecast is
+On a US early close (half-day: no forecast is made) it waits the same way and at TARGET sends one
+ntfy note instead (NOTE_TEXT; needs NTFY_TOPIC, never printed). It does nothing (and exits at once)
+if today isn't an NQ trading day, today's forecast is
 already published, another timer run is already waiting, or it starts after BACKUP + 30 min
 (then garch-vol's own late runs and the watchdog publish instead). Standard library + the gh CLI.
 
@@ -23,6 +25,7 @@ import os
 import subprocess
 import sys
 import time as _time
+import urllib.request
 from datetime import datetime, time, timedelta, timezone
 from pathlib import Path
 
@@ -35,6 +38,7 @@ LATE_LIMIT = timedelta(minutes=30)                # after BACKUP + this, leave i
 MAX_WAIT = timedelta(hours=5, minutes=20)         # + 15 min to BACKUP stays inside the 355-min job limit
 CHAIN_SLEEP = timedelta(hours=5, minutes=20)
 MAX_LEAD = timedelta(hours=13)                    # started more than this before the target: leave it to a later slot
+NOTE_TEXT = "No forecast today: US early close (1:00pm NY)"
 
 
 def ny_at(d, t) -> datetime:
@@ -42,7 +46,29 @@ def ny_at(d, t) -> datetime:
 
 
 def forecast_day(d) -> bool:
-    return d.weekday() < 5 and not cal.is_holiday(d) and cal.is_tradable_hour(ny_at(d, ORIGIN).astimezone(timezone.utc))
+    return cal.is_forecast_date(d, ORIGIN.hour)
+
+
+def note_day(d) -> bool:
+    """A US early close on a weekday: no forecast, one ntfy note at TARGET."""
+    return d.weekday() < 5 and cal.is_half_day(d)
+
+
+def send_note(text: str) -> bool:
+    topic = os.environ.get("NTFY_TOPIC", "").strip()
+    if not topic:
+        print("NTFY_TOPIC is not set: no note sent")
+        return False
+    req = urllib.request.Request(f"https://ntfy.sh/{topic}", data=text.encode(), method="POST",
+                                 headers={"Title": "NQ: no forecast today", "Tags": "calendar"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            ok = 200 <= r.status < 300
+    except Exception as e:  # noqa: BLE001
+        print(f"ntfy failed: {type(e).__name__}")
+        ok = False
+    print(f"early-close note sent: {ok}")
+    return ok
 
 
 def published_origin(repo: str) -> str | None:
@@ -84,12 +110,12 @@ def dispatch(repo: str, workflow: str, *fields: str) -> None:
 
 
 def plan(now: datetime) -> tuple[str, datetime | None, object]:
-    """("skip", None, reason) | ("chain", wake_utc, day) | ("wait", target_utc, day)."""
+    """("skip", None, day) | ("chain", wake_utc, day) | ("wait", target_utc, day) | ("note", target_utc, day)."""
     ny = now.astimezone(cal.NY)
     d = ny.date()
     if ny.time() > (datetime.combine(d, BACKUP) + LATE_LIMIT).time():
         d += timedelta(days=1)                       # today's slot has passed: aim at the next day
-    while not forecast_day(d):
+    while not (forecast_day(d) or note_day(d)):
         d += timedelta(days=1)
     target = ny_at(d, TARGET)
     wait = target - now
@@ -97,7 +123,7 @@ def plan(now: datetime) -> tuple[str, datetime | None, object]:
         return "skip", None, d
     if wait > MAX_WAIT:
         return "chain", now + CHAIN_SLEEP, d
-    return "wait", target, d
+    return ("wait" if forecast_day(d) else "note"), target, d
 
 
 def sleep_until(t: datetime, dry: bool) -> None:
@@ -117,19 +143,22 @@ def main() -> int:
            if args.now else datetime.now(timezone.utc))
     repo = os.environ.get("GITHUB_REPOSITORY", "ssslithy/nq-kronos")
     kind, when, d = plan(now)
-    print(f"now {now.astimezone(cal.NY):%a %d %b %H:%M} NY; next forecast day {d}; plan: {kind}"
+    print(f"now {now.astimezone(cal.NY):%a %d %b %H:%M} NY; next {'early close' if note_day(d) else 'forecast day'} {d}; plan: {kind}"
           + (f" until {when.astimezone(cal.NY):%a %H:%M} NY" if when else " (more than 13 h before the target; a later slot will act)"))
     if dry or kind == "skip":
         return 0
     if others_waiting(repo):
         print("another timer run is already waiting: nothing to do"); return 0
-    if made_today(repo, d):
+    if forecast_day(d) and made_today(repo, d):
         print(f"the forecast for {d} is already published: nothing to do"); return 0
     if kind == "chain":
         sleep_until(when, dry)
         dispatch(repo, "vol_timer.yml")              # the next link carries on to the target
         return 0
     sleep_until(when, dry)
+    if kind == "note":
+        send_note(NOTE_TEXT)
+        return 0
     if made_today(repo, d):
         print("published meanwhile: nothing to do"); return 0
     dispatch(repo, "garch_vol.yml", "force=false", "test_alert=false")

@@ -182,6 +182,10 @@ read the topic, so keep it secret. Without the secret nothing is sent. Manual fo
 - **Volatility forecast: volatility only, not direction.** It says how far NQ is likely
   to move over the next 23 trading hours (9am to 9am New York), not which way. Not investment advice.
 - On Fridays the window runs over the weekend; weekend gap risk isn't fully in Friday's range.
+- Each window ends at the next forecast (9am New York on the next full trading day). On US early
+  closes (half-days: 27 Nov and 24 Dec 2026, 26 Nov 2027) no forecast is made: the phone gets one
+  "No forecast today: US early close (1:00pm NY)" note instead, and the previous forecast's window
+  counts the half-day's 9:00am–1:00pm New York hours (σ is scaled for the longer window).
 - The model assumes tomorrow looks like the recent past: it reacts to shocks only after they
   happen, and it knows nothing about scheduled releases (FOMC, CPI, payrolls…). The event
   flag marks those days; realised moves on them often exceed the range.

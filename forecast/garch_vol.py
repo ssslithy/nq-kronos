@@ -14,9 +14,14 @@ Model choices are copied from the Phase 6 lab (lab/baselines.py):
   was tested in lab/garch_vol_calibration.py and changed nothing: hit rates 93-94% either way.)
 - Fit: the trailing 2,000 returns ending at the forecast bar; GARCH(1,1), zero mean,
   Student-t errors, `arch` with rescale=False. Refitted at every forecast.
-- Horizon: the next 23 bars (HORIZON): from the close of the 08:00-09:00 NY origin bar (9am New York, 2pm London; until 13 Nov 2026 the 07:00-08:00 bar)
-  to the close of the next trading day's origin bar, skipping the daily break and weekends.
-  The page still calls it "Next 24 hours". Until Nov 2026 it was 24 bars (to 09:00 NY).
+- Window: from the close of the 08:00-09:00 NY origin bar (9am New York, 2pm London; until 13 Nov 2026
+  the 07:00-08:00 bar) to the close of the next forecast's origin bar (window_for), over the tradable
+  hours between (daily break, weekends and holidays skipped; a US half-day counts its 09:00-13:00 NY
+  hours). That is HORIZON = 23 bars on a normal day. Since 15 Nov 2026 a window across a holiday or
+  half-day also ends at the next forecast: before, a fixed 23 bars ran 6 hours past it after a Monday
+  holiday or Christmas, and the window before a half-day skipped the half-day's hours. The raw sigma
+  (made for 23 hours) is scaled by sqrt(F), F = the window's share of a normal window's variance under
+  the intraday profile (1 on normal days; window_factor). The page still calls it "Next 24 hours".
 - Raw sigma: square root of the summed HORIZON analytic variance forecasts.
 - Rolls: additive back-adjustment. Measured from the incoming contract where Yahoo still has
   it; otherwise (expired contracts 404) the switch bar is the largest upward jump in
@@ -229,6 +234,25 @@ def roll_note(future: list[datetime]) -> str | None:
 
 # ---- prior daily forecasts: calibration factor, regime, realised ----------------------
 
+STANDARD_HOURS = tuple(h for h in range(24) if h != 17)   # NY bar-start hours in a normal 9am -> 9am window
+
+
+@lru_cache(maxsize=4096)
+def window_for(origin: pd.Timestamp) -> tuple[pd.Timestamp, ...]:
+    """Bar starts (UTC) in the forecast window of the origin bar starting at `origin`: every tradable
+    hour after it up to and including the next forecast's origin bar (cal.next_forecast_date)."""
+    o = pd.Timestamp(origin).tz_convert("UTC")
+    d = cal.next_forecast_date(o.tz_convert(cal.NY).date(), ORIGIN_NY_HOUR)
+    end = datetime(d.year, d.month, d.day, ORIGIN_NY_HOUR, tzinfo=cal.NY)
+    return tuple(pd.Timestamp(t) for t in cal.tradable_hours_through(o.to_pydatetime(), end))
+
+
+def window_factor(hours, profile: dict[int, float]) -> float:
+    """Share of a normal window's variance in a window with these NY bar-start hours (1.0 normally)."""
+    std = sum(profile.get(h, 0.0) for h in STANDARD_HOURS)
+    return float(sum(profile.get(h, 0.0) for h in hours) / std) if std > 0 else len(hours) / HORIZON
+
+
 def daily_origins(df: pd.DataFrame) -> np.ndarray:
     """Positions of the origin bar (ORIGIN_NY_HOUR, New York) on every NQ trading weekday present in the data."""
     ny = df.index.tz_convert(cal.NY)
@@ -283,8 +307,9 @@ def har_origins(bars: pd.DataFrame) -> np.ndarray:
 def prior_forecasts(bars: pd.DataFrame, n: int = 330, model: str | None = None) -> pd.DataFrame:
     """Raw sigma and realised HORIZON-bar move for up to `n` daily origins before the last
     bar, each made only from data up to its own origin (GARCH: the WINDOW returns to it; HAR-RV:
-    see har_sigmas). `move` is NaN until the forecast's HORIZON bars have closed (by the last bar
-    of `bars`). 330 leaves K_DAYS matured forecasts after the ~18% that touch a roll window are
+    see har_sigmas). `move` runs to the close of its window's last bar (window_for) and is NaN until that
+    bar has closed (by the last bar of `bars`) or if Yahoo has no bar there; `hours` are the window's NY
+    bar-start hours, for window_factor. 330 leaves K_DAYS matured forecasts after the ~18% that touch a roll window are
     excluded from k. `model` defaults to VOL_MODEL; the lab asks for "garch" explicitly."""
     model = model or VOL_MODEL
     close = bars["close"].to_numpy()
@@ -293,17 +318,29 @@ def prior_forecasts(bars: pd.DataFrame, n: int = 330, model: str | None = None) 
     pos_all = pos_all[(pos_all >= WINDOW) & (pos_all < len(bars) - 1)]
     pos = pos_all[-n:]
     har = har_sigmas(bars, pos_all)[0][-len(pos):] if model == "har" and len(pos) else None
-    windows = roll_windows_for(bars.index[0], bars.index[-1] + pd.Timedelta(days=3))
+    windows = roll_windows_for(bars.index[0], bars.index[-1] + pd.Timedelta(days=10))
+    at = {t: i for i, t in enumerate(bars.index)}
     rows = []
     for j, p in enumerate(pos):
-        matured = p + HORIZON < len(close)
+        win = window_for(bars.index[p])
+        e = at.get(win[-1])
         rows.append({
-            "origin_utc": bars.index[p], "pos": int(p),
+            "origin_utc": bars.index[p], "pos": int(p), "end_utc": win[-1],
+            "hours": tuple(t.tz_convert(cal.NY).hour for t in win),
             "sigma_raw_pct": float(har[j]) if har is not None else sigma_only(r[p - WINDOW + 1:p + 1]),
-            "move_pct": float(100 * np.log(close[p + HORIZON] / close[p])) if matured else np.nan,
-            "roll": touches_roll(bars.index[p + 1:p + HORIZON + 1], windows),
+            "move_pct": float(100 * np.log(close[e] / close[p])) if e is not None else np.nan,
+            "roll": touches_roll(win, windows),
         })
     return pd.DataFrame(rows)
+
+
+def windowed(prior: pd.DataFrame, profile: dict[int, float]) -> pd.DataFrame:
+    """prior with sigma_raw_pct scaled to each forecast's own window (x sqrt(window_factor)), for k
+    and the multipliers. `profile` comes from the forecast's own bars, so there is no look-ahead."""
+    if prior.empty or "hours" not in prior:
+        return prior
+    f = np.array([window_factor(h, profile) for h in prior["hours"]])
+    return prior.assign(sigma_raw_pct=prior["sigma_raw_pct"] * np.sqrt(f))
 
 
 def calibration_k(prior: pd.DataFrame) -> tuple[float, int]:
@@ -376,6 +413,35 @@ def load_events(path: str = str(EVENTS_FILE)) -> tuple[date, date, list[dict]]:
             sorted(out, key=lambda e: e["time_utc"]))
 
 
+@lru_cache(maxsize=1)
+def load_early_closes(path: str = str(EVENTS_FILE)) -> tuple[pd.Timestamp, ...]:
+    """US early closes (the cash market shuts at early_closes.time New York) from the events file."""
+    import yaml
+    doc = yaml.safe_load(Path(path).read_text()).get("early_closes") or {}
+    return tuple(pd.Timestamp(f"{d} {doc.get('time', '13:00')}").tz_localize(cal.NY).tz_convert("UTC")
+                 for d in doc.get("dates", []))
+
+
+def early_close_mismatch(path: str = str(EVENTS_FILE)) -> list[str]:
+    """Dates where the events file and nq_calendar.half_days disagree, over the file's coverage."""
+    lo, hi, _ = load_events(path)
+    listed = {t.tz_convert(cal.NY).date() for t in load_early_closes(path)}
+    rule = {d for y in range(lo.year, hi.year + 1) for d in cal.half_days(y) if lo <= d <= hi}
+    return [f"{d} {'only in the events file' if d in listed else 'only in nq_calendar'}"
+            for d in sorted(listed ^ rule)]
+
+
+def early_closes_in(future: list) -> list[dict]:
+    """Early closes on a day whose hours are in the window: time (UTC) and that day's hours in it."""
+    days = [t.astimezone(cal.NY).date() for t in future]
+    out = []
+    for t in load_early_closes():
+        d = t.tz_convert(cal.NY).date()
+        if d in days:
+            out.append({"time_utc": t.isoformat(), "date": d.isoformat(), "hours": days.count(d)})
+    return out
+
+
 def events_between(start: pd.Timestamp, end: pd.Timestamp, today: date) -> dict:
     """Scheduled releases in (start, end] and the flag text for the page and the alert."""
     covered_from, covered_until, events = load_events()
@@ -445,16 +511,18 @@ def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
     else:
         raw = garch_raw
     prior = prior_forecasts(bars) if prior is None else prior
-    k, k_n = calibration_k(prior)
-    sigma = k * raw
-    mults, m_n = tail_multipliers(prior, k)
-
-    future = cal.next_tradable_hours(origin.to_pydatetime(), HORIZON)
+    profile = intraday_profile(bars)
+    pw = windowed(prior, profile)
+    k, k_n = calibration_k(pw)
+    future = [t.to_pydatetime() for t in window_for(origin)]
     hours = [t.astimezone(cal.NY).hour for t in future]
+    wf = window_factor(hours, profile)
+    sigma = k * raw * np.sqrt(wf)
+    mults, m_n = tail_multipliers(pw, k)
+
     first_day = future[0].astimezone(cal.NY).date()
     cash_steps = [i for i, t in enumerate(future)
                   if hours[i] in CASH_NY_HOURS and t.astimezone(cal.NY).date() == first_day]
-    profile = intraday_profile(bars)
     w = np.array([profile.get(h, 0.0) for h in hours])
     cash_share = float(w[cash_steps].sum() / w.sum()) if cash_steps else None
     cash_sigma = sigma * np.sqrt(cash_share) if cash_share else None
@@ -488,7 +556,9 @@ def forecast_vol(bars: pd.DataFrame, sims: int = SIMS, seed: int | None = None,
         "range68": [px(-sigma), px(sigma)],
         "headline": HEADLINE,
         "headline_pts": pts(mults[HEADLINE] * sigma), "headline_pct": round(mults[HEADLINE] * sigma, 4),
-        "horizon": HORIZON,
+        "horizon": len(future),
+        "window_factor": round(wf, 4),
+        "early_closes": early_closes_in(future),
         "multipliers": {"m80": Z80, "m85": round(mults[85], 4), "m90": round(mults[90], 4),
                         "m95": round(mults[95], 4), "m99": round(mults[99], 4), "n": m_n,
                         "method": f"85th / 90th / 95th / 99th percentile of |move / k sigma| over the last {m_n} matured daily forecasts"},
@@ -548,10 +618,14 @@ def print_table(f: dict) -> None:
     end = pd.Timestamp(f["horizon_end_utc"])
     last = f["last_close"]
     close_t = o + pd.Timedelta(hours=1)
-    print(f"\nNQ volatility forecast, next {HORIZON} tradable hours ({MODEL_NAME[VOL_MODEL]}, calibrated) — volatility only, not direction")
+    print(f"\nNQ volatility forecast, next {f['horizon']} tradable hours ({MODEL_NAME[VOL_MODEL]}, calibrated) — volatility only, not direction")
     print(f"  as of bar         {o.tz_convert(cal.NY):%a %d %b %Y %H:%M}-{close_t.tz_convert(cal.NY):%H:%M} NY "
           f"({close_t.tz_convert(cal.LONDON):%H:%M} London close)   last close {last:,.2f}")
-    print(f"  horizon           next {HORIZON} tradable hours, to the bar starting {end.tz_convert(cal.NY):%a %d %b %H:%M} NY")
+    print(f"  horizon           next {f['horizon']} tradable hours, to the bar starting {end.tz_convert(cal.NY):%a %d %b %H:%M} NY"
+          + (f" (σ × √{f['window_factor']:.2f} for the window)" if abs(f["window_factor"] - 1) > 1e-6 else ""))
+    for ec in f["early_closes"]:
+        print(f"  early close       {pd.Timestamp(ec['time_utc']).tz_convert(cal.NY):%a %d %b %H:%M} NY: "
+              f"{ec['hours']} hours that day are in the window")
     cal_ = f["calibration"]
     rows = [
         ("Expected move (σ)", f"±{f['sigma_pts']:,.0f} pts  (±{f['sigma_pct']:.2f}%)"),

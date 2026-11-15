@@ -11,6 +11,11 @@
 # - The Fed calendar page gives meeting days, not times. The decision (statement) is
 #   released at 14:00 on the second day; the date below is that second day.
 
+# US early closes (half-days) are listed under early_closes at the end. They are not releases: they
+# don't set the event flag. No daily forecast is made on them (Yahoo has no 08:00-09:00 NY bar);
+# the page calendar lists them and the timer sends a "no forecast today" note. The dates must
+# match forecast/nq_calendar.py half_days() (checked by garch_vol.early_close_mismatch).
+
 covered_from: 2026-01-01   # forecasts before this (the 1-year backfill) show "not loaded"
 covered_until: 2027-12-31
 
@@ -189,3 +194,15 @@ types:
       - 2027-10-15   # Sep
       - 2027-11-16   # Oct
       - 2027-12-15   # Nov
+
+early_closes:
+  name: Early close
+  time: "13:00"          # New York: the stock market closes at 1:00pm (CME equity futures halt at 13:15)
+  sources:
+    - https://www.nyse.com/markets/hours-calendars
+    - https://ir.theice.com/press/news-details/2024/NYSE-Group-Announces-2025-2026-and-2027-Holiday-and-Early-Closings-Calendar/default.aspx
+    - https://www.cmegroup.com/trading-hours.html
+  dates:
+    - 2026-11-27   # Fri, day after Thanksgiving
+    - 2026-12-24   # Thu, Christmas Eve
+    - 2027-11-26   # Fri, day after Thanksgiving (2027's only early close: 2 Jul and 24 Dec 2027 are not half-days)

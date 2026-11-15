@@ -66,7 +66,7 @@ def history_line(f: dict) -> dict:
             "range80": f["range80"], "range85": f["range85"], "range90": f["range90"],
             "range95": f["range95"], "range99": f["range99"], "range68": f["range68"],
             "m85": f["multipliers"]["m85"], "m90": f["multipliers"]["m90"],
-            "m95": f["multipliers"]["m95"], "m99": f["multipliers"]["m99"], "horizon": f["horizon"],
+            "m95": f["multipliers"]["m95"], "m99": f["multipliers"]["m99"], "horizon": f["horizon"], "window_factor": f.get("window_factor"),
             "sigma_raw_pct": f["calibration"]["sigma_raw_pct"], "k": f["calibration"]["k"],
             "cash_sigma_pts": f["cash"]["sigma_pts"], "cash_sigma_pct": f["cash"]["sigma_pct"],
             "cash_hours": f["cash"]["hours"], "regime": f["regime"],
@@ -248,7 +248,7 @@ def backfill(bars: pd.DataFrame, days: int = BACKFILL_DAYS, skip: set | None = N
         if o in skip:
             continue
         prior = prior_all[prior_all["pos"] < p].tail(PRIOR_N).copy()
-        prior.loc[prior["pos"] + gv.HORIZON > p, "move_pct"] = np.nan    # not matured by then
+        prior.loc[prior["end_utc"] > o, "move_pct"] = np.nan              # not matured by then
         try:
             f = gv.forecast_vol(bars.iloc[:p + 1], sims=sims, prior=prior)
         except ValueError as e:                                         # too few matured for k

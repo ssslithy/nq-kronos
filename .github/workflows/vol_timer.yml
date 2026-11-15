@@ -9,6 +9,8 @@ name: vol-timer
 # more than 13 h away, it leaves it to a later slot. Extra slots exit at once when another timer
 # run is already waiting or the forecast is published. forecast/vol_timer.py has the logic.
 # Backups: garch-vol's own (late) slots and the watchdog still publish, late, if no slot fires.
+# On a US early close (half-day) no forecast is made: the timer sends one ntfy note at 09:07 NY
+# instead ("No forecast today: US early close (1:00pm NY)").
 on:
   schedule:
     - cron: "7 1-7 * * 1-5"
@@ -28,5 +30,6 @@ jobs:
       - name: Wait for 09:07 New York and start the vol run
         env:
           GH_TOKEN: ${{ github.token }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}     # the early-close note only
           REF: ${{ github.event.repository.default_branch }}
         run: python3 forecast/vol_timer.py

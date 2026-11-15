@@ -133,7 +133,7 @@
       $("cal-rows").innerHTML = c.items.map((e) => {
         const tm = T(e.time_utc);
         return `<div class="nq-cal${e.today ? " today" : ""}"><span class="d">${e.today ? "Today" : esc(date(tm))}</span>` +
-          `<span class="t">${esc(clock(tm))}</span><span class="n">${esc(e.name)}</span>${signal(e.impact)}</div>`;
+          `<span class="t">${esc(clock(tm))}</span><span class="n">${esc(e.name)}</span>${e.impact ? signal(e.impact) : ""}</div>`;
       }).join("");
       $("cal").hidden = false;
       $("cal-h").classList.toggle("nq-h2", !$("since").hidden);
@@ -223,8 +223,11 @@
     const a = T(v.forecast_time_utc), b = plusH(v.horizon_end_utc, 1), mu = v.multipliers, c = v.cash || {};
     const ev = (v.events && v.events.items) || [];
     const rows = [
-      ["Window", `${at(a)} – ${at(b)} London: ${v.horizon || 23} trading hours, to the same time the next trading day ` +
-        `(New York ${clock(a, NYC)} to ${clock(b, NYC)}). The daily break and weekends are skipped.`],
+      ["Window", `${at(a)} – ${at(b)} London: ${v.horizon || 23} trading hours, to the next forecast (9:00am New York on the next full trading day) ` +
+        `(New York ${clock(a, NYC)} to ${clock(b, NYC)}). The daily break, weekends and holidays are skipped.` +
+        (v.early_closes || []).map((e) => ` Includes the ${date(T(e.time_utc))} early close (1:00pm New York): ` +
+          `${e.hours} hours that day (9:00am–1:00pm New York); there is no forecast that day.`).join("") +
+        (v.window_factor && Math.abs(v.window_factor - 1) > 0.005 ? ` σ scaled ×${Math.sqrt(v.window_factor).toFixed(2)} for this window's hours.` : "")],
       ["PI", "Prediction interval: the range the price should end inside, with that probability, at the end of the window. " +
         "The chart can show the 99, 95, 90, 85 and 80% intervals; the card shows the 90%."],
       ["Model", (v.model.har
@@ -253,7 +256,7 @@
     const ty = (D.tsy && D.tsy.rows) || [];
     const src = (lbl) => { const r = ty.find((x) => x.label === lbl); return r && r.source ? r.source : "n/a"; };
     if (D.since && D.since.ok) rows.push(["Since US close", "Oil (CL=F, % change), VIX (Cboe ^VIX, which trades from 3:15am New York, " +
-      `change in points) and the dollar index (DX-Y.NYB, % change) from the previous 4:00pm New York close to ${hourOnly(a)} London. ` +
+      `change in points) and the dollar index (DX-Y.NYB, % change) from the previous US cash close (4:00pm New York, or 1:00pm after an early close) to ${hourOnly(a)} London. ` +
       `Falls are teal, rises red. Context only: overnight moves are already in the ${hourOnly(a)} price and don't predict the session ` +
       "(tested: the overnight move had no skill for the cash session)."]);
     rows.push(["Treasuries", `Yield changes in basis points (up = red). Window: the past 24 hours (${hourOnly(a)} → ${hourOnly(a)} London), or since the ` +
@@ -262,7 +265,7 @@
       `10Y: ${src("10Y")}. 2Y: ${src("2Y")}.` + (ty.some((x) => x.approx) ? " * = approximate: derived from the note future's price change " +
       "÷ its duration (2Y: 1.9) and added to the latest official close (FRED DGS2 for the 2Y)." : "")]);
     rows.push(["Data", "Yahoo Finance NQ=F, hourly, delayed and unofficial, roll-adjusted. Calendar: BLS, BEA, Census and the Fed schedules. " +
-      "Headlines: Yahoo Finance, CNBC, MarketWatch and Nasdaq.com RSS, published between the previous 4pm New York close and the forecast time; " +
+      "Headlines: Yahoo Finance, CNBC, MarketWatch and Nasdaq.com RSS, published between the previous US cash close (4pm New York, 1pm after an early close) and the forecast time; " +
       "the bars are a rule-based significance (Fed and macro, the biggest Nasdaq names' earnings and major news = 3). " +
       "BRIEF = the latest pre-market market wrap (from 6am London to the forecast time), pinned first; other market wraps and movers roundups are left out."]);
     if (D.fed && D.fed.ok) rows.push(["Fed odds", `Polymarket crowd betting odds for the ${D.fed.meeting_label} FOMC decision ` +

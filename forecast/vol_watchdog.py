@@ -39,7 +39,9 @@ def check(now: datetime, status: dict | None) -> tuple[bool, str]:
     """(late, reason) for the given time and vol_status.json contents."""
     ny = now.astimezone(cal.NY)
     d = ny.date()
-    if d.weekday() >= 5 or cal.is_holiday(d) or not cal.is_tradable_hour(today_origin(d)):
+    if cal.is_half_day(d):
+        return False, f"{d} is a US early close: no forecast is made, nothing is late"
+    if not cal.is_forecast_date(d, ORIGIN_NY_HOUR):
         return False, f"{d} is not a forecast day"
     if not (ACT_FROM <= ny.time() < ACT_UNTIL):
         return False, f"New York time {ny:%H:%M} is before 09:40 (the timer may still be starting the run)"

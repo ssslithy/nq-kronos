@@ -78,7 +78,7 @@ def origin_for(d: date) -> datetime:
 
 
 def is_forecast_day(d: date) -> bool:
-    return d.weekday() < 5 and not cal.is_holiday(d) and cal.is_tradable_hour(origin_for(d))
+    return cal.is_forecast_date(d, gv.ORIGIN_NY_HOUR)     # not weekends, holidays or US half-days
 
 
 def next_forecast_utc(after: date) -> str:

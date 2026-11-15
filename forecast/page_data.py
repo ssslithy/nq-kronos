@@ -106,15 +106,17 @@ def calendar(f: dict, now) -> dict:
     if origin.tz_convert(cal.NY).date() > covered_until:
         raise ValueError(f"event calendar not loaded after {covered_until}")
     o_day = origin.tz_convert(cal.LONDON).date()
+    closes = [{"kind": "EARLY_CLOSE", "name": "Early close 1:00pm New York", "impact": 0, "time_utc": t}
+              for t in gv.load_early_closes()]
     items = []
-    for e in events:
+    for e in sorted(events + closes, key=lambda x: x["time_utc"]):
         if e["time_utc"] >= origin:
             lt = e["time_utc"].tz_convert(cal.LONDON)
             items.append({"time_utc": iso(e["time_utc"]), "kind": e["kind"], "name": e["name"],
                           "impact": e["impact"], "today": lt.date() == o_day,
                           "date_london": "Today" if lt.date() == o_day else f"{lt:%a} {lt.day} {lt:%b}",
                           "time_london": london_time(e["time_utc"])})
-        if len(items) == 3:
+        if sum(i["kind"] != "EARLY_CLOSE" for i in items) == 3:     # 3 releases (+ any early close before them)
             break
     return {"ok": True, "generated_utc": iso(now), "origin_utc": iso(origin), "items": items,
             "source": gv.EVENTS_FILE.name}
@@ -330,6 +332,20 @@ def treasuries(f: dict, prev_origin: pd.Timestamp, now) -> dict:
 SINCE_CLOSE = (("Oil", "CL=F", "pct"), ("VIX", "^VIX", "pts"), ("Dollar", "DX-Y.NYB", "pct"))
 
 
+def prev_cash_close(prev_origin, origin) -> pd.Timestamp:
+    """The last US cash close before the origin (UTC): 4:00pm New York on the previous forecast's day,
+    or 1:00pm on a US half-day after it (no forecast is made on a half-day)."""
+    d = pd.Timestamp(prev_origin).tz_convert(cal.NY).date()
+    t = pd.Timestamp(datetime(d.year, d.month, d.day, 16), tz=cal.NY)
+    o_day = pd.Timestamp(origin).tz_convert(cal.NY).date()
+    x = d + timedelta(days=1)
+    while x < o_day:
+        if cal.is_half_day(x):
+            t = pd.Timestamp(datetime(x.year, x.month, x.day, 13), tz=cal.NY)
+        x += timedelta(days=1)
+    return t.tz_convert("UTC")
+
+
 def since_close(f: dict, prev_origin, now) -> dict:
     """Oil (CL=F, % change), VIX (^VIX, change in points; Yahoo's hourly ^VIX includes Cboe's
     extended hours from 3:15am New York, so it has a value at the origin) and the dollar
@@ -338,14 +354,13 @@ def since_close(f: dict, prev_origin, now) -> dict:
     are already in the origin price. A missing value is null (the page shows "–")."""
     origin = pd.Timestamp(f["origin_utc"])
     end = origin + pd.Timedelta(hours=1)
-    d = pd.Timestamp(prev_origin).tz_convert(cal.NY).date()
-    close = pd.Timestamp(datetime(d.year, d.month, d.day, 16), tz=cal.NY).tz_convert("UTC")
+    close = prev_cash_close(prev_origin, origin)                  # 4pm, or 1pm after a US half-day
     cells, errors = [], []
     for label, tk, unit in SINCE_CLOSE:
         cell = {"label": label, "ticker": tk, "unit": unit, "value": None}
         try:
             df = _hourly_ohlc(tk, close, origin)
-            a = df[(df.index < close) & (df.index >= close - pd.Timedelta(hours=4))]["Close"]   # last bar ending by 4pm
+            a = df[(df.index < close) & (df.index >= close - pd.Timedelta(hours=4))]["Close"]   # last bar ending by the close
             b = df[(df.index <= origin) & (df.index > origin - pd.Timedelta(hours=3))]["Close"]  # the origin bar
             if a.empty or b.empty:
                 raise ValueError(f"no {tk} bar at the US close or at the origin")
@@ -554,14 +569,12 @@ def _near_duplicate(a: str, b: str) -> bool:
 
 
 def news_window(f: dict, prev_origin) -> tuple[pd.Timestamp, pd.Timestamp]:
-    """Previous cash-session close (4pm New York on the previous trading day) -> the origin bar's
+    """Previous cash-session close (4pm New York on the previous trading day; 1pm after a US half-day) -> the origin bar's
     close (9am New York). Fixed by the origin, not by when the job runs."""
     end = pd.Timestamp(f["origin_utc"]) + pd.Timedelta(hours=1)
     if prev_origin is None:
         return end - pd.Timedelta(hours=24), end
-    d = pd.Timestamp(prev_origin).tz_convert(cal.NY).date()
-    start = pd.Timestamp(datetime(d.year, d.month, d.day, 16), tz=cal.NY).tz_convert("UTC")
-    return start, end
+    return prev_cash_close(prev_origin, end), end                 # 4pm, or 1pm after a US half-day
 
 
 def _fetch_feed(outlet_url):
@@ -903,9 +916,9 @@ def collect(f: dict, out: Path, now, prev_origin=None, skip: set[str] | None = N
 
 
 def previous_origin_for(o: pd.Timestamp) -> pd.Timestamp:
-    """The previous trading day's origin bar (weekends and NQ holidays skipped)."""
+    """The previous forecast's origin bar (weekends, NQ holidays and US half-days skipped)."""
     d = o.tz_convert(cal.NY).date() - timedelta(days=1)
-    while d.weekday() >= 5 or cal.is_holiday(d):
+    while not cal.is_forecast_date(d, gv.ORIGIN_NY_HOUR):
         d -= timedelta(days=1)
     return pd.Timestamp(datetime(d.year, d.month, d.day, gv.ORIGIN_NY_HOUR), tz=cal.NY).tz_convert("UTC")
 
