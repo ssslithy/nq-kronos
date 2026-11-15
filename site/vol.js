@@ -1,6 +1,6 @@
 // NQ forecasts: data loading and everything on the page except the chart (app.js draws that).
 // Reads data/vol_latest.json (daily vol forecast), vol_history.jsonl, vol_status.json,
-// calendar.json, treasuries.json, fed_odds.json, news.json, and Kronos's latest.json / status.json.
+// calendar.json, treasuries.json, fed_odds.json, news.json and since_close.json.
 // All times are London, 12-hour ("1:00pm"); New York appears only in Details.
 (() => {
   "use strict";
@@ -42,27 +42,9 @@
   const ready = Promise.all([
     getJSON("data/vol_latest.json"), soft("data/vol_status.json"), getLines("data/vol_history.jsonl"),
     soft("data/calendar.json"), soft("data/treasuries.json"), soft("data/news.json"),
-    soft("data/latest.json"), soft("data/status.json"), soft("data/fed_odds.json"), soft("data/since_close.json"),
-  ]).then(([vol, status, hist, calendar, tsy, news, kronos, kstatus, fed, since]) =>
-    ({ vol, status, hist, calendar, tsy, news, kronos, kstatus, fed, since }));
-
-  // Kronos is usable only if it was made from the same bar as the daily forecast and isn't stale.
-  // Kronos runs as its own job after the forecast (~10 min later). Until its origin matches the
-  // forecast's it is "updating…"; only 30 minutes after the forecast was published is it "not run today".
-  const KRONOS_GRACE_MS = 30 * 60e3;
-  const kronosState = (D) => {
-    const k = D.kronos, v = D.vol;
-    const sameBar = k && k.last_bar_utc && T(k.last_bar_utc).getTime() === T(v.origin_utc).getTime();
-    if (!sameBar) {
-      const pub = T(v.generated_utc || v.forecast_time_utc).getTime();
-      return Date.now() < pub + KRONOS_GRACE_MS
-        ? { ok: false, updating: true, why: "updating… (it runs about 10 minutes after the forecast)" }
-        : { ok: false, why: "not run today" };
-    }
-    if (k.stale || (D.kstatus && D.kstatus.ok === false)) return { ok: false, why: "not run today (last run failed)" };
-    return { ok: true };
-  };
-  const reloadKronos = () => Promise.all([soft("data/latest.json"), soft("data/status.json")]);
+    soft("data/fed_odds.json"), soft("data/since_close.json"),
+  ]).then(([vol, status, hist, calendar, tsy, news, fed, since]) =>
+    ({ vol, status, hist, calendar, tsy, news, fed, since }));
 
   // ---- render -----------------------------------------------------------------------------
   function header(D) {
@@ -239,7 +221,6 @@
       $("f-hit").parentElement.firstElementChild.textContent = `Last ${m.length} days:`;
     }
     const a = T(v.forecast_time_utc), b = plusH(v.horizon_end_utc, 1), mu = v.multipliers, c = v.cash || {};
-    const ks = kronosState(D);
     const ev = (v.events && v.events.items) || [];
     const rows = [
       ["Window", `${at(a)} – ${at(b)} London: ${v.horizon || 23} trading hours, to the same time the next trading day ` +
@@ -269,8 +250,6 @@
       ". Realised moves are often bigger on release days."]);
     if (v.roll_note) rows.push(["Roll", v.roll_note]);
     rows.push(["Fridays", "On Fridays the window runs over the weekend: weekend gap risk isn't fully in Friday's range."]);
-    rows.push(["Kronos", "Kronos-small (experimental) can be overlaid on the chart (its P10 and P90 paths). Its 80% band held ~46% of the time vs the 80% target. " +
-      (ks.ok ? "Today's run is from the same bar." : `Today: ${ks.why}.`)]);
     const ty = (D.tsy && D.tsy.rows) || [];
     const src = (lbl) => { const r = ty.find((x) => x.label === lbl); return r && r.source ? r.source : "n/a"; };
     if (D.since && D.since.ok) rows.push(["Since US close", "Oil (CL=F, % change), VIX (Cboe ^VIX, which trades from 3:15am New York, " +
@@ -296,7 +275,7 @@
       `<dt></dt><dd class="disc">Volatility only, not direction. Not investment advice.</dd>`;
   }
 
-  window.NQ = { ready, kronosState, reloadKronos, fmt: { clock, hourOnly, day, date, at, num, esc, T, plusH } };
+  window.NQ = { ready, fmt: { clock, hourOnly, day, date, at, num, esc, T, plusH } };
 
   ready.then((D) => {
     for (const f of [header, blocks, side, news, footer]) {

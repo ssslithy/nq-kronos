@@ -6,8 +6,8 @@ A free, self-updating page for Nasdaq-100 futures (NQ) at https://ssslithy.githu
 Once per US trading day, at 9:00am New York (2pm London; 1pm in the weeks when US and UK clocks differ),
 it publishes a **calibrated HAR-RV volatility forecast for 9am → 9am New York** (23 trading hours; size of the move, never direction) with five prediction
 intervals (90% is the headline), the cash-session range, the US calendar, Treasuries, Polymarket
-Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-small runs from the same bar as an
-**experimental** overlay only. Research tool, not investment advice.
+Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-small was retired on
+15 Nov 2026 (see "Kronos retired" below). Research tool, not investment advice.
 
 ## Daily schedule (everything runs once per trading day)
 
@@ -43,17 +43,11 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
      THEN `page_data.py` writes `calendar.json`, `treasuries.json`, `fed_odds.json`, `news.json` (fail-soft: a failed
      source writes `"ok": false` and the page hides that block; never fails or delays the forecast);
      commits and pushes those files.
-  2. `deploy`: Pages deploy of the vol forecast, straight away.
-  3. `kronos` (only if a forecast was made): `run_forecast.py --origin <that bar> --horizon 23`, 100 paths, its own
-     **15-minute limit**. If it fails or times out, `--mark-stale` flags only Kronos (`latest.json`
-     `stale`, `status.json` ok=false); the vol forecast is never touched. Commits `latest.json`, `history.jsonl`,
-     `band_check.json`, `status.json`.
-  4. `deploy-kronos`: second Pages deploy (after the vol one). All deploys share the
-     `pages-deploy` concurrency group with `forecast.yml`.
-- Timing: the vol forecast (alert + deploy) is live within ~5 min of the start; Kronos ~8–10 min after that.
-  Even a 20-minute-late start with a Kronos timeout finishes by about 09:50 NY.
-- `forecast.yml` has **no schedule**: manual Kronos run from the latest bar, and a deploy on pushes to
-  `site/**` (not `site/data/**`). A push that only changes `site/data` does not deploy by itself.
+  2. `deploy`: Pages deploy of the vol forecast, straight away. It shares the `pages-deploy`
+     concurrency group with `forecast.yml`.
+- Timing: the vol forecast (alert + deploy) is live within ~5 min of the start.
+- `forecast.yml` (workflow name "deploy") only deploys the page: on pushes to `site/**` (not
+  `site/data/**`) and by hand. A push that only changes `site/data` does not deploy by itself.
 - Accuracy timing: the window ends with the next day's origin bar, so a forecast's result
   (and its cash-session result, 09:00–16:00 NY) is filled by the next run.
 
@@ -69,7 +63,8 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   4.25% / 4.41%); the cash range was (87.5 / 90.6). Each window now ends half an hour after the next
   morning's 08:30 release, which the alert and Details name with its day. `site/data/vol_history.jsonl`
   was re-forecast from 09:00 (`vol_accuracy.py --backfill --all` drops lines from another origin hour;
-  the old 08:00 lines are in git history before that commit). London shows 2:00pm, or 1:00pm in the
+  the old 08:00 lines are archived unchanged in `site/data/archive/vol_history_8am.jsonl`, restored from
+  the commit before 9776835 and linked from the accuracy page footer; nothing reads it). London shows 2:00pm, or 1:00pm in the
   clock-change mismatch weeks; every label is built from the data.
 - **Model: HAR-RV since 9 Nov 2026** (`VOL_MODEL = "har"` in garch_vol.py; `"garch"` switches back).
   log RV(next 23 bars) = b0 + b1 log RV1 + b5 log RV5 + b22 log RV22, RV1 = sum of the 23 squared hourly
@@ -110,19 +105,20 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
   so **no regime chip** on the page; no direction is shown anywhere.
 - **Chart fan:** analytic bands (kσ × hour-of-day profile) for all five levels, so the last-step band
   edges equal the card's ranges exactly; the 100 paths are normal draws (kept in the JSON, not drawn).
-- **Kronos is experimental:** its lab 80% band held ~46% (target 80%). Off by default; its P10/P90
-  paths are drawn only if `latest.json` is from the same bar as the vol forecast and not stale.
-  Kronos is its own job (~9 min) and lands ~10 min after the forecast with its own Pages deploy
-  (`deploy-kronos`, shared `pages-deploy` group). Until then the checkbox reads "Kronos (updating…)"
-  and the page re-checks `latest.json` every minute; "not run today" only 30 min after the forecast
-  was published (`generated_utc`).
+- **Kronos retired (15 Nov 2026, NQ_9AM_ORIGIN.md decisions):** its lab 80% band held ~46% (target 80%)
+  and it was only ever an optional overlay. The `kronos` / `deploy-kronos` jobs, the chart toggle and
+  `latest.json` / `status.json` / `history.jsonl` / `band_check.json` are gone from the daily run and
+  the page. `run_forecast.py`, `backfill_history.py`, `band_check.py`, its torch `requirements.txt` and
+  the last data files are in `lab/archive/kronos/` (README there); run from there they write only to
+  `lab/archive/kronos/data/`. `vendor/kronos` stays as a submodule (the Phase 6 lab uses it). Nothing
+  in `forecast/` or `site/` may import or read the archive.
 - **Events:** `forecast/events_2026_2027.yaml` (FOMC 14:00; CPI, NFP, PCE, GDP advance, retail sales
   08:30 NY). `covered_from` 2026-01-01 / `covered_until` 2027-12-31; outside that the flag says
   "not loaded". **Update every January** from the official calendars cited in the file.
 - **Backfill results, HAR-RV, 09:00 origin (10 Nov 2025 – 12 Nov 2026, 250 forecasts, older / newer half):**
   80% 84.8 / 80.8, 85% 87.2 / 83.2, 90% 91.2 / 88.8, 95% 95.2 / 94.4, 99% 98.4 / 100.0.
   (08:00 origin, 3 Nov 2025 – 5 Nov 2026: 80.0 / 79.2, 83.2 / 83.2, 90.4 / 88.0, 93.6 / 96.0, 98.4 / 99.2.)
-- **Chart controls:** Last Price · Kronos (experimental) · 99 / 95 / 90 / 85 / 80% band buttons.
+- **Chart controls:** Last Price · 99 / 95 / 90 / 85 / 80% band buttons.
   Selected bands' upper and lower prices are always labelled at the right edge (de-overlapped).
   The chart always shows the full forecast window; the cash-session box, the "Cash" view and the
   "Levels" checkboxes were removed (NQ_CHART_CASH_REMOVAL.md). The cash session stays in the top
@@ -214,7 +210,8 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
 | Evening driver check (lab) | `lab/driver_check.py`, `.github/workflows/driver_check.yml` → `lab/results/driver_check.*` |
 | Accuracy log, cash-session backtest, backfill | `forecast/vol_accuracy.py` |
 | ntfy alert | `forecast/vol_alert.py` |
-| Kronos run, band check | `forecast/run_forecast.py`, `forecast/band_check.py` |
+| Kronos (retired), band check, last data | `lab/archive/kronos/` |
+| 08:00-origin forecasts before 16 Nov 2026 (archive) | `site/data/archive/vol_history_8am.jsonl` |
 | Data download, cleaning, rolls; trading calendar | `forecast/fetch.py`, `forecast/nq_calendar.py` |
 | Page (vanilla JS, no build; design in `design/`) | `site/index.html`, `vol.js` (data + everything but the chart), `app.js` (SVG chart), `style.css` (`body.nq` = main page) |
 | Accuracy page | `site/accuracy.html`, `site/accuracy.js`, `site/lab/*.png` |
@@ -232,13 +229,13 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
 ./.venv/bin/python lab/regime.py && ./.venv/bin/python lab/vol_contest.py   # research gates C and D
 ./.venv/bin/python lab/vol_contest.py --fix                                 # vol-fix scoring (lab/results/vol_fix.md)
 ./.venv/bin/python lab/origin_9am.py                                        # 08:00 vs 09:00 origin (lab/results/origin_9am.md)
-./.venv/bin/python forecast/run_forecast.py --origin 2026-11-13T13:00:00Z --horizon 23   # Kronos (writes site/data!)
+./.venv/bin/python lab/archive/kronos/run_forecast.py --origin 2026-11-13T13:00:00Z   # retired Kronos (needs torch; writes lab/archive/kronos/data)
 ./.venv/bin/python forecast/vol_alert.py [--send | --new-topic]             # alert text / test send
 ./.venv/bin/python -m http.server 8765 -d site                              # preview the page
 ```
 
 GitHub: Actions → garch-vol → Run workflow (tick **force** to forecast outside the window, which also
-alerts; tick **test alert** to check the secret). Actions → forecast → Run workflow for Kronos only.
+alerts; tick **test alert** to check the secret). Actions → deploy → Run workflow redeploys the page.
 
 ## Incidents
 

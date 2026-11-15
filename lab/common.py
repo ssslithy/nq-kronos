@@ -16,6 +16,7 @@ CACHE = LAB / "cache"
 RESULTS = LAB / "results"
 sys.path.insert(0, str(ROOT / "forecast"))
 sys.path.insert(0, str(ROOT / "vendor" / "kronos"))
+sys.path.insert(0, str(LAB / "archive" / "kronos"))   # run_forecast.py (Kronos, retired 15 Nov 2026)
 
 import fetch  # noqa: E402
 import nq_calendar as cal  # noqa: E402

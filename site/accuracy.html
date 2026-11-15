@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NQ forecast accuracy</title>
-  <meta name="description" content="How often NQ's actual 24-hour (9am to 9am New York) and cash-session moves landed inside the daily volatility forecast ranges, plus the Kronos lab results.">
+  <meta name="description" content="How often NQ's actual 24-hour (9am to 9am New York) and cash-session moves landed inside the daily volatility forecast ranges, plus the Kronos lab results and the archived 8am forecasts.">
   <meta name="theme-color" content="#090c0e">
-  <link rel="stylesheet" href="style.css?v=20261115a">
+  <link rel="stylesheet" href="style.css?v=20261115b">
 </head>
 <body class="acc">
   <header class="top">
@@ -81,19 +81,18 @@
         <tr><td>Naive</td><td>84%</td><td>83%</td><td>83%</td></tr>
       </tbody>
     </table></div>
-    <p class="acc-p">Verdict: raw Kronos's band was far too narrow; GARCH was closest to 80% out of sample. That's why the daily page used a calibrated GARCH (HAR-RV since Nov 2026) and keeps Kronos as an experimental toggle. Equity curves for the three test rules (MNQ, after costs; research only, not investment advice):</p>
+    <p class="acc-p">Verdict: raw Kronos's band was far too narrow; GARCH was closest to 80% out of sample. That's why the daily page used a calibrated GARCH (HAR-RV since Nov 2026) and kept Kronos only as an experimental toggle, retired on 15 Nov 2026 (code and its last forecast: <code>lab/archive/kronos/</code>). Equity curves for the three test rules (MNQ, after costs; research only, not investment advice):</p>
     <figure><img src="lab/equity_1_vol_sized_trend.png" alt="Equity curves, strategy 1: vol-sized trend" loading="lazy"><figcaption>1 · Vol-sized trend (MA 20/100, always in the market)</figcaption></figure>
     <figure><img src="lab/equity_2_stops_targets.png" alt="Equity curves, strategy 2: distribution stops and targets" loading="lazy"><figcaption>2 · Distribution stops and targets</figcaption></figure>
     <figure><img src="lab/equity_3_band_break.png" alt="Equity curves, strategy 3: band break, fade vs follow" loading="lazy"><figcaption>3 · Band break: fade vs follow</figcaption></figure>
-    <p class="acc-p" id="kronos-live"></p>
     <p class="acc-p">Caveats from the lab: one ~6-month period, 30 Kronos paths per forecast, estimated roll gaps before Sep 2026, delayed unofficial Yahoo data, and no correction for trying several rules.</p>
   </details>
 
   <footer>
     <p class="disclaimer">Volatility only, not direction. Past hit rates are not a guarantee. Not investment advice.</p>
-    <p>Backfilled days were forecast afterwards using only data up to 9:00am New York (2pm London) on that day. Until 13 Nov 2026 the live forecast was made an hour earlier; the whole year was then re-forecast from 9:00am (<code>lab/results/origin_9am.md</code>). Research write-ups: <code>lab/results/vol_contest.md</code> (GARCH kept), <code>lab/results/vol_fix.md</code> (HAR-RV replaced GARCH: faster after shocks) and <code>lab/results/regime.md</code> (no regime chip). Data: Yahoo Finance <code>NQ=F</code>, delayed and unofficial.</p>
+    <p>Backfilled days were forecast afterwards using only data up to 9:00am New York (2pm London) on that day. Until 13 Nov 2026 the live forecast was made an hour earlier; the whole year was then re-forecast from 9:00am (<code>lab/results/origin_9am.md</code>); the old 8:00am forecasts are archived in <a href="data/archive/vol_history_8am.jsonl">vol_history_8am.jsonl</a>. Research write-ups: <code>lab/results/vol_contest.md</code> (GARCH kept), <code>lab/results/vol_fix.md</code> (HAR-RV replaced GARCH: faster after shocks) and <code>lab/results/regime.md</code> (no regime chip). Data: Yahoo Finance <code>NQ=F</code>, delayed and unofficial.</p>
   </footer>
 
-  <script src="accuracy.js?v=20261115a"></script>
+  <script src="accuracy.js?v=20261115b"></script>
 </body>
 </html>

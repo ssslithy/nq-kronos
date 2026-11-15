@@ -206,16 +206,11 @@ body.nq { background: #0A0E11; color: #E8EEF1; font: 14px/1.4 Inter, system-ui, 
 .nq-controls { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; font-size: 13px; color: #93A1A9; }
 .nq-legend { display: flex; align-items: center; gap: 6px; }
 .nq-lp { width: 14px; height: 2px; background: #F2B84B; }
-.nq-check { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 0; color: #C9D4D9; user-select: none; }
-.nq-check input { width: 16px; height: 16px; margin: 0; accent-color: #34D3B6; cursor: pointer; }
-.nq-check input.ac-purple { accent-color: #B79CFF; }
-.nq-check.off { color: #5B6A72; cursor: not-allowed; }
-.nq-check.off input { cursor: not-allowed; }
 .nq-pis, .nq-pi-btns { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .nq-pis button { min-width: 52px; min-height: 44px; padding: 0 10px; border-radius: 10px; font: 600 14px "JetBrains Mono", monospace; cursor: pointer;
   background: #0E1418; color: #C9D4D9; border: 1px solid #2A353C; }
 .nq-pis button[aria-pressed="true"] { background: #34D3B6; color: #06221C; border-color: #34D3B6; }
-.nq-pis button:focus-visible, .nq-check input:focus-visible { outline: 2px solid #9AF0DE; outline-offset: 2px; }
+.nq-pis button:focus-visible { outline: 2px solid #9AF0DE; outline-offset: 2px; }
 .nq-chart svg { display: block; width: 100%; height: auto; }
 .nq-chart text { font-variant-numeric: tabular-nums; }
 .nq-axis-note { font-size: 12px; color: #93A1A9; }

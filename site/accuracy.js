@@ -1,6 +1,6 @@
 // Accuracy page: reads data/vol_history.jsonl (one line per daily vol forecast) and draws
 // the 24-hour (9am -> 9am New York) and cash-session hit charts, the hit-rate tables (80/85/90/95/99%) and the
-// rolling 60-day hit rate of the 90% range (the headline). Also the live Kronos daily check.
+// rolling 60-day hit rate of the 90% range (the headline).
 "use strict";
 (() => {
   const Z80 = 1.2816, DAYS = 250, ROLL = 60;
@@ -160,17 +160,6 @@
     el.innerHTML = svg(f, b, "Rolling 60-day hit rate of the 90% range, 24 hours and cash session");
   }
 
-  // live daily Kronos runs vs their own P10-P90 (data/band_check.json)
-  async function kronosLive() {
-    try {
-      const b = await (await fetch(`data/band_check.json?t=${Date.now()}`, { cache: "no-store" })).json();
-      const d = b.daily || { n: 0 };
-      $("kronos-live").textContent = d.n
-        ? `Live daily Kronos runs so far: ${d.n} matured; its P10–P90 held ${(100 * d.hit_rate).toFixed(0)}% (target 80%).`
-        : "Live daily Kronos runs: none matured yet.";
-    } catch (e) { /* optional */ }
-  }
-
   function render() {
     chart24($("chart-24h")); chartCash($("chart-cash")); chartRoll($("chart-roll"));
   }
@@ -187,7 +176,6 @@
       `${m.length} matured forecasts (${day.format(new Date(m[0].origin_utc))} to ${day.format(new Date(m[m.length - 1].origin_utc))}): ` +
       `the actual move landed inside the 90% range <b>${pct(h.v)}</b> of the time; cash session <b>${pct(c.v)}</b> of ${c.n}.`;
     tables(); render();
-    kronosLive();
   }
 
   let t = null;

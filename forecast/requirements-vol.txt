@@ -1,5 +1,5 @@
-# The daily GARCH vol forecast (forecast/run_vol.py) only: no torch / Kronos.
-# Versions match forecast/requirements.txt and the local .venv (Python 3.11).
+# The daily vol forecast (forecast/run_vol.py) and the page data. Kronos's torch set is in
+# lab/archive/kronos/requirements.txt. Versions match the local .venv (Python 3.11).
 yfinance==1.8.0
 pandas==2.2.2
 numpy==2.4.6

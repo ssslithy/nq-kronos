@@ -4,15 +4,14 @@ A small self-updating web page for Nasdaq-100 futures (NQ). Once per US trading 
 9:00am New York (2:00pm London; the close of the 08:00–09:00 New York bar), it publishes a calibrated HAR-RV
 volatility forecast for the next 23 trading hours (9am → 9am New York) with five prediction
 intervals, the cash-session range, the US release calendar, Treasuries, Fed-decision betting odds
-(Polymarket) and tech headlines, plus an
-experimental [Kronos](https://github.com/shiyu-coder/Kronos)-small run from the same bar, and checks
-how often reality lands inside the ranges.
+(Polymarket) and tech headlines, and checks how often reality lands inside the ranges.
+(An experimental [Kronos](https://github.com/shiyu-coder/Kronos)-small overlay ran until 15 Nov 2026;
+it is archived in `lab/archive/kronos/`.)
 
 **Live page:** https://ssslithy.github.io/nq-kronos/
 
-It runs for free on GitHub: one daily Actions workflow fetches data, runs both models on a CPU
-runner, commits the results and deploys GitHub Pages: the vol forecast first, then Kronos, so Kronos can
-never delay or block it.
+It runs for free on GitHub: one daily Actions workflow fetches data, runs the model on a CPU
+runner, commits the results and deploys GitHub Pages.
 
 > Experimental model output on delayed data. Not investment advice.
 
@@ -39,17 +38,14 @@ All times are London, 12-hour ("2:00pm"); New York appears only in Details.
   90 / 85 / 80% (multi-select, 90% on by default) draw stacked bands; at the last step each band
   equals that range exactly, and every selected band's upper and lower price is labelled at the
   right edge. The chart always shows the full forecast window (the cash session is in the top
-  card only). "Kronos (experimental)" overlays Kronos-small's P10 / P90 paths when it ran from the
-  same bar (its 80% band held only ~46% in the lab). Kronos lands ~10 minutes after the forecast:
-  until then it reads "Kronos (updating…)" and switches on by itself; "not run today" only after
-  30 minutes.
+  card only).
 - **Footer:** the 90% PI's hit rate over the last 250 days, and a Details section (window, model and
   multipliers, recent moves, cash-session notes, Friday weekend-gap note, data sources, and
   "Volatility only, not direction. Not investment advice.").
 - **Accuracy page** (`accuracy.html`): 24-hour and cash-session moves against the 90% ranges for
   the last 250 days, hit-rate tables (80 / 85 / 90 / 95 / 99%, by half, by release day and type; cash
-  90% and 80%, touch rates), rolling 60-day hit rates, the live Kronos daily check and the Phase 6
-  Kronos lab.
+  90% and 80%, touch rates), rolling 60-day hit rates, the Phase 6 Kronos lab, and a link to the archived
+  8:00am forecasts (`site/data/archive/vol_history_8am.jsonl`, before the origin moved to 9:00am).
 - A banner appears only if the daily run failed or is more than 90 minutes late. If the calendar,
   Treasuries, Fed odds or news fetch fails, that block is simply hidden.
 
@@ -62,15 +58,12 @@ All times are London, 12-hour ("2:00pm"); New York appears only in Details.
 | Daily vol forecast (HAR-RV), fan, alert, accuracy log | `forecast/run_vol.py`, `garch_vol.py`, `vol_accuracy.py`, `vol_alert.py` |
 | Calendar, Treasuries, Fed odds and news for the page (after the alert; fail-soft) | `forecast/page_data.py` |
 | Research: volatility contest, vol fix, regime filter | `lab/vol_contest.py` (`--fix`), `lab/regime.py` → `lab/results/` |
-| Kronos-small from the same bar (`--origin`, `--horizon 23` in the daily job): 100 paths, `site/data/latest.json`, `history.jsonl`, `band_check.json`, `status.json` | `forecast/run_forecast.py` |
-| Score past Kronos forecasts against actual closes | `forecast/band_check.py` |
+| Retired Kronos-small run, its band check and last forecast (not used by the site) | `lab/archive/kronos/` |
 | Static page (vanilla JS + SVG, no build step) | `site/` |
-| Daily job: vol forecast + alert, commit, deploy; then Kronos as its own job (15-min limit), commit, deploy | `.github/workflows/garch_vol.yml` |
-| Manual Kronos run from the latest bar; deploy on `site/` code changes | `.github/workflows/forecast.yml` |
+| Daily job: vol forecast + alert, commit, deploy | `.github/workflows/garch_vol.yml` |
+| Deploy on `site/` code changes (or by hand) | `.github/workflows/forecast.yml` |
 
-If the vol forecast fails, the previous one stays up marked stale and the run fails. If
-Kronos fails or runs past 15 minutes, only Kronos is marked stale (badge on the page, error in
-`status.json`); the vol forecast, alert and deploy have already gone out.
+If the vol forecast fails, the previous one stays up marked stale and the run fails.
 
 ## Run locally
 
@@ -79,26 +72,13 @@ Requires Python 3.11.
 ```bash
 git clone --recurse-submodules <this repo> && cd nq-kronos
 python3.11 -m venv .venv && . .venv/bin/activate
-pip install -r forecast/requirements.txt
+pip install -r forecast/requirements-vol.txt
 python forecast/fetch.py                 # last 5 bars + the next forecast hours
-python forecast/run_forecast.py          # ~3 min on a laptop CPU; writes site/data/*
+python forecast/run_vol.py --now "2026-11-13 09:10" --force --out /tmp/vol   # a past day, into a scratch folder
 python -m http.server -d site            # then open http://localhost:8000
 ```
 
-On Linux, install the CPU-only PyTorch wheel first to avoid a multi-GB CUDA download:
-`pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu`.
-On Apple silicon, `--device mps` roughly halves the runtime (results then differ slightly
-from the CPU run).
-
-## Changing samples or horizon
-
-- Locally: `python forecast/run_forecast.py --samples 50 --horizon 12`
-  (or set `NQ_SAMPLES` / `NQ_HORIZON`).
-- In the daily job: 100 samples (`NQ_SAMPLES` in `.github/workflows/garch_vol.yml`). A
-  manual Kronos-only run (Actions → forecast → Run workflow) lets you pick the sample count
-  and run from the latest bar, even while the market is closed.
-- Sampling cost is ~1.5–2 s per path on CPU, because Kronos recomputes its full 512-bar
-  context at every step; 100 paths take about 3–5 minutes on a GitHub runner.
+The retired Kronos run needs torch and its own requirements: see `lab/archive/kronos/README.md`.
 
 ## Daily volatility forecast (HAR-RV), 9am → 9am New York
 
@@ -197,10 +177,8 @@ read the topic, so keep it secret. Without the secret nothing is sent. Manual fo
   Headlines come from free RSS feeds (Yahoo Finance, CNBC, MarketWatch, Nasdaq.com): titles and
   links only, never anything published after the forecast time. Fed odds are Polymarket's public prices (crowd betting odds), not a
   forecast from this site.
-- Kronos's published benchmarks come from its authors and are not yet independently
-  replicated.
-- Backfilled history lines (`"backfill": true`, marked "bf" on the page) were generated
-  afterwards with 30 paths; they drop out of the 30-forecast window as live ones arrive.
+- Backfilled history lines (`"backfill": true`) were forecast afterwards using only data
+  available at each origin.
 - **Volatility forecast: volatility only, not direction.** It says how far NQ is likely
   to move over the next 23 trading hours (9am to 9am New York), not which way. Not investment advice.
 - On Fridays the window runs over the weekend; weekend gap risk isn't fully in Friday's range.
@@ -218,7 +196,8 @@ read the topic, so keep it secret. Without the secret nothing is sent. Manual fo
   included as a git submodule in `vendor/kronos` pinned to commit `67b630e`. Weights:
   [NeoQuasar/Kronos-small](https://huggingface.co/NeoQuasar/Kronos-small) and
   [NeoQuasar/Kronos-Tokenizer-base](https://huggingface.co/NeoQuasar/Kronos-Tokenizer-base)
-  (MIT), pinned to specific revisions in `forecast/run_forecast.py`.
+  (MIT), pinned to specific revisions in `lab/archive/kronos/run_forecast.py`. Retired from the
+  page on 15 Nov 2026; still used by the Phase 6 lab.
 - **Data** — Yahoo Finance via [yfinance](https://github.com/ranaroussi/yfinance).
 
 ## Disclaimer

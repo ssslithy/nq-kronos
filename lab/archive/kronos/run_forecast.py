@@ -24,7 +24,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent
+HERE = Path(__file__).resolve().parent                 # lab/archive/kronos (retired 15 Nov 2026)
+ROOT = HERE.parents[2]
+sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT / "forecast"))
 sys.path.insert(0, str(ROOT / "vendor" / "kronos"))
 
@@ -34,7 +36,7 @@ import nq_calendar as cal  # noqa: E402
 
 log = logging.getLogger("forecast")
 
-DATA_DIR = ROOT / "site" / "data"
+DATA_DIR = HERE / "data"                               # was site/data while Kronos was live
 LATEST = DATA_DIR / "latest.json"
 HISTORY = DATA_DIR / "history.jsonl"
 STATUS = DATA_DIR / "status.json"
