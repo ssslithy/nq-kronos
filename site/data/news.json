@@ -1,157 +1,157 @@
 {
  "ok": true,
- "generated_utc": "2026-11-16T14:07:47Z",
- "window_start_utc": "2026-11-13T21:00:00Z",
- "window_end_utc": "2026-11-16T14:00:00Z",
+ "generated_utc": "2026-11-17T14:07:44Z",
+ "window_start_utc": "2026-11-16T21:00:00Z",
+ "window_end_utc": "2026-11-17T14:00:00Z",
  "brief": {
-  "source": "MT Newswires",
-  "title": "Update: US Equity Futures Lower Pre-Bell as Traders Await Nvidia Results, Anthropic IPO",
-  "link": "https://finance.yahoo.com/markets/stocks/articles/us-equity-futures-lower-pre-135602836.html?.tsrc=rss",
-  "published_utc": "2026-11-16T13:56:02Z",
-  "time_london": "1:56pm",
+  "source": "Investor's Business Daily",
+  "title": "Stock Market Today: Dow Slides After Surprise Retail Sales; Nvidia Rises With Earnings On Tap (Live Coverage)",
+  "link": "https://finance.yahoo.com/m/0c9330f2-68c3-38ef-9244-7dbdfd0853b7/stock-market-today%3A-dow.html?.tsrc=rss",
+  "published_utc": "2026-11-17T13:53:05Z",
+  "time_london": "1:53pm",
   "kind": "market_wrap"
  },
  "items": [
   {
-   "source": "Investor's Business Daily",
-   "title": "Tesla Sells Cybercabs To The Public. It Might Be Because Of A Bet With A YouTuber.",
-   "link": "https://finance.yahoo.com/m/40779e8f-2539-3b70-a13d-63c13ba203c1/tesla-sells-cybercabs-to-the.html?.tsrc=rss",
-   "published_utc": "2026-11-16T13:55:09Z",
-   "time_london": "1:55pm",
+   "source": "Yahoo Finance",
+   "title": "Syntax Earns Microsoft Agentic Business Solutions Specialization",
+   "link": "https://finance.yahoo.com/news/syntax-earns-microsoft-agentic-business-140000868.html?.tsrc=rss",
+   "published_utc": "2026-11-17T14:00:00Z",
+   "time_london": "2:00pm",
    "impact": 1,
    "cluster": 1
   },
   {
    "source": "Nasdaq",
-   "title": "If Staying in Nvidia Stock Scares You, You Might Want To Consider This ETF",
-   "link": "https://www.nasdaq.com/articles/if-staying-nvidia-stock-scares-you-you-might-want-consider-etf",
-   "published_utc": "2026-11-16T13:50:02Z",
-   "time_london": "1:50pm",
+   "title": "This Magnificent Growth Stock Just Entered the Artificial Intelligence (AI) Cloud Race, and It Looks Dirt Cheap",
+   "link": "https://www.nasdaq.com/articles/magnificent-growth-stock-just-entered-artificial-intelligence-ai-cloud-race-and-it-looks",
+   "published_utc": "2026-11-17T13:45:02Z",
+   "time_london": "1:45pm",
    "impact": 1,
    "cluster": 1
   },
   {
-   "source": "Nasdaq",
-   "title": "U.S. Stocks May See Further Downside As Nvidia Slumps",
-   "link": "https://www.nasdaq.com/articles/us-stocks-may-see-further-downside-nvidia-slumps",
-   "published_utc": "2026-11-16T13:49:04Z",
-   "time_london": "1:49pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Nasdaq",
-   "title": "Bay Street Likely To Open Weak; Inflation Data In Focus",
-   "link": "https://www.nasdaq.com/articles/bay-street-likely-open-weak-inflation-data-focus-0",
-   "published_utc": "2026-11-16T13:27:16Z",
-   "time_london": "1:27pm",
+   "source": "MarketWatch",
+   "title": "U.S. retail sales slow just ahead of the holiday shopping season",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=0dc06a8e-06fc-4b90-bc4d-cb185fa78cf7&mod=mw_rss_bulletins",
+   "published_utc": "2026-11-17T13:42:52Z",
+   "time_london": "1:42pm",
    "impact": 3,
    "cluster": 1
   },
   {
-   "source": "Investor's Business Daily",
-   "title": "Jensen Huang Reportedly Considers Returning To Nvidia: FT",
-   "link": "https://finance.yahoo.com/m/694d3941-721c-31d4-aff5-d306f1116454/jensen-huang-reportedly.html?.tsrc=rss",
-   "published_utc": "2026-11-16T13:21:31Z",
-   "time_london": "1:21pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "CNBC",
-   "title": "Lutnick faces questions over Nvidia spy scandal. His sons' firm has ties to the chipmaker",
-   "link": "https://www.cnbc.com/2026/11/13/howard-lutnick-nvidia-jensen-huang-china-cantor-fitzgerald.html",
-   "published_utc": "2026-11-16T12:14:46Z",
-   "time_london": "12:14pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Bloomberg",
-   "title": "Blackstone REIT to Buy Amazon Data Centers in $5 Billion Deal",
-   "link": "https://finance.yahoo.com/real-estate/articles/blackstone-reit-buy-amazon-data-115357460.html?.tsrc=rss",
-   "published_utc": "2026-11-16T11:53:57Z",
-   "time_london": "11:53am",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "MarketWatch",
-   "title": "Nvidia can avoid fate of other stocks that were once the biggest, says JPMorgan",
-   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=70f8da3a-cf10-45a3-9b1a-10cda20ef41e&mod=mw_rss_bulletins",
-   "published_utc": "2026-11-16T11:26:06Z",
-   "time_london": "11:26am",
-   "impact": 1,
+   "source": "Nasdaq",
+   "title": "U.S. Retail Sales Increase In Line With Estimates In October",
+   "link": "https://www.nasdaq.com/articles/us-retail-sales-increase-line-estimates-october",
+   "published_utc": "2026-11-17T13:34:54Z",
+   "time_london": "1:34pm",
+   "impact": 3,
    "cluster": 1
   },
   {
    "source": "Yahoo Finance",
-   "title": "Dozens of satellites lost in space after Amazon rocket failure",
-   "link": "https://uk.finance.yahoo.com/news/dozens-satellites-lost-space-amazon-111802188.html?.tsrc=rss",
-   "published_utc": "2026-11-16T11:18:02Z",
-   "time_london": "11:18am",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "MarketWatch",
-   "title": "Ex-White House economist calculates how far stocks will fall if AI bubble burst",
-   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=4ad182ae-afc3-4e55-ae3c-95f1358c596e&mod=mw_rss_bulletins",
-   "published_utc": "2026-11-16T11:11:32Z",
-   "time_london": "11:11am",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Yahoo Finance",
-   "title": "US Administration Plans AI National Champions Programme Including Nvidia, Amazon and Microsoft, WSJ Reports",
-   "link": "https://investorshub.advfn.com/market-news/article/40072/us-administration-plans-ai-national-champions-programme-including-nvidia-amazon-and-microsoft-wsj-reports?.tsrc=rss",
-   "published_utc": "2026-11-16T11:07:27Z",
-   "time_london": "11:07am",
+   "title": "Amazon to invest $7bn in Indian renewable energy projects by 2030",
+   "link": "https://www.power-technology.com/news/amazon-7bn-indian-renewable-projects-2030/?.tsrc=rss",
+   "published_utc": "2026-11-17T13:29:18Z",
+   "time_london": "1:29pm",
    "impact": 1,
    "cluster": 1
   },
   {
    "source": "MT Newswires",
-   "title": "Meta Fined $887.3 Million by Italy for Accessing Android Users' Photos Without Specific Consent",
-   "link": "https://finance.yahoo.com/technology/ai/articles/meta-fined-887-3-million-093734165.html?.tsrc=rss",
-   "published_utc": "2026-11-16T09:37:34Z",
-   "time_london": "9:37am",
+   "title": "Market Chatter: Amazon, Google, Meta Lobbying Fails to Stop Trump From Pursuing China Data Center Curbs",
+   "link": "https://finance.yahoo.com/technology/articles/market-chatter-amazon-google-meta-123953028.html?.tsrc=rss",
+   "published_utc": "2026-11-17T12:39:53Z",
+   "time_london": "12:39pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Investor's Business Daily",
+   "title": "This Is The Biggest Financial Risk, According To Fed's Report",
+   "link": "https://finance.yahoo.com/m/da30c140-0174-31ea-bbcf-1896d688d619/this-is-the-biggest-financial.html?.tsrc=rss",
+   "published_utc": "2026-11-17T12:00:34Z",
+   "time_london": "12:00pm",
    "impact": 3,
    "cluster": 1
+  },
+  {
+   "source": "Benzinga",
+   "title": "'Soft Recession or Something More Dramatic:' Former SEC Chair Gary Gensler Warns AI Boom Could End in Dot-Com-Scale Bust \u2014 'They Loaned Too Much Money, Too Fast'",
+   "link": "https://finance.yahoo.com/technology/ai/articles/soft-recession-something-more-dramatic-120008643.html?.tsrc=rss",
+   "published_utc": "2026-11-17T12:00:08Z",
+   "time_london": "12:00pm",
+   "impact": 3,
+   "cluster": 1
+  },
+  {
+   "source": "MarketWatch",
+   "title": "Tepper and Loeb among fund managers piling into Nvidia and other megacap tech stocks on eve of October drawdown",
+   "link": "https://www.marketwatch.com/story/tepper-loeb-among-fund-managers-piling-into-nvidia-and-other-megacap-tech-on-the-eve-of-october-drawdown-de45f572?mod=mw_rss_topstories",
+   "published_utc": "2026-11-17T10:28:00Z",
+   "time_london": "10:28am",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "MarketWatch",
+   "title": "Nvidia board establishes committee to oversee export controls",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=60eb154b-9905-4400-a4a8-4afc2bbfd660&mod=mw_rss_bulletins",
+   "published_utc": "2026-11-17T10:17:04Z",
+   "time_london": "10:17am",
+   "impact": 2,
+   "cluster": 2
+  },
+  {
+   "source": "CNBC",
+   "title": "Nvidia warns chip buyers of legal risks tied to China AI access, sources tell CNBC",
+   "link": "https://www.cnbc.com/2026/11/17/nvidia-china-cloud-ai-chip-access.html",
+   "published_utc": "2026-11-17T07:07:35Z",
+   "time_london": "7:07am",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Investing",
+   "title": "Asia stocks slide as U.S. tightens AI chip curbs ahead of Nvidia results",
+   "link": "https://finance.yahoo.com/markets/world-indices/articles/asia-stocks-slide-u-tightens-042558888.html?.tsrc=rss",
+   "published_utc": "2026-11-16T21:49:21Z",
+   "time_london": "9:49pm",
+   "impact": 2,
+   "cluster": 3
   }
  ],
  "split": {
   "stories": {
-   "n": 34,
-   "bars3": 2,
-   "bars2": 0,
-   "bars1": 32,
-   "pct3": 6,
-   "pct2": 0,
-   "pct1": 94
+   "n": 27,
+   "bars3": 4,
+   "bars2": 2,
+   "bars1": 21,
+   "pct3": 15,
+   "pct2": 7,
+   "pct1": 78
   },
   "listed": {
    "n": 12,
-   "bars3": 2,
-   "bars2": 0,
-   "bars1": 10,
-   "pct3": 17,
-   "pct2": 0,
-   "pct1": 83
+   "bars3": 4,
+   "bars2": 2,
+   "bars1": 6,
+   "pct3": 33,
+   "pct2": 17,
+   "pct1": 50
   },
   "note": "non-wrap items only: market wraps and movers roundups are excluded"
  },
  "stats": {
-  "fetched": 434,
-  "in_window": 244,
+  "fetched": 415,
+  "in_window": 214,
   "wraps": {
-   "market_wrap": 7,
-   "movers_roundup": 1
+   "market_wrap": 4,
+   "movers_roundup": 0
   },
-  "relevant": 49,
-  "blocked_publisher": 55,
-  "clustered": 15
+  "relevant": 36,
+  "blocked_publisher": 47,
+  "clustered": 9
  },
  "feeds_ok": 23,
  "feeds_total": 23,
