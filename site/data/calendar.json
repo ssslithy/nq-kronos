@@ -1,17 +1,8 @@
 {
  "ok": true,
- "generated_utc": "2026-11-17T14:07:44Z",
- "origin_utc": "2026-11-17T13:00:00Z",
+ "generated_utc": "2026-11-18T14:07:32Z",
+ "origin_utc": "2026-11-18T13:00:00Z",
  "items": [
-  {
-   "time_utc": "2026-11-17T13:30:00Z",
-   "kind": "RETAIL",
-   "name": "Retail sales",
-   "impact": 2,
-   "today": true,
-   "date_london": "Today",
-   "time_london": "1:30pm"
-  },
   {
    "time_utc": "2026-11-25T13:30:00Z",
    "kind": "PCE",
@@ -38,6 +29,15 @@
    "today": false,
    "date_london": "Fri 4 Dec",
    "time_london": "1:30pm"
+  },
+  {
+   "time_utc": "2026-12-09T19:00:00Z",
+   "kind": "FOMC",
+   "name": "FOMC decision",
+   "impact": 3,
+   "today": false,
+   "date_london": "Wed 9 Dec",
+   "time_london": "7:00pm"
   }
  ],
  "source": "events_2026_2027.yaml"
