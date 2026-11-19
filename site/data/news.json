@@ -1,157 +1,157 @@
 {
  "ok": true,
- "generated_utc": "2026-11-18T14:07:32Z",
- "window_start_utc": "2026-11-17T21:00:00Z",
- "window_end_utc": "2026-11-18T14:00:00Z",
+ "generated_utc": "2026-11-19T14:07:33Z",
+ "window_start_utc": "2026-11-18T21:00:00Z",
+ "window_end_utc": "2026-11-19T14:00:00Z",
  "brief": {
-  "source": "MT Newswires",
-  "title": "Update: US Equity Futures Mostly Higher Pre-Bell as Nvidia Posts Higher-Than-Expected Financial Results",
-  "link": "https://finance.yahoo.com/markets/stocks/articles/us-equity-futures-mostly-higher-135405758.html?.tsrc=rss",
-  "published_utc": "2026-11-18T13:54:05Z",
-  "time_london": "1:54pm",
+  "source": "Investor's Business Daily",
+  "title": "Dow Jones Futures Rise, Nasdaq Jumps: Anthropic To Debut After Record IPO; Palo Alto, Everpure Rally, Walmart Falls",
+  "link": "https://finance.yahoo.com/m/107e5a2c-4fba-3df3-b2fd-5d1160e65516/dow-jones-futures-rise%2C.html?.tsrc=rss",
+  "published_utc": "2026-11-19T13:07:44Z",
+  "time_london": "1:07pm",
   "kind": "market_wrap"
  },
  "items": [
   {
-   "source": "Investing",
-   "title": "Wall Street reassured by Nvidia beat and raise despite leadership turmoil",
-   "link": "https://finance.yahoo.com/markets/stocks/articles/wall-street-reassured-nvidia-beat-134833043.html?.tsrc=rss",
-   "published_utc": "2026-11-18T13:48:33Z",
+   "source": "Yahoo Finance",
+   "title": "DXC Collaborates with Cisco to Turn AI-Powered Network Insights into Action with DXC OASIS",
+   "link": "https://finance.yahoo.com/news/dxc-collaborates-cisco-turn-ai-140000867.html?.tsrc=rss",
+   "published_utc": "2026-11-19T14:00:00Z",
+   "time_london": "2:00pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Yahoo Finance",
+   "title": "Chip Stocks Split From Their Bellwether as Leadership Questions Linger",
+   "link": "https://finance.yahoo.com/news/chip-stocks-split-bellwether-leadership-135800328.html?.tsrc=rss",
+   "published_utc": "2026-11-19T13:58:00Z",
+   "time_london": "1:58pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "MarketWatch",
+   "title": "Alibaba\u2019s cloud business is thriving. But those profits are completely offset by losses from its AI labs.",
+   "link": "https://www.marketwatch.com/story/alibabas-cloud-business-is-thriving-but-those-profits-are-completely-offset-by-losses-from-its-ai-labs-74bf4b3c?mod=mw_rss_topstories",
+   "published_utc": "2026-11-19T13:55:00Z",
+   "time_london": "1:55pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Investor's Business Daily",
+   "title": "Elon Musk's Latest Calls For Tesla-SpaceX Merger; Explains Pay Package",
+   "link": "https://finance.yahoo.com/m/1572a323-6573-387a-b2e2-dc53dede777c/elon-musk%27s-latest-calls-for.html?.tsrc=rss",
+   "published_utc": "2026-11-19T13:48:42Z",
    "time_london": "1:48pm",
    "impact": 1,
    "cluster": 1
   },
   {
    "source": "Nasdaq",
-   "title": "Why S&P 500 ETF Investors Don't Have to Worry (Much) About Nvidia Stock Plunging",
-   "link": "https://www.nasdaq.com/articles/why-sp-500-etf-investors-dont-have-worry-much-about-nvidia-stock-plunging",
-   "published_utc": "2026-11-18T13:41:01Z",
-   "time_london": "1:41pm",
-   "impact": 1,
+   "title": "Baker Hughes-McDermott Consortium Wins INPEX Contract For Ichthys LNG Project",
+   "link": "https://www.nasdaq.com/articles/baker-hughes-mcdermott-consortium-wins-inpex-contract-ichthys-lng-project",
+   "published_utc": "2026-11-19T13:05:03Z",
+   "time_london": "1:05pm",
+   "impact": 2,
    "cluster": 1
   },
   {
-   "source": "Yahoo Finance",
-   "title": "Bill Gurley says giving away AI is Google's 'No. 1' move against Anthropic",
-   "link": "https://finance.yahoo.com/markets/article/bill-gurley-says-giving-away-ai-is-googles-no-1-move-against-anthropic-133314859.html?.tsrc=rss",
-   "published_utc": "2026-11-18T13:33:14Z",
-   "time_london": "1:33pm",
-   "impact": 1,
+   "source": "Barron's",
+   "title": "Anthropic Stock Market Debut Will Change the AI Trade Forever",
+   "link": "https://finance.yahoo.com/m/fcb295bf-9c0c-3ffa-946d-c7e37a453503/anthropic-stock-market-debut.html?.tsrc=rss",
+   "published_utc": "2026-11-19T12:45:00Z",
+   "time_london": "12:45pm",
+   "impact": 2,
    "cluster": 1
   },
   {
-   "source": "MarketWatch",
-   "title": "Economic data: Minutes from the Fed\u2019s latest meeting could provide tea leaves",
-   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=7ba6535c-61a0-44b1-9eda-3b31f09b808e&mod=mw_rss_bulletins",
-   "published_utc": "2026-11-18T13:31:57Z",
-   "time_london": "1:31pm",
-   "impact": 3,
-   "cluster": 1
-  },
-  {
-   "source": "CNBC",
-   "title": "Southeast Asia\u2019s data center boom leaned on Chinese demand. New U.S. rules put that pipeline at risk",
-   "link": "https://www.cnbc.com/2026/11/18/nvidia-us-ai-chip-export-controls-data-centers-.html",
-   "published_utc": "2026-11-18T13:15:45Z",
-   "time_london": "1:15pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Yahoo Finance",
-   "title": "GB News launches British-only rival to Amazon",
-   "link": "https://uk.finance.yahoo.com/news/gb-news-launches-british-only-130711257.html?.tsrc=rss",
-   "published_utc": "2026-11-18T13:07:11Z",
-   "time_london": "1:07pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Benzinga",
-   "title": "Elon Musk Steps in After Jensen Huang Loses X Verification Following Nvidia Exit: \u2018Blue Check Coming Back for Free on the House\u2019",
-   "link": "https://finance.yahoo.com/media-advertising/articles/elon-musk-steps-jensen-huang-130007871.html?.tsrc=rss",
-   "published_utc": "2026-11-18T13:00:07Z",
-   "time_london": "1:00pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "MarketWatch",
-   "title": "The Fed is tightening, the economy is slowing \u2014 and that\u2019s the perfect setup to buy bonds, this trader argues",
-   "link": "https://www.marketwatch.com/story/the-fed-is-tightening-the-economy-is-slowing-and-thats-the-perfect-setup-to-buy-bonds-this-trader-argues-b1c88b23?mod=mw_rss_topstories",
-   "published_utc": "2026-11-18T11:38:00Z",
-   "time_london": "11:38am",
-   "impact": 3,
-   "cluster": 1
-  },
-  {
-   "source": "CNBC",
-   "title": "Cantor Fitzgerald's Nvidia business interests targeted in Democrats' Lutnick probe",
-   "link": "https://www.cnbc.com/2026/11/18/nvidia-lutnick-china-ai-megaspeed-cantor-fitzgerald.html",
-   "published_utc": "2026-11-18T09:45:01Z",
-   "time_london": "9:45am",
+   "source": "Nasdaq",
+   "title": "PDD Holdings Inc. Sponsored ADR (PDD) Surpasses Q3 Earnings Estimates",
+   "link": "https://www.nasdaq.com/articles/pdd-holdings-inc-sponsored-adr-pdd-surpasses-q3-earnings-estimates",
+   "published_utc": "2026-11-19T11:45:01Z",
+   "time_london": "11:45am",
    "impact": 3,
    "cluster": 1
   },
   {
    "source": "Investing",
-   "title": "Asia stocks mixed as Nvidia optimism offsets Wall Street rout, Fed mins in focus",
-   "link": "https://finance.yahoo.com/markets/stocks/articles/asia-stocks-mixed-nvidia-optimism-050505174.html?.tsrc=rss",
-   "published_utc": "2026-11-18T05:05:05Z",
-   "time_london": "5:05am",
+   "title": "Anthropic\u2019s record-setting IPO; Fed minutes - what\u2019s moving markets",
+   "link": "https://finance.yahoo.com/technology/ai/articles/anthropic-record-setting-ipo-fed-093418331.html?.tsrc=rss",
+   "published_utc": "2026-11-19T09:34:18Z",
+   "time_london": "9:34am",
    "impact": 3,
    "cluster": 1
   },
   {
-   "source": "Benzinga",
-   "title": "Tesla-SpaceX Merger Is 'Almost Inconceivable' to Avoid, Says Elon Musk Biographer \u2014 'You'll Know More' on Dec. 3",
-   "link": "https://finance.yahoo.com/technology/articles/tesla-spacex-merger-almost-inconceivable-043006339.html?.tsrc=rss",
-   "published_utc": "2026-11-18T04:30:06Z",
-   "time_london": "4:30am",
+   "source": "Yahoo Finance",
+   "title": "Why Nvidia and ASML still fit an underweight tech strategy",
+   "link": "https://www.thestreet.com/investing/why-nvidia-and-asml-still-fit-an-underweight-tech-strategy?.tsrc=rss",
+   "published_utc": "2026-11-19T00:44:54Z",
+   "time_london": "12:44am",
+   "impact": 2,
+   "cluster": 1
+  },
+  {
+   "source": "CNBC",
+   "title": "Microsoft CEO Satya Nadella calls Outlook outage a 'perfect storm.' Here's what went wrong",
+   "link": "https://www.cnbc.com/2026/11/18/microsoft-put-the-ai-threat-to-software-behind-it-then-came-the-outage.html",
+   "published_utc": "2026-11-19T00:18:28Z",
+   "time_london": "12:18am",
    "impact": 3,
    "cluster": 1
   },
   {
    "source": "CNBC",
-   "title": "Nvidia takes positive step forward with stronger sales outlook. Here\u2019s our thoughts on the stock",
-   "link": "https://www.cnbc.com/investingclub/2026/11/17/nvidia-takes-positive-step-forward-with-stronger-sales-outlook-heres-our-thoughts-on-the-stock.html",
-   "published_utc": "2026-11-17T21:05:24Z",
-   "time_london": "9:05pm",
-   "impact": 3,
-   "cluster": 14
+   "title": "Palo Alto inks $4.5 billion deal for AI startup Applied Compute, shares pop 7% on earnings",
+   "link": "https://www.cnbc.com/2026/11/18/palo-alto-networks-panw-q1-2027-earnings-.html",
+   "published_utc": "2026-11-19T00:07:06Z",
+   "time_london": "12:07am",
+   "impact": 2,
+   "cluster": 1
+  },
+  {
+   "source": "MarketWatch",
+   "title": "What\u2019s next for the AI trade after Nvidia\u2019s blowout results are met with a shrug",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=eafdb624-64f5-4c2b-89e2-927ea73ab283&mod=mw_rss_bulletins",
+   "published_utc": "2026-11-18T21:06:49Z",
+   "time_london": "9:06pm",
+   "impact": 2,
+   "cluster": 2
   }
  ],
  "split": {
   "stories": {
-   "n": 24,
-   "bars3": 6,
-   "bars2": 0,
-   "bars1": 18,
-   "pct3": 25,
-   "pct2": 0,
-   "pct1": 75
+   "n": 44,
+   "bars3": 3,
+   "bars2": 5,
+   "bars1": 36,
+   "pct3": 7,
+   "pct2": 11,
+   "pct1": 82
   },
   "listed": {
    "n": 12,
-   "bars3": 6,
-   "bars2": 0,
-   "bars1": 6,
-   "pct3": 50,
-   "pct2": 0,
-   "pct1": 50
+   "bars3": 3,
+   "bars2": 5,
+   "bars1": 4,
+   "pct3": 25,
+   "pct2": 42,
+   "pct1": 33
   },
   "note": "non-wrap items only: market wraps and movers roundups are excluded"
  },
  "stats": {
-  "fetched": 427,
-  "in_window": 227,
+  "fetched": 439,
+  "in_window": 231,
   "wraps": {
-   "market_wrap": 9,
-   "movers_roundup": 0
+   "market_wrap": 8,
+   "movers_roundup": 1
   },
-  "relevant": 38,
+  "relevant": 46,
   "blocked_publisher": 48,
-  "clustered": 14
+  "clustered": 2
  },
  "feeds_ok": 23,
  "feeds_total": 23,
