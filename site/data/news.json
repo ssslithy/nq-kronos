@@ -1,157 +1,157 @@
 {
  "ok": true,
- "generated_utc": "2026-11-19T14:07:33Z",
- "window_start_utc": "2026-11-18T21:00:00Z",
- "window_end_utc": "2026-11-19T14:00:00Z",
+ "generated_utc": "2026-11-20T14:07:37Z",
+ "window_start_utc": "2026-11-19T21:00:00Z",
+ "window_end_utc": "2026-11-20T14:00:00Z",
  "brief": {
-  "source": "Investor's Business Daily",
-  "title": "Dow Jones Futures Rise, Nasdaq Jumps: Anthropic To Debut After Record IPO; Palo Alto, Everpure Rally, Walmart Falls",
-  "link": "https://finance.yahoo.com/m/107e5a2c-4fba-3df3-b2fd-5d1160e65516/dow-jones-futures-rise%2C.html?.tsrc=rss",
-  "published_utc": "2026-11-19T13:07:44Z",
-  "time_london": "1:07pm",
+  "source": "MT Newswires",
+  "title": "Update: US Equity Futures Drop Pre-Bell as Anthropic Shares Decline One Day After Debut",
+  "link": "https://finance.yahoo.com/markets/stocks/articles/us-equity-futures-drop-pre-135320294.html?.tsrc=rss",
+  "published_utc": "2026-11-20T13:53:20Z",
+  "time_london": "1:53pm",
   "kind": "market_wrap"
  },
  "items": [
   {
    "source": "Yahoo Finance",
-   "title": "DXC Collaborates with Cisco to Turn AI-Powered Network Insights into Action with DXC OASIS",
-   "link": "https://finance.yahoo.com/news/dxc-collaborates-cisco-turn-ai-140000867.html?.tsrc=rss",
-   "published_utc": "2026-11-19T14:00:00Z",
-   "time_london": "2:00pm",
+   "title": "Anthropic just went public. Here's what SpaceX and Facebook IPOs tell us about where the stock goes next.",
+   "link": "https://finance.yahoo.com/markets/article/anthropic-just-went-public-heres-what-spacex-and-facebook-ipos-tell-us-about-where-the-stock-goes-next-135422687.html?.tsrc=rss",
+   "published_utc": "2026-11-20T13:54:22Z",
+   "time_london": "1:54pm",
    "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Yahoo Finance",
-   "title": "Chip Stocks Split From Their Bellwether as Leadership Questions Linger",
-   "link": "https://finance.yahoo.com/news/chip-stocks-split-bellwether-leadership-135800328.html?.tsrc=rss",
-   "published_utc": "2026-11-19T13:58:00Z",
-   "time_london": "1:58pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "MarketWatch",
-   "title": "Alibaba\u2019s cloud business is thriving. But those profits are completely offset by losses from its AI labs.",
-   "link": "https://www.marketwatch.com/story/alibabas-cloud-business-is-thriving-but-those-profits-are-completely-offset-by-losses-from-its-ai-labs-74bf4b3c?mod=mw_rss_topstories",
-   "published_utc": "2026-11-19T13:55:00Z",
-   "time_london": "1:55pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Investor's Business Daily",
-   "title": "Elon Musk's Latest Calls For Tesla-SpaceX Merger; Explains Pay Package",
-   "link": "https://finance.yahoo.com/m/1572a323-6573-387a-b2e2-dc53dede777c/elon-musk%27s-latest-calls-for.html?.tsrc=rss",
-   "published_utc": "2026-11-19T13:48:42Z",
-   "time_london": "1:48pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Nasdaq",
-   "title": "Baker Hughes-McDermott Consortium Wins INPEX Contract For Ichthys LNG Project",
-   "link": "https://www.nasdaq.com/articles/baker-hughes-mcdermott-consortium-wins-inpex-contract-ichthys-lng-project",
-   "published_utc": "2026-11-19T13:05:03Z",
-   "time_london": "1:05pm",
-   "impact": 2,
-   "cluster": 1
-  },
-  {
-   "source": "Barron's",
-   "title": "Anthropic Stock Market Debut Will Change the AI Trade Forever",
-   "link": "https://finance.yahoo.com/m/fcb295bf-9c0c-3ffa-946d-c7e37a453503/anthropic-stock-market-debut.html?.tsrc=rss",
-   "published_utc": "2026-11-19T12:45:00Z",
-   "time_london": "12:45pm",
-   "impact": 2,
-   "cluster": 1
-  },
-  {
-   "source": "Nasdaq",
-   "title": "PDD Holdings Inc. Sponsored ADR (PDD) Surpasses Q3 Earnings Estimates",
-   "link": "https://www.nasdaq.com/articles/pdd-holdings-inc-sponsored-adr-pdd-surpasses-q3-earnings-estimates",
-   "published_utc": "2026-11-19T11:45:01Z",
-   "time_london": "11:45am",
-   "impact": 3,
    "cluster": 1
   },
   {
    "source": "Investing",
-   "title": "Anthropic\u2019s record-setting IPO; Fed minutes - what\u2019s moving markets",
-   "link": "https://finance.yahoo.com/technology/ai/articles/anthropic-record-setting-ipo-fed-093418331.html?.tsrc=rss",
-   "published_utc": "2026-11-19T09:34:18Z",
-   "time_london": "9:34am",
-   "impact": 3,
+   "title": "Nvidia\u2019s financing risks could keep AI chip stocks under pressure, analyst says",
+   "link": "https://finance.yahoo.com/technology/ai/articles/nvidia-financing-risks-could-keep-135314222.html?.tsrc=rss",
+   "published_utc": "2026-11-20T13:53:14Z",
+   "time_london": "1:53pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Investing",
+   "title": "Tech investors are fleeing to CrowdStrike\u2014ignoring a 5,552x P/E",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/tech-investors-fleeing-crowdstrike-ignoring-134917233.html?.tsrc=rss",
+   "published_utc": "2026-11-20T13:49:17Z",
+   "time_london": "1:49pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "MarketWatch",
+   "title": "Anthropic\u2019s stock slides closer to IPO price, dragging the AI trade",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=c739630e-74bb-492d-91d9-53c530667e07&mod=mw_rss_bulletins",
+   "published_utc": "2026-11-20T13:46:11Z",
+   "time_london": "1:46pm",
+   "impact": 1,
+   "cluster": 2
+  },
+  {
+   "source": "CNBC",
+   "title": "Anthropic stock falls 13% premarket amid AI sell-off as Nvidia, AMD also sink",
+   "link": "https://www.cnbc.com/2026/11/20/anthropic-stock-ai-amd-nvidia.html",
+   "published_utc": "2026-11-20T13:42:49Z",
+   "time_london": "1:42pm",
+   "impact": 1,
    "cluster": 1
   },
   {
    "source": "Yahoo Finance",
-   "title": "Why Nvidia and ASML still fit an underweight tech strategy",
-   "link": "https://www.thestreet.com/investing/why-nvidia-and-asml-still-fit-an-underweight-tech-strategy?.tsrc=rss",
-   "published_utc": "2026-11-19T00:44:54Z",
-   "time_london": "12:44am",
+   "title": "Nvidia stock extends 6-day losing streak, as AMD, Broadcom lead chip sector lower",
+   "link": "https://finance.yahoo.com/markets/article/nvidia-amd-and-broadcom-lead-chip-stocks-lower-133658985.html?.tsrc=rss",
+   "published_utc": "2026-11-20T13:36:58Z",
+   "time_london": "1:36pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Nasdaq",
+   "title": "Nvidia and Micron Can't Make AI Chips Without This Growth Stock. Here's Why It Could Soar.",
+   "link": "https://www.nasdaq.com/articles/nvidia-and-micron-cant-make-ai-chips-without-growth-stock-heres-why-it-could-soar-0",
+   "published_utc": "2026-11-20T13:20:02Z",
+   "time_london": "1:20pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "CNBC",
+   "title": "Lagarde says EU funds should take first losses on chip plants, data centers",
+   "link": "https://www.cnbc.com/2026/11/20/lagarde-eu-data-center-funding.html",
+   "published_utc": "2026-11-20T12:52:15Z",
+   "time_london": "12:52pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Yahoo Finance",
+   "title": "343 Companies Report $28.5 Billion In Trump Tariff Refunds. Here's Where The Money Is Going.",
+   "link": "https://www.ibtimes.com/us-companies-tariff-refunds-supreme-court-ruling-3810008?.tsrc=rss",
+   "published_utc": "2026-11-20T12:48:19Z",
+   "time_london": "12:48pm",
    "impact": 2,
    "cluster": 1
   },
   {
-   "source": "CNBC",
-   "title": "Microsoft CEO Satya Nadella calls Outlook outage a 'perfect storm.' Here's what went wrong",
-   "link": "https://www.cnbc.com/2026/11/18/microsoft-put-the-ai-threat-to-software-behind-it-then-came-the-outage.html",
-   "published_utc": "2026-11-19T00:18:28Z",
-   "time_london": "12:18am",
+   "source": "Investing",
+   "title": "HSBC upgrades Tesla, more than doubles target on SpaceX merger potential",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/hsbc-upgrades-tesla-more-doubles-121007073.html?.tsrc=rss",
+   "published_utc": "2026-11-20T12:10:07Z",
+   "time_london": "12:10pm",
    "impact": 3,
-   "cluster": 1
+   "cluster": 2
   },
   {
    "source": "CNBC",
-   "title": "Palo Alto inks $4.5 billion deal for AI startup Applied Compute, shares pop 7% on earnings",
-   "link": "https://www.cnbc.com/2026/11/18/palo-alto-networks-panw-q1-2027-earnings-.html",
-   "published_utc": "2026-11-19T00:07:06Z",
-   "time_london": "12:07am",
+   "title": "Anthropic IPO takeaways: ANT debuts with $1.8 trillion market cap in landmark moment for AI",
+   "link": "https://www.cnbc.com/2026/11/19/anthropic-ipo-ant-live-updates.html",
+   "published_utc": "2026-11-20T00:04:56Z",
+   "time_london": "12:04am",
    "impact": 2,
    "cluster": 1
   },
   {
    "source": "MarketWatch",
-   "title": "What\u2019s next for the AI trade after Nvidia\u2019s blowout results are met with a shrug",
-   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=eafdb624-64f5-4c2b-89e2-927ea73ab283&mod=mw_rss_bulletins",
-   "published_utc": "2026-11-18T21:06:49Z",
-   "time_london": "9:06pm",
-   "impact": 2,
+   "title": "Intuit\u2019s downbeat outlook deepens Wall Street\u2019s anxiety about software companies",
+   "link": "https://www.marketwatch.com/story/intuits-downbeat-outlook-deepens-wall-streets-anxiety-about-software-companies-15b878e5?mod=mw_rss_topstories",
+   "published_utc": "2026-11-19T22:30:01Z",
+   "time_london": "10:30pm",
+   "impact": 3,
    "cluster": 2
   }
  ],
  "split": {
   "stories": {
-   "n": 44,
-   "bars3": 3,
-   "bars2": 5,
-   "bars1": 36,
-   "pct3": 7,
-   "pct2": 11,
-   "pct1": 82
+   "n": 31,
+   "bars3": 2,
+   "bars2": 2,
+   "bars1": 27,
+   "pct3": 6,
+   "pct2": 6,
+   "pct1": 87
   },
   "listed": {
    "n": 12,
-   "bars3": 3,
-   "bars2": 5,
-   "bars1": 4,
-   "pct3": 25,
-   "pct2": 42,
-   "pct1": 33
+   "bars3": 2,
+   "bars2": 2,
+   "bars1": 8,
+   "pct3": 17,
+   "pct2": 17,
+   "pct1": 67
   },
   "note": "non-wrap items only: market wraps and movers roundups are excluded"
  },
  "stats": {
-  "fetched": 439,
-  "in_window": 231,
+  "fetched": 427,
+  "in_window": 211,
   "wraps": {
-   "market_wrap": 8,
-   "movers_roundup": 1
+   "market_wrap": 7,
+   "movers_roundup": 0
   },
-  "relevant": 46,
-  "blocked_publisher": 48,
-  "clustered": 2
+  "relevant": 34,
+  "blocked_publisher": 53,
+  "clustered": 3
  },
  "feeds_ok": 23,
  "feeds_total": 23,
