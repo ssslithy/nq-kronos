@@ -1,157 +1,157 @@
 {
  "ok": true,
- "generated_utc": "2026-11-20T14:07:37Z",
- "window_start_utc": "2026-11-19T21:00:00Z",
- "window_end_utc": "2026-11-20T14:00:00Z",
+ "generated_utc": "2026-11-23T14:07:30Z",
+ "window_start_utc": "2026-11-20T21:00:00Z",
+ "window_end_utc": "2026-11-23T14:00:00Z",
  "brief": {
   "source": "MT Newswires",
-  "title": "Update: US Equity Futures Drop Pre-Bell as Anthropic Shares Decline One Day After Debut",
-  "link": "https://finance.yahoo.com/markets/stocks/articles/us-equity-futures-drop-pre-135320294.html?.tsrc=rss",
-  "published_utc": "2026-11-20T13:53:20Z",
+  "title": "Update: US Equity Futures Rise Pre-Bell as Nvidia Starts Off Week Strong",
+  "link": "https://finance.yahoo.com/markets/stocks/articles/us-equity-futures-rise-pre-135359421.html?.tsrc=rss",
+  "published_utc": "2026-11-23T13:53:59Z",
   "time_london": "1:53pm",
   "kind": "market_wrap"
  },
  "items": [
   {
-   "source": "Yahoo Finance",
-   "title": "Anthropic just went public. Here's what SpaceX and Facebook IPOs tell us about where the stock goes next.",
-   "link": "https://finance.yahoo.com/markets/article/anthropic-just-went-public-heres-what-spacex-and-facebook-ipos-tell-us-about-where-the-stock-goes-next-135422687.html?.tsrc=rss",
-   "published_utc": "2026-11-20T13:54:22Z",
-   "time_london": "1:54pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
    "source": "Investing",
-   "title": "Nvidia\u2019s financing risks could keep AI chip stocks under pressure, analyst says",
-   "link": "https://finance.yahoo.com/technology/ai/articles/nvidia-financing-risks-could-keep-135314222.html?.tsrc=rss",
-   "published_utc": "2026-11-20T13:53:14Z",
-   "time_london": "1:53pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Investing",
-   "title": "Tech investors are fleeing to CrowdStrike\u2014ignoring a 5,552x P/E",
-   "link": "https://finance.yahoo.com/markets/stocks/articles/tech-investors-fleeing-crowdstrike-ignoring-134917233.html?.tsrc=rss",
-   "published_utc": "2026-11-20T13:49:17Z",
-   "time_london": "1:49pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "MarketWatch",
-   "title": "Anthropic\u2019s stock slides closer to IPO price, dragging the AI trade",
-   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=c739630e-74bb-492d-91d9-53c530667e07&mod=mw_rss_bulletins",
-   "published_utc": "2026-11-20T13:46:11Z",
-   "time_london": "1:46pm",
-   "impact": 1,
-   "cluster": 2
-  },
-  {
-   "source": "CNBC",
-   "title": "Anthropic stock falls 13% premarket amid AI sell-off as Nvidia, AMD also sink",
-   "link": "https://www.cnbc.com/2026/11/20/anthropic-stock-ai-amd-nvidia.html",
-   "published_utc": "2026-11-20T13:42:49Z",
-   "time_london": "1:42pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Yahoo Finance",
-   "title": "Nvidia stock extends 6-day losing streak, as AMD, Broadcom lead chip sector lower",
-   "link": "https://finance.yahoo.com/markets/article/nvidia-amd-and-broadcom-lead-chip-stocks-lower-133658985.html?.tsrc=rss",
-   "published_utc": "2026-11-20T13:36:58Z",
-   "time_london": "1:36pm",
+   "title": "Dow Jones, Nasdaq, S&P 500 preview: Consumer spending in focus after AI rout",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/dow-jones-nasdaq-p-500-135515185.html?.tsrc=rss",
+   "published_utc": "2026-11-23T13:55:15Z",
+   "time_london": "1:55pm",
    "impact": 1,
    "cluster": 1
   },
   {
    "source": "Nasdaq",
-   "title": "Nvidia and Micron Can't Make AI Chips Without This Growth Stock. Here's Why It Could Soar.",
-   "link": "https://www.nasdaq.com/articles/nvidia-and-micron-cant-make-ai-chips-without-growth-stock-heres-why-it-could-soar-0",
-   "published_utc": "2026-11-20T13:20:02Z",
-   "time_london": "1:20pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "CNBC",
-   "title": "Lagarde says EU funds should take first losses on chip plants, data centers",
-   "link": "https://www.cnbc.com/2026/11/20/lagarde-eu-data-center-funding.html",
-   "published_utc": "2026-11-20T12:52:15Z",
-   "time_london": "12:52pm",
+   "title": "Nvidia's 10-Q Is Delayed. Here's What I'm Looking for When It Lands.",
+   "link": "https://www.nasdaq.com/articles/nvidias-10-q-delayed-heres-what-im-looking-when-it-lands",
+   "published_utc": "2026-11-23T13:50:02Z",
+   "time_london": "1:50pm",
    "impact": 1,
    "cluster": 1
   },
   {
    "source": "Yahoo Finance",
-   "title": "343 Companies Report $28.5 Billion In Trump Tariff Refunds. Here's Where The Money Is Going.",
-   "link": "https://www.ibtimes.com/us-companies-tariff-refunds-supreme-court-ruling-3810008?.tsrc=rss",
-   "published_utc": "2026-11-20T12:48:19Z",
-   "time_london": "12:48pm",
+   "title": "Nvidia, Broadcom, and AMD roar higher as chip stocks rebound from worst week since 2001",
+   "link": "https://finance.yahoo.com/markets/article/nvidia-broadcom-and-amd-roar-higher-as-chips-rebound-from-worst-week-since-2001-133109931.html?.tsrc=rss",
+   "published_utc": "2026-11-23T13:31:09Z",
+   "time_london": "1:31pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Nasdaq",
+   "title": "Coca-Cola Europacific Partners Faces Formal EU Antitrust Investigation",
+   "link": "https://www.nasdaq.com/articles/coca-cola-europacific-partners-faces-formal-eu-antitrust-investigation",
+   "published_utc": "2026-11-23T13:09:34Z",
+   "time_london": "1:09pm",
    "impact": 2,
    "cluster": 1
   },
   {
-   "source": "Investing",
-   "title": "HSBC upgrades Tesla, more than doubles target on SpaceX merger potential",
-   "link": "https://finance.yahoo.com/markets/stocks/articles/hsbc-upgrades-tesla-more-doubles-121007073.html?.tsrc=rss",
-   "published_utc": "2026-11-20T12:10:07Z",
-   "time_london": "12:10pm",
-   "impact": 3,
-   "cluster": 2
+   "source": "Barron's",
+   "title": "Tesla\u2019s Big Self-Driving Upgrade Arrives Right on Time for the Stock",
+   "link": "https://finance.yahoo.com/m/6a733e08-c8a9-3da6-bbdc-9f5eb9ca9edd/tesla%E2%80%99s-big-self-driving.html?.tsrc=rss",
+   "published_utc": "2026-11-23T12:30:00Z",
+   "time_london": "12:30pm",
+   "impact": 2,
+   "cluster": 1
   },
   {
-   "source": "CNBC",
-   "title": "Anthropic IPO takeaways: ANT debuts with $1.8 trillion market cap in landmark moment for AI",
-   "link": "https://www.cnbc.com/2026/11/19/anthropic-ipo-ant-live-updates.html",
-   "published_utc": "2026-11-20T00:04:56Z",
-   "time_london": "12:04am",
+   "source": "Yahoo Finance",
+   "title": "CrowdStrike explores acquisition of Zscaler \u2013 report",
+   "link": "https://www.verdict.co.uk/crowdstrike-explores-acquisition-zscaler/?.tsrc=rss",
+   "published_utc": "2026-11-23T11:10:21Z",
+   "time_london": "11:10am",
    "impact": 2,
+   "cluster": 3
+  },
+  {
+   "source": "Nasdaq",
+   "title": "Zscaler (ZS) Q1 Earnings and Revenues Surpass Estimates",
+   "link": "https://www.nasdaq.com/articles/zscaler-zs-q1-earnings-and-revenues-surpass-estimates",
+   "published_utc": "2026-11-23T11:10:02Z",
+   "time_london": "11:10am",
+   "impact": 3,
+   "cluster": 1
+  },
+  {
+   "source": "Nasdaq",
+   "title": "CrowdStrike Holdings (CRWD) Q3 Earnings and Revenues Surpass Estimates",
+   "link": "https://www.nasdaq.com/articles/crowdstrike-holdings-crwd-q3-earnings-and-revenues-surpass-estimates",
+   "published_utc": "2026-11-23T11:10:01Z",
+   "time_london": "11:10am",
+   "impact": 3,
    "cluster": 1
   },
   {
    "source": "MarketWatch",
-   "title": "Intuit\u2019s downbeat outlook deepens Wall Street\u2019s anxiety about software companies",
-   "link": "https://www.marketwatch.com/story/intuits-downbeat-outlook-deepens-wall-streets-anxiety-about-software-companies-15b878e5?mod=mw_rss_topstories",
-   "published_utc": "2026-11-19T22:30:01Z",
-   "time_london": "10:30pm",
+   "title": "The Fed risks a recession if it raises interest rates: Bill Ackman",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=9ba83848-30c5-4771-b8ea-16e8a2e90822&mod=mw_rss_bulletins",
+   "published_utc": "2026-11-23T11:09:26Z",
+   "time_london": "11:09am",
    "impact": 3,
-   "cluster": 2
+   "cluster": 1
+  },
+  {
+   "source": "Yahoo Finance",
+   "title": "The Fed isn't riding to the rescue \u2014 Wall Street still sees a December rate hike after tech's worst week since 2020: Chart of the Day",
+   "link": "https://finance.yahoo.com/markets/article/the-fed-isnt-riding-to-the-rescue--wall-street-still-sees-a-december-rate-hike-after-techs-worst-week-since-2020-chart-of-the-day-110000273.html?.tsrc=rss",
+   "published_utc": "2026-11-23T11:00:00Z",
+   "time_london": "11:00am",
+   "impact": 3,
+   "cluster": 1
+  },
+  {
+   "source": "MarketWatch",
+   "title": "The U.S. may enter a recession if the Fed raises rates, hedge-fund manager Bill Ackman says",
+   "link": "https://www.marketwatch.com/story/the-u-s-may-enter-a-recession-if-the-fed-raises-rates-hedge-fund-manager-bill-ackman-says-16738971?mod=mw_rss_topstories",
+   "published_utc": "2026-11-23T10:57:00Z",
+   "time_london": "10:57am",
+   "impact": 3,
+   "cluster": 1
+  },
+  {
+   "source": "Investing",
+   "title": "Futures bounce after AI selloff; Bessent on Nvidia probe - what\u2019s moving markets",
+   "link": "https://finance.yahoo.com/markets/stocks/articles/futures-bounce-ai-selloff-bessent-071306387.html?.tsrc=rss",
+   "published_utc": "2026-11-23T07:13:06Z",
+   "time_london": "7:13am",
+   "impact": 2,
+   "cluster": 1
   }
  ],
  "split": {
   "stories": {
-   "n": 31,
-   "bars3": 2,
-   "bars2": 2,
-   "bars1": 27,
-   "pct3": 6,
-   "pct2": 6,
-   "pct1": 87
+   "n": 40,
+   "bars3": 5,
+   "bars2": 4,
+   "bars1": 31,
+   "pct3": 12,
+   "pct2": 10,
+   "pct1": 78
   },
   "listed": {
    "n": 12,
-   "bars3": 2,
-   "bars2": 2,
-   "bars1": 8,
-   "pct3": 17,
-   "pct2": 17,
-   "pct1": 67
+   "bars3": 5,
+   "bars2": 4,
+   "bars1": 3,
+   "pct3": 42,
+   "pct2": 33,
+   "pct1": 25
   },
   "note": "non-wrap items only: market wraps and movers roundups are excluded"
  },
  "stats": {
-  "fetched": 427,
-  "in_window": 211,
+  "fetched": 440,
+  "in_window": 245,
   "wraps": {
-   "market_wrap": 7,
-   "movers_roundup": 0
+   "market_wrap": 8,
+   "movers_roundup": 1
   },
-  "relevant": 34,
-  "blocked_publisher": 53,
-  "clustered": 3
+  "relevant": 45,
+  "blocked_publisher": 46,
+  "clustered": 5
  },
  "feeds_ok": 23,
  "feeds_total": 23,
