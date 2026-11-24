@@ -1,157 +1,157 @@
 {
  "ok": true,
- "generated_utc": "2026-11-23T14:07:30Z",
- "window_start_utc": "2026-11-20T21:00:00Z",
- "window_end_utc": "2026-11-23T14:00:00Z",
+ "generated_utc": "2026-11-24T14:07:31Z",
+ "window_start_utc": "2026-11-23T21:00:00Z",
+ "window_end_utc": "2026-11-24T14:00:00Z",
  "brief": {
   "source": "MT Newswires",
-  "title": "Update: US Equity Futures Rise Pre-Bell as Nvidia Starts Off Week Strong",
-  "link": "https://finance.yahoo.com/markets/stocks/articles/us-equity-futures-rise-pre-135359421.html?.tsrc=rss",
-  "published_utc": "2026-11-23T13:53:59Z",
-  "time_london": "1:53pm",
+  "title": "Update: US Equity Futures Slide Pre-Bell as Traders Assess Nvidia-Led Market Rally",
+  "link": "https://finance.yahoo.com/markets/stocks/articles/us-equity-futures-slide-pre-135142573.html?.tsrc=rss",
+  "published_utc": "2026-11-24T13:51:42Z",
+  "time_london": "1:51pm",
   "kind": "market_wrap"
  },
  "items": [
   {
-   "source": "Investing",
-   "title": "Dow Jones, Nasdaq, S&P 500 preview: Consumer spending in focus after AI rout",
-   "link": "https://finance.yahoo.com/markets/stocks/articles/dow-jones-nasdaq-p-500-135515185.html?.tsrc=rss",
-   "published_utc": "2026-11-23T13:55:15Z",
-   "time_london": "1:55pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Nasdaq",
-   "title": "Nvidia's 10-Q Is Delayed. Here's What I'm Looking for When It Lands.",
-   "link": "https://www.nasdaq.com/articles/nvidias-10-q-delayed-heres-what-im-looking-when-it-lands",
-   "published_utc": "2026-11-23T13:50:02Z",
-   "time_london": "1:50pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
    "source": "Yahoo Finance",
-   "title": "Nvidia, Broadcom, and AMD roar higher as chip stocks rebound from worst week since 2001",
-   "link": "https://finance.yahoo.com/markets/article/nvidia-broadcom-and-amd-roar-higher-as-chips-rebound-from-worst-week-since-2001-133109931.html?.tsrc=rss",
-   "published_utc": "2026-11-23T13:31:09Z",
-   "time_london": "1:31pm",
-   "impact": 1,
-   "cluster": 1
-  },
-  {
-   "source": "Nasdaq",
-   "title": "Coca-Cola Europacific Partners Faces Formal EU Antitrust Investigation",
-   "link": "https://www.nasdaq.com/articles/coca-cola-europacific-partners-faces-formal-eu-antitrust-investigation",
-   "published_utc": "2026-11-23T13:09:34Z",
-   "time_london": "1:09pm",
+   "title": "Trump Is Bringing Tariffs Back, and China Will Likely Get Hit Hardest: WSJ",
+   "link": "https://www.benzinga.com/markets/prediction-markets/26/11/63575690/trump-china-tariffs-return?utm_source=yahooFinance&utm_campaign=partner_feed&utm_medium=referral&.tsrc=rss",
+   "published_utc": "2026-11-24T13:47:52Z",
+   "time_london": "1:47pm",
    "impact": 2,
    "cluster": 1
   },
   {
    "source": "Barron's",
-   "title": "Tesla\u2019s Big Self-Driving Upgrade Arrives Right on Time for the Stock",
-   "link": "https://finance.yahoo.com/m/6a733e08-c8a9-3da6-bbdc-9f5eb9ca9edd/tesla%E2%80%99s-big-self-driving.html?.tsrc=rss",
-   "published_utc": "2026-11-23T12:30:00Z",
-   "time_london": "12:30pm",
-   "impact": 2,
+   "title": "AMD Stock Shows the Market Has Stopped Making Sense After Huang\u2019s Dramatic Return",
+   "link": "https://finance.yahoo.com/m/fad1db36-fd86-34e4-866b-804987e46e84/amd-stock-shows-the-market.html?.tsrc=rss",
+   "published_utc": "2026-11-24T13:31:00Z",
+   "time_london": "1:31pm",
+   "impact": 1,
    "cluster": 1
   },
   {
    "source": "Yahoo Finance",
-   "title": "CrowdStrike explores acquisition of Zscaler \u2013 report",
-   "link": "https://www.verdict.co.uk/crowdstrike-explores-acquisition-zscaler/?.tsrc=rss",
-   "published_utc": "2026-11-23T11:10:21Z",
-   "time_london": "11:10am",
+   "title": "Amazon To Pull Unauthorized Victoria's Secret Listings On Thanksgiving",
+   "link": "https://www.mediapost.com/publications/article/419642/amazon-to-pull-unauthorized-victorias-secret-list.html?.tsrc=rss",
+   "published_utc": "2026-11-24T13:00:00Z",
+   "time_london": "1:00pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Barron's",
+   "title": "Tesla Stock Drops as Mercedes-Benz Enters the Self-Driving Race",
+   "link": "https://finance.yahoo.com/m/0b6758bf-cfbb-317a-a1cb-b9bd07aec22f/tesla-stock-drops-as.html?.tsrc=rss",
+   "published_utc": "2026-11-24T12:20:00Z",
+   "time_london": "12:20pm",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Yahoo Finance",
+   "title": "DXL launches AI product discovery on Meta Muse via Commercetools",
+   "link": "https://www.retail-insight-network.com/news/dxl-ai-product-discovery-meta-muse-commercetools/?.tsrc=rss",
+   "published_utc": "2026-11-24T11:46:23Z",
+   "time_london": "11:46am",
    "impact": 2,
+   "cluster": 1
+  },
+  {
+   "source": "Nasdaq",
+   "title": "Tap Jensen-Led AI Rally With These ETFs",
+   "link": "https://www.nasdaq.com/articles/tap-jensen-led-ai-rally-these-etfs",
+   "published_utc": "2026-11-24T11:42:00Z",
+   "time_london": "11:42am",
+   "impact": 1,
+   "cluster": 1
+  },
+  {
+   "source": "Yahoo Finance",
+   "title": "SpaceX and Tesla Directors Hold Talks Over Potential US$3.5 Trillion Merger",
+   "link": "https://investorshub.advfn.com/market-news/article/40597/spacex-and-tesla-directors-hold-talks-over-potential-us3-5-trillion-merger?.tsrc=rss",
+   "published_utc": "2026-11-24T11:19:30Z",
+   "time_london": "11:19am",
+   "impact": 3,
    "cluster": 3
   },
   {
-   "source": "Nasdaq",
-   "title": "Zscaler (ZS) Q1 Earnings and Revenues Surpass Estimates",
-   "link": "https://www.nasdaq.com/articles/zscaler-zs-q1-earnings-and-revenues-surpass-estimates",
-   "published_utc": "2026-11-23T11:10:02Z",
-   "time_london": "11:10am",
-   "impact": 3,
-   "cluster": 1
-  },
-  {
-   "source": "Nasdaq",
-   "title": "CrowdStrike Holdings (CRWD) Q3 Earnings and Revenues Surpass Estimates",
-   "link": "https://www.nasdaq.com/articles/crowdstrike-holdings-crwd-q3-earnings-and-revenues-surpass-estimates",
-   "published_utc": "2026-11-23T11:10:01Z",
-   "time_london": "11:10am",
-   "impact": 3,
-   "cluster": 1
-  },
-  {
-   "source": "MarketWatch",
-   "title": "The Fed risks a recession if it raises interest rates: Bill Ackman",
-   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=9ba83848-30c5-4771-b8ea-16e8a2e90822&mod=mw_rss_bulletins",
-   "published_utc": "2026-11-23T11:09:26Z",
-   "time_london": "11:09am",
-   "impact": 3,
-   "cluster": 1
-  },
-  {
-   "source": "Yahoo Finance",
-   "title": "The Fed isn't riding to the rescue \u2014 Wall Street still sees a December rate hike after tech's worst week since 2020: Chart of the Day",
-   "link": "https://finance.yahoo.com/markets/article/the-fed-isnt-riding-to-the-rescue--wall-street-still-sees-a-december-rate-hike-after-techs-worst-week-since-2020-chart-of-the-day-110000273.html?.tsrc=rss",
-   "published_utc": "2026-11-23T11:00:00Z",
-   "time_london": "11:00am",
-   "impact": 3,
-   "cluster": 1
-  },
-  {
-   "source": "MarketWatch",
-   "title": "The U.S. may enter a recession if the Fed raises rates, hedge-fund manager Bill Ackman says",
-   "link": "https://www.marketwatch.com/story/the-u-s-may-enter-a-recession-if-the-fed-raises-rates-hedge-fund-manager-bill-ackman-says-16738971?mod=mw_rss_topstories",
-   "published_utc": "2026-11-23T10:57:00Z",
-   "time_london": "10:57am",
-   "impact": 3,
-   "cluster": 1
-  },
-  {
-   "source": "Investing",
-   "title": "Futures bounce after AI selloff; Bessent on Nvidia probe - what\u2019s moving markets",
-   "link": "https://finance.yahoo.com/markets/stocks/articles/futures-bounce-ai-selloff-bessent-071306387.html?.tsrc=rss",
-   "published_utc": "2026-11-23T07:13:06Z",
-   "time_london": "7:13am",
+   "source": "CNBC",
+   "title": "U.S. adds Megaspeed to trade blacklist over export control concerns amid Nvidia controversy",
+   "link": "https://www.cnbc.com/2026/11/24/us-adds-megaspeed-to-trade-blacklist-over-export-control-concerns-.html",
+   "published_utc": "2026-11-24T02:37:39Z",
+   "time_london": "2:37am",
    "impact": 2,
    "cluster": 1
+  },
+  {
+   "source": "CNBC",
+   "title": "Amazon faces FAA probe after delivery drone strikes Michigan fiber cable, garage",
+   "link": "https://www.cnbc.com/2026/11/23/amazon-drone-crash-michigan-faa-investigation.html",
+   "published_utc": "2026-11-24T00:56:10Z",
+   "time_london": "12:56am",
+   "impact": 3,
+   "cluster": 1
+  },
+  {
+   "source": "MarketWatch",
+   "title": "Trump is open to capping credit-card interest rates. But don't bank on it.",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=a4f1ebae-17bf-495e-a06d-21c4d132e172&mod=mw_rss_bulletins",
+   "published_utc": "2026-11-23T22:18:12Z",
+   "time_london": "10:18pm",
+   "impact": 3,
+   "cluster": 1
+  },
+  {
+   "source": "MarketWatch",
+   "title": "Short sellers get smoked as Nvidia shares tally biggest one-day gain in history",
+   "link": "https://www.marketwatch.com/bulletins/redirect/go?g=1ae855e5-decc-41a1-8791-a22413ea01b9&mod=mw_rss_bulletins",
+   "published_utc": "2026-11-23T21:26:33Z",
+   "time_london": "9:26pm",
+   "impact": 3,
+   "cluster": 1
+  },
+  {
+   "source": "CNBC",
+   "title": "CrowdStrike CEO defends Zscaler acquisition, calls it a 'winning combination'",
+   "link": "https://www.cnbc.com/2026/11/23/crowdstrike-zscaler-deal-ceo-george-kurtz.html",
+   "published_utc": "2026-11-23T21:04:03Z",
+   "time_london": "9:04pm",
+   "impact": 2,
+   "cluster": 2
   }
  ],
  "split": {
   "stories": {
-   "n": 40,
-   "bars3": 5,
+   "n": 20,
+   "bars3": 4,
    "bars2": 4,
-   "bars1": 31,
-   "pct3": 12,
-   "pct2": 10,
-   "pct1": 78
+   "bars1": 12,
+   "pct3": 20,
+   "pct2": 20,
+   "pct1": 60
   },
   "listed": {
    "n": 12,
-   "bars3": 5,
+   "bars3": 4,
    "bars2": 4,
-   "bars1": 3,
-   "pct3": 42,
+   "bars1": 4,
+   "pct3": 33,
    "pct2": 33,
-   "pct1": 25
+   "pct1": 33
   },
   "note": "non-wrap items only: market wraps and movers roundups are excluded"
  },
  "stats": {
-  "fetched": 440,
-  "in_window": 245,
+  "fetched": 431,
+  "in_window": 233,
   "wraps": {
-   "market_wrap": 8,
+   "market_wrap": 6,
    "movers_roundup": 1
   },
-  "relevant": 45,
-  "blocked_publisher": 46,
-  "clustered": 5
+  "relevant": 35,
+  "blocked_publisher": 65,
+  "clustered": 15
  },
  "feeds_ok": 23,
  "feeds_total": 23,
