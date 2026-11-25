@@ -1,34 +1,34 @@
 {
  "ok": true,
- "generated_utc": "2026-11-24T14:07:31Z",
- "origin_utc": "2026-11-24T13:00:00Z",
- "window_start_utc": "2026-11-23T21:00:00Z",
- "window_end_utc": "2026-11-24T14:00:00Z",
- "window_label": "Since US close \u00b7 Mon 9pm \u2013 Tue 2pm",
+ "generated_utc": "2026-11-25T14:07:29Z",
+ "origin_utc": "2026-11-25T13:00:00Z",
+ "window_start_utc": "2026-11-24T21:00:00Z",
+ "window_end_utc": "2026-11-25T14:00:00Z",
+ "window_label": "Since US close \u00b7 Tue 9pm \u2013 Wed 2pm",
  "cells": [
   {
    "label": "Oil",
    "ticker": "CL=F",
    "unit": "pct",
-   "value": 0.8,
-   "from": 80.19,
-   "to": 80.83
+   "value": 1.19,
+   "from": 81.44,
+   "to": 82.41
   },
   {
    "label": "VIX",
    "ticker": "^VIX",
    "unit": "pts",
-   "value": 2.41,
-   "from": 27.05,
-   "to": 29.46
+   "value": 5.16,
+   "from": 26.19,
+   "to": 31.35
   },
   {
    "label": "Dollar",
    "ticker": "DX-Y.NYB",
    "unit": "pct",
-   "value": -0.45,
-   "from": 104.344,
-   "to": 103.874
+   "value": 0.16,
+   "from": 103.822,
+   "to": 103.993
   }
  ],
  "errors": null,
