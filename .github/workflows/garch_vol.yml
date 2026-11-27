@@ -11,7 +11,9 @@ name: garch-vol
 #   vol     9am->9am New York (2pm->2pm London) volatility (run_vol.py; HAR-RV since Nov 2026, the job keeps its
 #           old name) + phone alert, then calendar / Treasuries / Fed odds / news (fail-soft),
 #           commit, push   (~2-6 min)
-#   deploy  Pages deploy of the vol forecast, straight away
+#   deploy  Pages deploy of the vol forecast, straight away (one retry, 60 s later, if GitHub's deploy fails)
+# Every run, forecast or not, also checks the live page: if its vol_latest.json differs from main's,
+# a deploy failed earlier (24 and 25 Nov 2026) and this run deploys again.
 # (Kronos-small used to run here as two more jobs; retired 15 Nov 2026, see lab/archive/kronos/.)
 on:
   schedule:
@@ -44,6 +46,7 @@ jobs:
     timeout-minutes: 15
     outputs:
       changed: ${{ steps.commit.outputs.changed }}
+      stale: ${{ steps.live.outputs.stale }}
       made: ${{ steps.run.outputs.made }}
       origin: ${{ steps.run.outputs.origin }}
     steps:
@@ -105,6 +108,26 @@ jobs:
           fi
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
+      - name: Check the live page has main's forecast
+        id: live
+        if: always()
+        run: |
+          # After a failed Pages deploy the page keeps the old forecast, and later runs find no new
+          # data, so nothing redeploys. Compare the live vol_latest.json with main's; differ -> deploy.
+          git fetch -q origin "${GITHUB_REF_NAME}" || true
+          want=$(git show "origin/${GITHUB_REF_NAME}:site/data/vol_latest.json" 2>/dev/null \
+                 | python -c "import json,sys;print(json.load(sys.stdin).get('generated_utc'))" 2>/dev/null || true)
+          owner=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          url="https://${owner}.github.io/${GITHUB_REPOSITORY#*/}/data/vol_latest.json?check=${GITHUB_RUN_ID}"
+          have=$(curl -fsS --max-time 20 "$url" | python -c "import json,sys;print(json.load(sys.stdin).get('generated_utc'))" 2>/dev/null || true)
+          echo "main: ${want:-?}  live: ${have:-unreachable}"
+          if [ -n "$want" ] && [ "$want" != "None" ] && [ "$want" != "$have" ]; then
+            echo "::warning::the live page is behind main (an earlier deploy failed); deploying again"
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Fail the run if the forecast failed
         if: steps.run.outputs.code != '0'
         run: |
@@ -113,14 +136,14 @@ jobs:
 
   deploy:
     needs: vol
-    if: always() && needs.vol.outputs.changed == 'true'
+    if: always() && (needs.vol.outputs.changed == 'true' || needs.vol.outputs.stale == 'true')
     runs-on: ubuntu-latest
     concurrency:                    # shared with forecast.yml: one Pages deploy at a time
       group: pages-deploy
       cancel-in-progress: false
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -131,3 +154,17 @@ jobs:
           path: site
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        continue-on-error: true         # GitHub sometimes can't find the bundle just uploaded (24/25 Nov 2026)
+      - name: Wait before retrying the deploy
+        if: steps.deployment.outcome == 'failure'
+        run: echo "::warning::Pages deploy failed; retrying in 60 s with a fresh upload"; sleep 60
+      - if: steps.deployment.outcome == 'failure'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+          name: github-pages-retry
+      - id: deployment_retry
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        with:
+          artifact_name: github-pages-retry

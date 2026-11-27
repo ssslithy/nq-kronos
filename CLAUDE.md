@@ -44,7 +44,11 @@ Fed-decision odds and tech headlines, a phone alert and an accuracy log. Kronos-
      source writes `"ok": false` and the page hides that block; never fails or delays the forecast);
      commits and pushes those files.
   2. `deploy`: Pages deploy of the vol forecast, straight away. It shares the `pages-deploy`
-     concurrency group with `forecast.yml`.
+     concurrency group with `forecast.yml`. If GitHub's deploy step fails it uploads again and retries
+     once, 60 s later (both deploy workflows).
+  Every garch-vol run (all 7 weekday slots, forecast or not, holidays and half-days included) also
+  compares the live `data/vol_latest.json` with main's (`generated_utc`); if they differ an earlier
+  deploy failed, and the run deploys again.
 - Timing: the vol forecast (alert + deploy) is live within ~5 min of the start.
 - `forecast.yml` (workflow name "deploy") only deploys the page: on pushes to `site/**` (not
   `site/data/**`) and by hand. A push that only changes `site/data` does not deploy by itself.
@@ -262,6 +266,13 @@ alerts; tick **test alert** to check the secret). Actions → deploy → Run wor
   an external timer (cron-job.org) as the primary trigger, late runs still forecast once, the watchdog
   acts whenever it runs after 09:30 NY. Then (11 Nov) the vol-timer workflow replaced the external
   timer, whose test calls never reached GitHub.
+
+- **24 and 25 Nov 2026, page stuck on the old forecast:** both forecasts ran and were committed on
+  time, but GitHub's deploy step failed ("Fetching artifact metadata failed", no "github-pages"
+  artifact found). The backup slots found no new data, so nothing redeployed, and Thanksgiving and
+  the half-day have no forecast: the page showed Tuesday's forecast until a manual re-run on Fri
+  27 Nov. Fixed: one deploy retry with a fresh upload, and every run redeploys if the live page is
+  behind main.
 
 ## Rules for future changes
 

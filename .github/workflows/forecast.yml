@@ -22,7 +22,7 @@ jobs:
       cancel-in-progress: false
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment_retry.outputs.page_url }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -33,3 +33,17 @@ jobs:
           path: site
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        continue-on-error: true         # GitHub sometimes can't find the bundle just uploaded (24/25 Nov 2026)
+      - name: Wait before retrying the deploy
+        if: steps.deployment.outcome == 'failure'
+        run: echo "::warning::Pages deploy failed; retrying in 60 s with a fresh upload"; sleep 60
+      - if: steps.deployment.outcome == 'failure'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+          name: github-pages-retry
+      - id: deployment_retry
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        with:
+          artifact_name: github-pages-retry
