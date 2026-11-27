@@ -151,6 +151,7 @@ body.nq { background: #0A0E11; color: #E8EEF1; font: 14px/1.4 Inter, system-ui, 
 .nq-pct { font-size: 22px; font-weight: 500; color: #93A1A9; }
 .nq-range { font-size: clamp(18px, 2.4vw, 22px); font-weight: 600; color: #C9D4D9; }
 .nq-note { font-size: 13px; color: #93A1A9; }
+#b-24h-incl { width: 0; min-width: 100%; }      /* wraps to the block; never widens it (squeezed the cash range) */
 
 .nq-side { flex: 1 1 220px; max-width: 284px; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid #1E272D; padding-left: 20px; min-width: 0; }
 .nq-h { display: block; font-size: 12px; font-weight: 600; color: #93A1A9; text-transform: uppercase; letter-spacing: 0.06em; padding-bottom: 4px; }

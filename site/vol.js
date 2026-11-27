@@ -68,7 +68,17 @@
   function blocks(D) {
     const v = D.vol, lv = v.headline || 90;
     const a = T(v.forecast_time_utc), b = plusH(v.horizon_end_utc, 1);
-    $("b-24h-when").textContent = `${at(a)} – ${at(b)}`;
+    // Which day and period: dated ends; "Next 24 hours" only for a normal 23-trading-hour window
+    const hrs = v.horizon || 23;
+    $("b-24h-label").textContent = hrs === 23 ? "Next 24 hours," : `Next ${hrs} trading hours,`;
+    $("b-24h-when").innerHTML = `<span class="nq-span">${esc(`${date(a)} ${clock(a)}`)} –</span> ` +   // may break after the dash
+      `<span class="nq-span">${esc(`${date(b)} ${clock(b)}`)}</span>`;
+    const ecs = v.early_closes || [];
+    if (ecs.length) {
+      $("b-24h-incl").textContent = ecs.map((e) => `Includes the ${date(T(e.time_utc))} early close (${clock(T(e.time_utc))})`).join(" · ") +
+        ". No forecast that day.";
+      $("b-24h-incl").hidden = false;
+    }
     $("b-24h-pts").textContent = `±${num(v.headline_pts)} pts`;
     $("b-24h-pct").textContent = `±${v.headline_pct.toFixed(2)}%`;
     const r = v[`range${lv}`];
